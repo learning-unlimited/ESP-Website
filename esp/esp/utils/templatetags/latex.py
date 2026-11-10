@@ -38,13 +38,17 @@ Learning Unlimited, Inc.
 """
 
 from django import template
+
+from esp.utils.latex import tex_printable_text
 register = template.Library()
 
 @register.filter
 def texescape(value):
     """ This will escape a string according to the rules of LaTeX """
 
-    value = six.text_type(value).strip()
+    # Keep accented letters pdflatex can print (the templates use T1 fonts)
+    # rather than dropping everything outside ASCII.
+    value = tex_printable_text(six.text_type(value).strip(), keep_newlines=True)[0]
 
 
 
@@ -95,8 +99,6 @@ def texescape(value):
     value = value.replace('\r\n', '\n')
     value = value.replace('\r',   '\n')
     value = value.replace('\n',   '~\\\\\n')
-
-    value = value.encode('ascii', 'ignore')
 
     return value
 

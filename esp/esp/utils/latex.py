@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 """
 """ This module will render latex code and return a rendered display. """
 
+import glob
 import hashlib
 import os.path
 import os
@@ -43,6 +44,9 @@ from functools import partial
 from random import random
 import subprocess
 import tempfile
+import unicodedata
+
+import six
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -63,6 +67,85 @@ FILE_MIME_TYPES = {
     'svg': 'image/svg+xml',
     'png': 'image/png',
 }
+
+_TEX_SPECIALS = {
+    '\\': r'\textbackslash{}',
+    '&': r'\&',
+    '%': r'\%',
+    '$': r'\$',
+    '#': r'\#',
+    '_': r'\_',
+    '{': r'\{',
+    '}': r'\}',
+    '~': r'\textasciitilde{}',
+    '^': r'\textasciicircum{}',
+}
+# Typographic characters with a plain equivalent that reads the same.
+_TEX_PUNCTUATION = {
+    u'\u00a0': ' ',
+    u'ʼ': "'",
+    u'‐': '-',
+    u'‑': '-',
+    u'–': '-',
+    u'—': '-',
+    u'‘': "'",
+    u'’': "'",
+    u'“': '"',
+    u'”': '"',
+}
+# Latin letters that pdflatex with T1 fonts rejects outright.
+_TEX_UNSUPPORTED_LETTERS = set(u'ĦħĸĿŀŉŦŧſ')
+
+
+def _tex_printable(char):
+    code = ord(char)
+    if 32 <= code < 127:
+        return True
+    return 0xC0 <= code <= 0x17F and char.isalpha() and char not in _TEX_UNSUPPORTED_LETTERS
+
+
+def tex_printable_text(value, replacement='?', keep_newlines=False):
+    """Reduce arbitrary text to characters pdflatex can print, without escaping.
+
+    Typographic punctuation becomes its plain equivalent, accented Latin
+    letters are kept, a letter pdflatex can't print falls back to its
+    unaccented form if it has one, and anything else becomes `replacement`.
+    Needs a T1 font encoding to print the accented letters.
+
+    Returns a (text, altered) tuple; `altered` is True if any character could
+    not be printed as written.
+    """
+    text = unicodedata.normalize('NFC', six.text_type(value))
+    pieces = []
+    altered = False
+    for char in text:
+        char = _TEX_PUNCTUATION.get(char, char)
+        if char in '\r\n' and keep_newlines:
+            pieces.append(char)
+            continue
+        if char in '\t\r\n':
+            char = ' '
+        if not _tex_printable(char):
+            category = unicodedata.category(char)
+            if category == 'Cc':
+                continue
+            altered = True
+            if category in ('Cf', 'Mn', 'Me'):
+                continue
+            base = unicodedata.normalize('NFD', char)[0]
+            char = base if base != char and _tex_printable(base) else replacement
+        pieces.append(char)
+    return ''.join(pieces), altered
+
+
+def texsafe(value, replacement='?'):
+    """Escape arbitrary text so that it can never break a pdflatex compile.
+
+    See tex_printable_text for how characters pdflatex can't print are handled.
+    Returns a (tex, altered) tuple.
+    """
+    text, altered = tex_printable_text(value, replacement)
+    return ''.join(_TEX_SPECIALS.get(char, char) for char in text), altered
 
 
 def render_to_latex(filepath, context_dict=None, file_type='pdf'):
@@ -94,7 +177,7 @@ def render_to_latex(filepath, context_dict=None, file_type='pdf'):
     return HttpResponse(contents, content_type=FILE_MIME_TYPES[file_type])
 
 
-def gen_latex(texcode, file_type='pdf', stdout=_devnull_sentinel, stderr=subprocess.STDOUT):
+def gen_latex(texcode, file_type='pdf', stdout=_devnull_sentinel, stderr=subprocess.STDOUT, timeout=None, cleanup=False):
     """Generate the latex code.
 
     :param texcode:
@@ -120,6 +203,15 @@ def gen_latex(texcode, file_type='pdf', stdout=_devnull_sentinel, stderr=subproc
         specified by the stdout param.
     :type stderr:
         `int` or `file` or `None`
+    :param timeout:
+        Seconds each external command may run before being killed and raising
+        subprocess.TimeoutExpired.  Default is no limit.
+    :type timeout:
+        `int` or `None`
+    :param cleanup:
+        Whether to delete the temporary files afterward.
+    :type cleanup:
+        `bool`
     :return:
         The generated file contents.
     :rtype:
@@ -133,28 +225,39 @@ def gen_latex(texcode, file_type='pdf', stdout=_devnull_sentinel, stderr=subproc
         # parameter for `stderr`.
         stdout, stderr = [devnull_file if f is _devnull_sentinel else f for f in [stdout, stderr]]
 
-        return _gen_latex(texcode, stdout=stdout, stderr=stderr, file_type=file_type)
+        return _gen_latex(texcode, stdout=stdout, stderr=stderr, file_type=file_type, timeout=timeout, cleanup=cleanup)
 
 
-def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
+def _gen_latex(texcode, stdout, stderr, file_type='pdf', timeout=None, cleanup=False):
     file_base = os.path.join(TEX_TEMP, get_rand_file_base())
 
     if file_type == 'tex':
         return texcode
 
+    try:
+        return _compile_latex(texcode, file_base, stdout, stderr, file_type, timeout)
+    finally:
+        if cleanup:
+            for path in glob.glob(file_base + '*'):
+                os.remove(path)
+
+
+def _compile_latex(texcode, file_base, stdout, stderr, file_type, timeout):
     # write to the LaTeX file
-    with open(file_base+TEX_EXT, 'w') as texfile:
+    with open(file_base+TEX_EXT, 'w', encoding='utf-8') as texfile:
         texfile.write(texcode)
 
-    # All command calls will use the same values for the cwd, stdout, and
-    # stderr arguments, so we define a partially-applied callable call() that
-    # makes it easier to call subprocess.call() with these values.
-    call = partial(subprocess.call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
+    # All command calls will use the same values for the cwd, stdout, stderr
+    # and timeout arguments, so we define a partially-applied callable call()
+    # that makes it easier to call subprocess.call() with these values.
+    call = partial(subprocess.call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr, timeout=timeout)
 
     retcode = call(['pdflatex'] + LATEX_OPTIONS + ['%s.tex' % file_base])
 
     try:
-        with open('%s.log' % file_base) as f:
+        # TeX wraps its log at a fixed byte width, which can split a multibyte
+        # character, so the log isn't always valid UTF-8.
+        with open('%s.log' % file_base, encoding='utf-8', errors='replace') as f:
             tex_log = f.read()
     except Exception as e:
         # In this case, there's not much to do except error -- pdflatex will

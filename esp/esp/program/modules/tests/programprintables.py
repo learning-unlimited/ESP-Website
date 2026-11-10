@@ -120,6 +120,31 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         print((response['Content-Type']))
         self.assertTrue(response['Content-Type'].startswith('application/pdf'))
 
+    def test_latex_printables_keep_accented_names(self):
+        for student in self.students:
+            student.first_name = u'Jos\u00e9'
+            student.last_name = u'W\u00f3jcik-Nguy\u1ec5n \u738b'
+            student.save()
+        for cls in self.program.classes():
+            cls.title = u'Caf\u00e9 \u00c9conomie \u0141\u00f3d\u017a \u201cquoted\u201d'
+            cls.save()
+
+        tex = self.get_response('studentschedules/tex', 'students', 'enrolled').content.decode('utf8')
+        self.assertIn(u'Jos\u00e9 W\u00f3jcik-Nguyen ?', tex)
+        response = self.get_response('studentschedules', 'students', 'enrolled')
+        self.assertTrue(response['Content-Type'].startswith('application/pdf'))
+
+        for query in ('', '?sort_name_list=timeblock'):
+            response = self.client.get('/manage/%s/coursecatalog%s' % (self.program.getUrlBase(), query))
+            self.assertTrue(response['Content-Type'].startswith('application/pdf'), response.content[-1500:])
+        # Certificates need media/latex_media/letterhead.pdf; dev and CI copies
+        # get a blank one from deploy/make_blank_letterhead.sh.
+        base = '/manage/%s/certificate' % self.program.getUrlBase()
+        response = self.client.get('%s/tex?userid=%d' % (base, self.students[0].id))
+        self.assertIn(u'Jos\u00e9 W\u00f3jcik-Nguyen ?', response.content.decode('utf8'))
+        response = self.client.get('%s?userid=%d' % (base, self.students[0].id))
+        self.assertTrue(response['Content-Type'].startswith('application/pdf'), response.content[-1500:])
+
     def test_all_classes_spreadsheet_loads(self):
         """
         User must be admin to access the spreadsheet via GET method and that the field selection template

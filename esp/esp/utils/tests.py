@@ -455,3 +455,17 @@ def suite():
 
 
 
+
+
+class TexEscapeTest(unittest.TestCase):
+    def test_keeps_printable_accents_and_falls_back_for_the_rest(self):
+        from esp.utils.templatetags.latex import texescape
+        self.assertEqual(texescape(u'Jos\u00e9 W\u00f3jcik'), u'Jos\u00e9 W\u00f3jcik')
+        self.assertEqual(texescape(u'Nguy\u1ec5n \u738b'), u'Nguyen ?')
+
+    def test_still_escapes_and_formats(self):
+        from esp.utils.templatetags.latex import texescape
+        self.assertEqual(texescape(u'A & B_1 $$\\sqrt{2}$$'), u'A \\& B\\_1 $\\sqrt{2}$')
+        self.assertEqual(texescape(u'\u201cquoted\u201d'), u"``quoted''")
+        self.assertEqual(texescape(u'line one\nline two'), u'line one~\\\\\nline two')
+        self.assertIsInstance(texescape(u'plain'), str)
