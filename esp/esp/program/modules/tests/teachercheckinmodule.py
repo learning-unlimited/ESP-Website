@@ -39,7 +39,7 @@ from esp.cal.models import Event, EventType
 from esp.program.controllers.classreg import ClassCreationController
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
-from esp.users.models import ESPUser, Record
+from esp.users.models import ESPUser, Record, RecordType
 
 class TeacherCheckinModuleTest(ProgramFrameworkTest):
 
@@ -57,6 +57,9 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         self.teacher  = self.teachers[0]
         self.cls      = self.teacher.getTaughtClasses()[0]
         self.event    = 'teacher_checked_in'
+
+        RecordType.objects.get_or_create(name='teacher_checked_in',
+        defaults={'description': 'Teacher checked in for teaching on the day of the program',},)
         self.teacher2 = ESPUser.objects.create(username='CheckinTeacher2')
         self.teacher2.makeRole("Teacher")
 
@@ -218,7 +221,7 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         for offset, arrived in ((datetime.timedelta(hours=1), True),
                                 (datetime.timedelta(hours=-1), False)):
             when = checkin_time + offset
-            with self.subTest(when=when):
+            with self.subTest(when=when.isoformat()):
                 response = self.missingTeachersPage(
                     date=when.strftime('%m/%d/%Y'), when=when.strftime('%m/%d/%Y %H:%M'))
                 self.assertEqual(response.context['when'], when)
