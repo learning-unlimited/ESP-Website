@@ -314,7 +314,11 @@ class AutoschedulerController(object):
     def export_assignments(self):
         changed_sections = set()
         for action in self.optimizer.manipulator.history:
-            changed_sections.add(action["section"])
+            # Swap actions touch two sections and store them under "sections"
+            if "sections" in action:
+                changed_sections.update(action["sections"])
+            else:
+                changed_sections.add(action["section"])
         scheduling_hashes = {
             section.id: section.initial_state for section in changed_sections}
         logger.info(scheduling_hashes)
