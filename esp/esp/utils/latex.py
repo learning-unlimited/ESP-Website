@@ -57,7 +57,7 @@ from esp.middleware import ESPError
 TEX_TEMP = tempfile.gettempdir()
 TEX_EXT  = '.tex'
 _devnull_sentinel = object()
-LATEX_OPTIONS = ['-interaction', 'nonstopmode', '-halt-on-error']
+LATEX_OPTIONS = ['-interaction', 'nonstopmode', '-halt-on-error', '-no-shell-escape']
 
 # File types that are valid outputs, and the corresponding response mimetypes
 FILE_MIME_TYPES = {
