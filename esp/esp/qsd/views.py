@@ -110,8 +110,6 @@ def _parse_orig_int(post_dict, key):
 @disable_csrf_cookie_update
 @reversion.create_revision()
 def qsd(request, url):
-    if request.user.is_authenticated:
-        reversion.set_user(request.user)
 
     #   Extract the 'action' from the supplied URL if there is one
     url_parts = url.split('/')
