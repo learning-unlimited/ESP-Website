@@ -6,6 +6,32 @@
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 #recipient_filter_done, #recipient_list_done { display: none }
+.backs-box { background: #f0f0f0; border: 1px solid #ccc; border-radius: 4px; padding: 12px 16px; transition: background 0.15s, border-color 0.15s; }
+.backs-box.active { background: #dde4ee; border-color: #8aaac8; }
+.backs-box.locked { opacity: 0.55; }
+.backs-box-label { font-weight: bold; font-size: 12px; text-transform: uppercase; color: #888; margin-bottom: 8px; letter-spacing: 0.04em; }
+.backs-or-divider { display: flex; align-items: center; gap: 10px; margin: 6px 0; color: #aaa; font-weight: bold; font-size: 13px; }
+.backs-or-divider::before, .backs-or-divider::after { content: ''; flex: 1; border-top: 1px solid #ccc; }
+#barcode_box label { display: inline; }
+.nametag-back-editor { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; margin-top: 10px; }
+.nametag-back-editor > div { flex: 1 1 380px; min-width: 0; }
+#back-discard[hidden] { display: none; }
+#back-source[readonly] { background: #e9e9e9; color: #555; }
+#back-source { width: 100%; box-sizing: border-box; height: 300px; font-family: monospace; font-size: 13px; resize: vertical; }
+.back-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.back-name-row label { margin: 0; white-space: nowrap; }
+.back-name-row input { flex: 1 1 auto; min-width: 0; box-sizing: border-box; margin: 0; }
+.back-source-label { margin: 0 0 2px; }
+#back-preview-card { position: relative; width: 3.9in; max-width: 100%; aspect-ratio: 3.9 / 3; border: 1px solid #888; background: #fff; }
+#back-preview-card::after { content: ''; position: absolute; top: 3.333%; bottom: 3.333%; left: 2.564%; right: 2.564%; border: 1px dashed #c66; pointer-events: none; }
+#back-preview-card img { display: block; width: 100%; height: 100%; }
+#back-preview-card img[hidden] { display: none; }
+.back-message { padding: 10px 12px; border-radius: 4px; margin: 8px 0; white-space: pre-wrap; }
+.back-error { background: #f2dede; border: 1px solid #ebccd1; color: #a94442; font-family: monospace; font-size: 12px; }
+.back-preview-caption { color: #666; font-size: 12px; margin-top: 4px; }
+.back-warning { background: #fcf8e3; border: 2px solid #e0a800; color: #7a5b00; font-weight: bold; }
+.back-info { background: #d9edf7; border: 1px solid #bce8f1; color: #31708f; }
+.back-recipes pre { font-size: 12px; overflow-x: auto; }
 </style>
 <br />
 <br />
@@ -24,30 +50,17 @@ Please select from options below.
 </p>
 
 <br />
-<h2>Axiak's Guide to happy IDs</h2>
+<h2>Printing nametags</h2>
 
-To have good quality IDs:<br />
 <ol>
-  <li>Use Firefox ;-) (it'll probably look good in another browser...probably)</li>
-  <li>Use a computer that has Georgia font installed (i.e. NOT athena)</li>
-  <li>If the beaver graphics look weird in the browser, don't worry (they're at a higher resolution than the screen)</li>
-  <li>In firefox, go to File-&gt;page options. Then set all the margins to 0 and remove all headers and footers.</li>
-  <li>You probably want copytech to print this. Thus you need to make a pdf:<br />
-     <ol>
-        <li>In windows click print->adobe pdf (on a computer with distiller) and save to pdf</li>
-        <li>In linux select the postscript printer and select options and set the print command to <tt>`ps2pdf - ~/ids_tmp.pdf`</tt></li>
-        <li>You *may* have to split it up into 40-page chunks and put them together with <a href="http://www.accesspdf.com/pdftk/">pdftk</a></li>
-        <li>After that, just send to copytech! Use the online form, and be specific:<br />
-     e.g.:<div style="width: 300px"><tt>I am bringing my own blue cardstock paper, please wait until I bring that. Once it is printed, please cut the paper into IDs by making six cuts along the places that make most sense. In addition, please maintain the order (by giving us the piles you cut out as-is). Thank you!</tt></div>
-        </li>
-       </ol>
-   </li>
-   <li>That's all!</li>
+  <li>This page generates a PDF. Print it at actual size (100%, no "fit to page") for it to fit snugly in nametag holders. If using nametag backs, print double-sided, flipping on the long edge.</li>
+  <li>You probably want copytech to print this. If so, use their online form to submit the PDF, and be specific, e.g.:<div style="width: 300px"><tt>I am bringing my own blue cardstock paper, please wait until I bring that. Once it is printed, please cut the paper into IDs by making six cuts along the places that make most sense. In addition, please maintain the order (by giving us the piles you cut out as-is). Thank you!</tt></div></li>
+  <li>If printing these yourself: to check that fronts and backs line up, you can print a "Printer calibration scale", and if the offset is worse than 0.1" or so, it may be worth correcting below.</li>
 </ol>
 {% end_inline_program_qsd_block %}
 
 <br />
-<form action="./generatetags" method="post">
+<form action="./generatetags" method="post" id="nametag-form">
 <fieldset>
 <strong>ID Type:</strong>
 <br />
@@ -88,6 +101,9 @@ To have good quality IDs:<br />
   <li><input type="radio" name="type" value="blank" id="blank" />
       <label for="blank">Blank (specify number below)</label>
   </li>
+  <li><input type="radio" name="type" value="calibration" id="calibration" />
+      <label for="calibration">Printer calibration scale</label>
+  </li>
 </ul>
 <br />
 <div id="aul_wrapper" hidden>
@@ -125,15 +141,75 @@ To have good quality IDs:<br />
 <input type="text" id="programname" size="40" name="progname" value="{{ program.niceName }}" />
 <br />
 <br />
-<div id="barcode_wrapper">
-<strong>Barcodes:</strong>
-<br />
-<br />
-<input type="checkbox" name="barcodes" id="barcodes" />
-<label for="barcodes"> Display barcodes for user ID numbers{% if self_checkin %} and self checkin codes{% endif %} on back of nametags</label>
-<br />
-<br />
+<div id="backs_section">
+<div id="back_wrapper" class="backs-box">
+  <div class="backs-box-label">Nametag back</div>
+  <select name="nametag_back" id="nametag_back" autocomplete="off">
+    {% include "program/modules/nametagmodule/back_options.html" %}
+  </select>
+  <div id="back-editor" hidden>
+    <div id="back-note" class="back-message back-info" hidden></div>
+    <div class="nametag-back-editor">
+      <div>
+        <div class="back-name-row">
+          <label for="back-name" id="back-name-label"><strong>Rename this back pattern:</strong></label>
+          <input type="text" id="back-name" maxlength="100" />
+        </div>
+        <label for="back-source" class="back-source-label"><strong>LaTeX</strong></label>
+        <textarea id="back-source" spellcheck="false"></textarea>
+        <button type="button" id="back-save" class="btn btn-primary">Save and preview</button>
+        <button type="button" id="back-discard" class="btn">Discard changes</button>
+        <span id="back-save-status"></span>
+      </div>
+      <div>
+        <strong>Preview</strong>
+        <div id="back-preview-card"><img id="back-preview-image" alt="Preview of the nametag back" hidden /></div>
+        <div class="back-preview-caption">Keep content within red dashed line (0.1" margin) for best results</div>
+        <div id="back-preview-error" class="back-message back-error" hidden></div>
+        <div id="back-preview-warning" class="back-message back-warning" hidden></div>
+      </div>
+    </div>
+    <details class="back-recipes">
+      <summary style="cursor: pointer;"><strong>LaTeX examples</strong></summary>
+      <p>Characters <code>&amp; % $ # _ { } ~ ^</code> need a backslash, e.g. <code>\&amp;</code>. Upload images with the
+        <a href="/admin/filebrowser/browse/" target="_blank" rel="noopener">file browser</a>, then use their path after <code>/media/</code>.</p>
+<pre>\textbf{\textit{Important Info}}
+
+\textbf{MIT Police:} 617-253-1212
+
+{\large Bigger text} {\small smaller text} {\fontsize{20}{24}\selectfont exact size}
+
+\begin{tabular}{@{}&gt;{\bfseries}r@{\hspace{6pt}}l@{}}
+Check-In: &amp; Stata Center until 11:00 am Sat\\
+Walk-Ins: &amp; Lobby 13, 10:30 am--5:30 pm Sat\\
+\end{tabular}
+
+\noindent\rule{\linewidth}{0.4pt}
+
+\begin{center}\includegraphics[height=1in]{uploaded/map.png}\end{center}</pre>
+    </details>
+  </div>
+  <div id="back-unsaved" class="back-message back-error" hidden>Save this back to {{ program.niceName }}, or choose Blank, before generating nametags.</div>
 </div>
+<div id="barcode_wrapper">
+  <div class="backs-or-divider">&mdash;OR&mdash;</div>
+  <div id="barcode_box" class="backs-box">
+    <div class="backs-box-label">Barcodes</div>
+    <input type="checkbox" name="barcodes" id="barcodes" autocomplete="off" />
+    <label for="barcodes"> Display barcodes for user ID numbers{% if self_checkin %} and self checkin codes{% endif %} on back of nametags</label>
+  </div>
+</div>
+</div>
+<br />
+<details id="printer_alignment">
+  <summary style="cursor: pointer;"><strong>Printer alignment</strong></summary>
+  <p>Only needed if backs don't line up with fronts. Print a "Printer calibration scale" to measure this. Inches; negative values move the other way.</p>
+  <label for="back_x_offset">Move backs right:</label>
+  <input type="number" step="0.005" min="-1" max="1" id="back_x_offset" name="back_x_offset" value="0" />
+  <label for="back_y_offset">Move backs down:</label>
+  <input type="number" step="0.005" min="-1" max="1" id="back_y_offset" name="back_y_offset" value="0" />
+</details>
+<br />
 
 <input type="submit" value="Generate IDs!" />
 </fieldset>
@@ -154,6 +230,8 @@ $j('input:radio[name="type"]').change( function(e){
         $j('#title_wrapper').toggle();
         $j('#barcodes').prop("checked", false);
         $j('#barcode_wrapper').toggle();
+    } else if (option == "calibration") {
+        $j('#backs_section').toggle();
     } else if (option == "misc") {
         $j('#misc_wrapper').toggle();
         $j('#barcodes').prop("checked", false);
@@ -167,6 +245,209 @@ $j('input:radio[name="type"]').change( function(e){
         $old_this = $j(this);
     }
 });
+// The editor's inputs have no name
+// attributes, so they aren't sent with the nametag form; saving and loading
+// happen in place so that the rest of the form isn't lost.
+var updateBackBoxes;
+(function() {
+    var $select = $j('#nametag_back');
+    var $barcodes = $j('#barcodes');
+    var $editor = $j('#back-editor');
+    var $name = $j('#back-name');
+    var $source = $j('#back-source');
+    var image = document.getElementById('back-preview-image');
+    var programName = '{{ program.niceName|escapejs }}';
+    var saved = {id: '', name: '', source: ''};
+    var importFrom = null;
+    var previousSelection = '';
+
+    function editorOpen() { return !$editor.prop('hidden'); }
+
+    function hasEdits() {
+        return editorOpen() && ($source.val() !== saved.source || $j.trim($name.val()) !== saved.name);
+    }
+
+    function blocksPrinting() {
+        return editorOpen() && (!saved.id || hasEdits());
+    }
+
+    function confirmDiscard() {
+        return !hasEdits() || window.confirm('Discard your unsaved changes to this back?');
+    }
+
+    function showMessages($el, messages) {
+        $el.text(messages.join('\n')).prop('hidden', messages.length === 0);
+    }
+
+    function setStatus(text) { $j('#back-save-status').text(text); }
+
+    function setNote(text) { showMessages($j('#back-note'), text ? [text] : []); }
+
+    function showPreview(result) {
+        showMessages($j('#back-preview-error'), result.error ? [result.error] : []);
+        showMessages($j('#back-preview-warning'), result.warning ? [result.warning] : []);
+        if (result.image) {
+            image.src = result.image;
+            image.hidden = false;
+        }
+    }
+
+    function clearPreview() {
+        image.hidden = true;
+        showMessages($j('#back-preview-error'), []);
+        showMessages($j('#back-preview-warning'), []);
+    }
+
+    function setImporting(id) {
+        importFrom = id;
+        $source.prop('readonly', id !== null);
+        $j('#back-discard').prop('hidden', id !== null);
+        $j('#back-save').text(id !== null ? 'Import to ' + programName + ' and edit' : 'Save and preview');
+        var label = 'Name this back pattern:';
+        if (id !== null) {
+            label = 'Rename this back pattern on import:';
+        } else if (saved.id) {
+            label = 'Rename this back pattern:';
+        }
+        $j('#back-name-label strong').text(label);
+    }
+
+    function openEditor(back, note, importId) {
+        saved = {id: back.id, name: back.name, source: back.source};
+        $name.val(back.name);
+        $source.val(back.source);
+        setImporting(importId);
+        $j('#back-unsaved').prop('hidden', true);
+        $editor.prop('hidden', false);
+        setNote(note);
+        setStatus('');
+        clearPreview();
+    }
+
+    function closeEditor() {
+        saved = {id: '', name: '', source: ''};
+        setImporting(null);
+        $editor.prop('hidden', true);
+        $j('#back-unsaved').prop('hidden', true);
+    }
+
+    function loadBack(id) {
+        setStatus('Loading...');
+        $j.getJSON('./nametagbackload', {back: id}, function(result) {
+            if ($select.val() !== id) { return; }
+            if (result.id === undefined) {
+                $select.val('');
+                previousSelection = '';
+                closeEditor();
+                updateBackBoxes();
+                return;
+            }
+            if (result.importing) {
+                // Read-only, and not printable, until it's copied to this program.
+                openEditor({id: '', name: result.name, source: result.source},
+                           'This back is from another program. Import it to edit or print it for ' + programName + '.',
+                           result.id);
+            } else {
+                openEditor(result, '', null);
+            }
+            showPreview(result);
+        }).fail(function() { setStatus('Could not load that back.'); });
+    }
+
+    // A back and barcodes share the back of the card, so while one is active
+    // the other is locked rather than being able to wipe it out.
+    updateBackBoxes = function() {
+        var backActive = $select.val() !== '';
+        var barcodesActive = $barcodes.prop('checked');
+        $barcodes.prop('disabled', backActive);
+        $select.prop('disabled', barcodesActive);
+        $j('#back_wrapper').toggleClass('active', backActive).toggleClass('locked', barcodesActive);
+        $j('#barcode_box').toggleClass('active', barcodesActive).toggleClass('locked', backActive);
+    };
+
+    $select.on('change', function() {
+        var selection = $select.val();
+        if (!confirmDiscard()) {
+            $select.val(previousSelection);
+            return;
+        }
+        previousSelection = selection;
+        if (selection === 'new') {
+            openEditor({id: '', name: '', source: ''}, '', null);
+            $name.focus();
+        } else if (selection) {
+            loadBack(selection);
+        } else {
+            closeEditor();
+        }
+        updateBackBoxes();
+    });
+
+    $barcodes.on('change', updateBackBoxes);
+
+    $j('input:radio[name="type"]').change(function() {
+        updateBackBoxes();
+        if ($j(this).val() === 'calibration' && this.checked) {
+            $j('#printer_alignment').prop('open', true);
+        }
+    });
+
+    $j('#back-discard').on('click', function() {
+        $name.val(saved.name);
+        $source.val(saved.source);
+        $j('#back-unsaved').prop('hidden', true);
+        setStatus('');
+    });
+
+    function afterSave(result) {
+        setStatus('');
+        showPreview(result);
+        if (result.id === undefined) { return; }
+        saved = {id: result.id, name: result.name, source: $source.val()};
+        $name.val(result.name);
+        $select.html(result.options_html).val(String(result.id));
+        previousSelection = String(result.id);
+        setImporting(null);
+        setNote('');
+        $j('#back-unsaved').prop('hidden', true);
+        updateBackBoxes();
+        setStatus('Saved.');
+    }
+
+    $j('#back-save').on('click', function() {
+        var request;
+        setStatus('Saving...');
+        if (importFrom !== null) {
+            request = {back_id: importFrom, name: $name.val(), csrfmiddlewaretoken: csrf_token()};
+            $j.post('./nametagbackimport', request, afterSave, 'json').fail(saveFailed);
+        } else {
+            request = {back_id: saved.id, name: $name.val(), source: $source.val(), csrfmiddlewaretoken: csrf_token()};
+            $j.post('./nametagbacksave', request, afterSave, 'json').fail(saveFailed);
+        }
+    });
+
+    function saveFailed() {
+        setStatus('Saving failed. Your text has not been lost.');
+    }
+
+    $source.add($name).on('input', function() {
+        setStatus(hasEdits() && importFrom === null ? 'Unsaved changes. The preview shows the last save.' : '');
+    });
+    $name.on('keydown', function(e) {
+        // Enter here shouldn't submit the nametag form.
+        if (e.which === 13) { e.preventDefault(); }
+    });
+
+    // Only this program's saved backs can be printed.
+    $j('#nametag-form').on('submit', function(e) {
+        if ($j('input:radio[name="type"]:checked').val() !== 'calibration' && blocksPrinting()) {
+            e.preventDefault();
+            $j('#back-unsaved').prop('hidden', false)[0].scrollIntoView();
+        }
+    });
+
+    updateBackBoxes();
+})();
 $j(function() {
     var items = location.search.substr(1).split("&").filter(Boolean);
     if(items.length > 0){

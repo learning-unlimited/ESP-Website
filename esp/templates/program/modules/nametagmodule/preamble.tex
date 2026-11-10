@@ -1,0 +1,33 @@
+{% autoescape off %}\documentclass[12pt,letterpaper]{article}
+\usepackage[paperwidth={{ paper_width }}in,paperheight={{ paper_height }}in,margin=0in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multicol}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage[code=Code39,X=.5mm,ratio=2.25,H=2cm]{makebarcode}
+\graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ MEDIA_ROOT }}{% templatetag closebrace %}{% templatetag closebrace %}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\unitlength}{1in}
+\newsavebox{\backbox}
+\newsavebox{\ntmeasure}
+\newcommand{\ntfit}[2]{\sbox{\ntmeasure}{#2}\ifdim\wd\ntmeasure>#1\relax\resizebox{#1}{!}{\usebox{\ntmeasure}}\else\usebox{\ntmeasure}\fi}
+\newcommand{\ntprogram}[1]{\ntfit{3.7in}{\fontsize{16}{19}\selectfont\bfseries #1}\par\vspace{5pt}}
+\newcommand{\ntname}[1]{\ntfit{3.7in}{\fontsize{28}{30}\selectfont\bfseries\strut #1}\par}
+\newcommand{\ntpronoun}[1]{\ntfit{3.7in}{\fontsize{15}{18}\selectfont #1}\par}
+\newcommand{\nttitle}[1]{\ntfit{3.7in}{\fontsize{12}{14}\selectfont\bfseries #1}\par}
+\newcommand{\ntid}[1]{\ntfit{2.8in}{\fontsize{10}{12}\selectfont #1}\par}
+\newcommand{\ntfront}[2]{\begin{minipage}[t][2.8in][t]{3.7in}#1\vfill #2\end{minipage}}
+\newcommand{\ntfooter}[3]{\begin{minipage}[b]{0.8in}#1\end{minipage}\hfill\begin{minipage}[b]{2.8in}\raggedleft #2\ntfit{2.8in}{\fontsize{10}{12}\selectfont\bfseries #3}\end{minipage}}
+\newcommand{\ntlabel}[1]{\parbox[t]{3.8in}{\fontsize{48}{54}\selectfont\bfseries #1}}
+\newcommand{\ntcenterlabel}[1]{\fontsize{48}{54}\selectfont\bfseries #1}
+\newcommand{\ntscale}[1]{\fontsize{6}{7}\selectfont #1}
+\newcommand{\ntscalehelp}{\parbox[t]{7.8in}{\fontsize{9}{11}\selectfont Hold this sheet up to a light. Where each line printed on the front crosses a scale is how far to move the backs: add the top and bottom readings to ``Move backs right'' and the left and right readings to ``Move backs down''.}}
+\newcommand{\ntcheckin}[1]{\begingroup\large\bfseries Self checkin code: #1\par\endgroup\vspace{0.2in}}
+\newcommand{\ntbarcodeback}[2]{\begin{minipage}[t][3in][c]{3.9in}\centering #1\barcode{#2}\end{minipage}}
+{% endautoescape %}

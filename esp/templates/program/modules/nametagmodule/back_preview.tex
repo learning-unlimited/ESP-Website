@@ -1,0 +1,9 @@
+{% autoescape off %}{% include "program/modules/nametagmodule/preamble.tex" %}
+\begin{document}
+{% include "program/modules/nametagmodule/backbox.tex" %}
+\begin{picture}({{ paper_width }},{{ paper_height }})(0,0)
+\put({{ back_corner_x }},{{ back_corner_y }}){\makebox(0,0)[lt]{\usebox{\backbox}}}
+\end{picture}
+\typeout{NAMETAG_BACK_COMPLETE}
+\end{document}
+{% endautoescape %}

@@ -1,0 +1,8 @@
+{% autoescape off %}{% include "program/modules/nametagmodule/preamble.tex" %}
+\begin{document}
+{% if has_back %}{% include "program/modules/nametagmodule/backbox.tex" %}{% endif %}
+{% for page in pages %}\begin{picture}({{ paper_width }},{{ paper_height }})(0,0)
+{% for item in page %}{{ item }}
+{% endfor %}\end{picture}\clearpage
+{% endfor %}\end{document}
+{% endautoescape %}

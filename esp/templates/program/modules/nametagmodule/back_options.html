@@ -1,0 +1,9 @@
+<option value="">Blank (no back pages)</option>
+{% for group in back_groups %}
+<optgroup label="{% if group.is_current %}{{ group.label }}{% else %}Import from {{ group.label }}{% endif %}">
+  {% if group.is_current %}<option value="new">Create from scratch</option>{% endif %}
+  {% for back in group.backs %}
+  <option value="{{ back.id }}">{{ back.name }}</option>
+  {% endfor %}
+</optgroup>
+{% endfor %}

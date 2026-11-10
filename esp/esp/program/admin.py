@@ -412,3 +412,14 @@ class LotteryRunAdmin(admin.ModelAdmin):
     readonly_fields = ('snapshot', 'progress_series', 'enrolled_pairs', 'submitted_at')
     date_hierarchy = 'submitted_at'
 admin_site.register(LotteryRun, LotteryRunAdmin)
+
+
+from reversion.admin import VersionAdmin
+from esp.program.models import NametagBack
+
+
+class NametagBackAdmin(VersionAdmin):
+    list_display = ('name', 'program')
+    list_select_related = ('program',)
+    search_fields = ('name', 'program__name', 'program__url')
+admin_site.register(NametagBack, NametagBackAdmin)
