@@ -601,21 +601,36 @@ class Program(models.Model, CustomFormsLinkModel):
         # Due to how RegistrationProfiles work, this is ~impossible to do
         # efficiently.  getGrade is cached, though, and probably most of those
         # caches will be warm, so it'll probably be okay.  Maybe.  Hopefully.
-        return len([student for student in self.students()['classreg']
+        return len([student for student in self._cap_counted_students()
                     if student.getGrade(self, assume_student=True) in grades])
+
+    def _cap_counted_students(self):
+        """The students the program cap counts: those registered for at least
+        one class, which StudentClassRegModule provides.
+
+        Without that module there is nothing to count, so a capped program
+        can't work.  That raises a clear error rather than guessing a count:
+        0 would silently stop enforcing the cap, and treating the program as
+        full would lock out everyone, including students already registered.
+        """
+        students = self.students().get('classreg')
+        if students is None:
+            raise ESPError("%s has a size cap, but caps count students registered for "
+                           "classes, and the Student Class Registration module isn't "
+                           "enabled. Remove the cap or enable that module." % self.niceName(), log=True)
+        return students
 
     def _students_in_program(self):
         """The number of students in the program.
 
         Used by the program cap logic.
         """
-        return self.students()['classreg'].count()
+        return self._cap_counted_students().count()
 
     @cache_function
     def _student_is_in_program(self, user):
         """Return whether the student is in the program."""
-        students = self.students()['classreg']
-        return students.filter(id=user.id).exists()
+        return self._cap_counted_students().filter(id=user.id).exists()
     _student_is_in_program.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
     _student_is_in_program.depend_on_row('program.ClassSection', lambda cls: {'self': cls.parent_class.parent_program})
     _student_is_in_program.depend_on_row('program.StudentRegistration', lambda sr: {'user': sr.user})

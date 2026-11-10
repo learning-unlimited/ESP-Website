@@ -52,6 +52,12 @@ class ModuleExistenceTest(ProgramFrameworkTest):
             } )
         super(ModuleExistenceTest, self).setUp(*args, **kwargs)
 
+        #   These tests are about module links, not the program cap.  A capped
+        #   program without StudentClassRegModule is a configuration error
+        #   (see Program._cap_counted_students), and these tests remove it.
+        self.program.program_size_max = 0
+        self.program.save()
+
         #   Make all modules non-required for now, so we don't have to be shown required pages
         for pmo in self.program.getModules():
             pmo.__class__ = ProgramModuleObj
@@ -122,15 +128,13 @@ class ModuleExistenceTest(ProgramFrameworkTest):
         #   Get student reg page and check list of modules
         self.check_reg_modules('studentreg', 'learn')
 
-        #   Remove a module and check list is still consistent
-        possible_modules = [x.module.id for x in self.target_module_list('learn')]
-        module_to_remove = random.choice(possible_modules)
-        self.program.program_modules.remove(module_to_remove)
-        self.check_reg_modules('studentreg', 'learn')
-
-        #   Restore it and re-check
-        self.program.program_modules.add(module_to_remove)
-        self.check_reg_modules('studentreg', 'learn')
+        #   Remove each module in turn and check the list is still consistent,
+        #   then restore it and check again
+        for module_id in [x.module.id for x in self.target_module_list('learn')]:
+            self.program.program_modules.remove(module_id)
+            self.check_reg_modules('studentreg', 'learn')
+            self.program.program_modules.add(module_id)
+            self.check_reg_modules('studentreg', 'learn')
 
     def test_teacherreg(self):
         """ Ensure that the list of modules on the teacher reg page is correct """
@@ -142,12 +146,20 @@ class ModuleExistenceTest(ProgramFrameworkTest):
         #   Get teacher reg page and check list of modules
         self.check_reg_modules('teacherreg', 'teach')
 
-        #   Remove a module and check list is still consistent
-        possible_modules = [x.module.id for x in self.target_module_list('teach')]
-        module_to_remove = random.choice(possible_modules)
-        self.program.program_modules.remove(module_to_remove)
-        self.check_reg_modules('teacherreg', 'teach')
+        #   Remove each module in turn and check the list is still consistent,
+        #   then restore it and check again
+        for module_id in [x.module.id for x in self.target_module_list('teach')]:
+            self.program.program_modules.remove(module_id)
+            self.check_reg_modules('teacherreg', 'teach')
+            self.program.program_modules.add(module_id)
+            self.check_reg_modules('teacherreg', 'teach')
 
-        #   Restore it and re-check
-        self.program.program_modules.add(module_to_remove)
-        self.check_reg_modules('teacherreg', 'teach')
+    def test_cap_without_class_registration_is_a_clear_error(self):
+        from esp.middleware.esperrormiddleware import ESPError_Log
+        from esp.program.modules.base import ProgramModule
+
+        self.program.program_size_max = 10
+        self.program.save()
+        self.program.program_modules.remove(ProgramModule.objects.get(handler='StudentClassRegModule'))
+        with self.assertRaisesRegex(ESPError_Log, 'Student Class Registration module'):
+            self.program._students_in_program()

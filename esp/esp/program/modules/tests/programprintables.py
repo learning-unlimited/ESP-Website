@@ -202,8 +202,10 @@ class TestAllClassesSelectionForm(ProgramFrameworkTest):
         self.assertFalse(form.is_valid())
 
     def test_class_subject_fields_accepted(self):
-        """Ensure that field names of ClassSubject are accepted"""
-        params = {'subject_fields':[field.name for field in ClassSubject._meta.fields]}
+        """Ensure that field names of ClassSubject are accepted, except the
+        ones the form deliberately leaves out"""
+        excluded = AllClassesFieldConverter.exclude_fields
+        params = {'subject_fields': [field.name for field in ClassSubject._meta.fields if field.name not in excluded]}
         form = AllClassesSelectionForm(self.program, params)
         self.assertTrue(form.is_valid())
 
