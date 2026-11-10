@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from django.conf.urls import include, url
 from django.contrib import admin
-from esp.admin import admin_site, autodiscover
+from esp.admin import admin_site, autodiscover, register_remaining_models
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
@@ -66,6 +66,7 @@ import esp.users.views
 import esp.utils.views
 
 autodiscover(admin_site)
+register_remaining_models(admin_site, settings.ADMIN_PANEL_EXCLUDED_MODELS, settings.ADMIN_PANEL_READ_ONLY_MODELS)
 
 # Override error pages
 handler404 = 'esp.utils.web.error404'

@@ -457,6 +457,52 @@ def suite():
 
 
 
+class RegisterRemainingModelsTest(DjangoTestCase):
+    def test_registers_unregistered_models_except_excluded(self):
+        from django.contrib.admin.sites import AdminSite
+        from esp.admin import register_remaining_models
+        from esp.program.models import NametagBack
+        from esp.users.models import PasswordRecoveryTicket
+
+        site = AdminSite()
+        registered = register_remaining_models(site, ['program.NametagBack'])
+        self.assertIn(PasswordRecoveryTicket, registered)
+        self.assertFalse(site.is_registered(NametagBack))
+        self.assertTrue(all(model.__module__.startswith('esp.') and not model._meta.proxy for model in registered))
+        # A plain foreign key to users gets an ID box, not a dropdown of everyone.
+        self.assertEqual(site._registry[PasswordRecoveryTicket].raw_id_fields, ['user'])
+
+    def test_read_only_models_cannot_be_changed(self):
+        from django.contrib.admin.sites import AdminSite
+        from django.core.exceptions import PermissionDenied
+        from django.test import RequestFactory
+        from esp.admin import ReadOnlyModelAdmin, register_remaining_models
+        from esp.users.models import ESPUser, PasswordRecoveryTicket
+
+        site = AdminSite()
+        register_remaining_models(site, [], ['users.PasswordRecoveryTicket'])
+        model_admin = site._registry[PasswordRecoveryTicket]
+        self.assertIsInstance(model_admin, ReadOnlyModelAdmin)
+        request = RequestFactory().post('/')
+        request.user = ESPUser(is_superuser=True, is_staff=True)
+        self.assertFalse(model_admin.has_add_permission(request))
+        self.assertFalse(model_admin.has_delete_permission(request))
+        self.assertIn('user', model_admin.get_readonly_fields(request))
+        self.assertEqual(model_admin.get_actions(request), {})
+        with self.assertRaises(PermissionDenied):
+            model_admin.change_view(request, '1')
+
+    def test_real_admin_site_has_every_model(self):
+        from django.apps import apps
+        import esp.urls  # noqa: registration happens when the URLconf loads
+        from esp.admin import admin_site
+
+        missing = [model._meta.label for model in apps.get_models()
+                   if model.__module__.startswith('esp.') and not model._meta.proxy
+                   and not admin_site.is_registered(model)]
+        self.assertEqual(missing, [])
+
+
 class TexEscapeTest(unittest.TestCase):
     def test_keeps_printable_accents_and_falls_back_for_the_rest(self):
         from esp.utils.templatetags.latex import texescape

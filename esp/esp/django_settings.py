@@ -391,6 +391,20 @@ CYBERSOURCE_CONFIG = {
 
 FILEBROWSER_CUSTOM_ADMIN = 'esp.admin.admin_site'
 
+#   Every model in ESP's own apps gets an admin page, a default one if no
+#   admin.py registers it (see esp.admin.register_remaining_models).  List
+#   models to leave out here, as 'app_label.ModelName'.
+ADMIN_PANEL_EXCLUDED_MODELS = []
+#   Models given a default admin page that can be viewed but not edited.
+ADMIN_PANEL_READ_ONLY_MODELS = [
+    'users.PasswordRecoveryTicket',
+    'modules.AJAXChangeLog',
+    'modules.AJAXChangeLogEntry',
+    'modules.AJAXSectionDetail',
+    'resources.AssignmentGroup',
+    'resources.ResourceGroup',
+]
+
 #   Allow Filebrowser to edit anything under media/
 #   (not just '/media/uploads/' which is the default)
 FILEBROWSER_DIRECTORY = ''

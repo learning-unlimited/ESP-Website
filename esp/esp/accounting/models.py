@@ -122,6 +122,10 @@ class LineItemOptions(models.Model):
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this option--leave blank to inherit from the line item type.')
     is_custom = models.BooleanField(default=False, help_text='Should the student be allowed to specify a custom amount for this option?')
 
+    class Meta:
+        # Otherwise Django pluralizes the class name to "line item optionss".
+        verbose_name = 'line item option'
+
     @property
     def amount_dec_inherited(self):
         """ The amount to charge for this option; inherits from parent
