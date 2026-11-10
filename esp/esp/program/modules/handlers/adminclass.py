@@ -151,7 +151,7 @@ class AdminClass(ProgramModuleObj):
 
             class_id = request.POST['class_id']
             try:
-                class_subject = get_by_id_or_404(ClassSubject, class_id)
+                class_subject = get_by_id_or_404(ClassSubject, class_id, parent_program=prog)
             except ClassSubject.MultipleObjectsReturned:
                 raise ESPError("Error: multiple classes selected")
             except Http404:
@@ -182,14 +182,14 @@ class AdminClass(ProgramModuleObj):
         if request.method == 'POST':
             if request.POST.get('sure') == 'True':
                 try:
-                    s = ClassSection.objects.get(id=int(request.GET.get('sec_id')))
+                    s = ClassSection.objects.get(id=int(request.GET.get('sec_id')), parent_class__parent_program=prog)
                     s.delete()
                 except (TypeError, ValueError, ClassSection.DoesNotExist):
                     raise ESPError(f'Unable to delete a section.  The section requested was: {request.GET.get("sec_id")}', log=False)
             #   Both Confirm and Cancel go back to the class's management page.
             return HttpResponseRedirect(f'/manage/{one}/{two}/manageclass/{extra}')
         else:
-            section = get_by_id_or_404(ClassSection, request.GET.get('sec_id'))
+            section = get_by_id_or_404(ClassSection, request.GET.get('sec_id'), parent_class__parent_program=prog)
             context = {'sec': section, 'module': self}
 
             return render_to_response(self.baseDir()+'delete_confirm.html', request, context)
@@ -251,7 +251,7 @@ class AdminClass(ProgramModuleObj):
                         sf.data = request.POST
                         sf.is_bound = True
                         if sf.is_valid():
-                            sec = ClassSection.objects.get(id=sf.cleaned_data['secid'])
+                            sec = get_by_id_or_404(ClassSection, sf.cleaned_data['secid'], parent_class=cls)
                             orig_sec_status = sec.status
                             sf.save_data(sec)
                             verbs = RTC.getVisibleRegistrationTypeNames(prog)
