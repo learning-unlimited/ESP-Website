@@ -151,7 +151,7 @@ class AdminClass(ProgramModuleObj):
 
             class_id = request.POST['class_id']
             try:
-                class_subject = get_by_id_or_404(ClassSubject, class_id)
+                class_subject = get_by_id_or_404(ClassSubject, class_id, parent_program=prog)
             except ClassSubject.MultipleObjectsReturned:
                 raise ESPError("Error: multiple classes selected")
             except Http404:

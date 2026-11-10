@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 from django.core import mail
 
 from esp.program.class_status import ClassStatus
-from esp.program.models import ClassSection, ClassSubject
+from esp.program.models import ClassSection, ClassSubject, Program
 from esp.program.modules.forms.management import ClassCancellationForm
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
@@ -456,3 +456,61 @@ class ClassAvailabilityConflictTest(ProgramFrameworkTest):
             self.assertIn(key, response.context)
         self.assertEqual(response.context['class'], self.cls)
         self.assertEqual(response.context['program'], self.program)
+
+
+class CrossProgramAdminClassTest(ProgramFrameworkTest):
+    """An admin of one program must not be able to change another program's classes (#4799)."""
+
+    def setUp(self):
+        super().setUp()
+        self.admin = self.admins[0]
+        self.client.login(username=self.admin.username, password='password')
+        self.cls = self.program.classes()[0]
+        self.manage_url = self.program.get_manage_url()
+        self.other_sec = self._create_other_program_section()
+        self.other_cls = self.other_sec.parent_class
+
+    def _create_other_program_section(self):
+        """A second program with one accepted class and section."""
+        other_prog = Program.objects.create(
+            url='TestProgram/OtherAdminClass',
+            name='TestProgram Other AdminClass',
+            grade_min=7,
+            grade_max=12,
+            director_email='info@test.learningu.org',
+            program_size_max=3000,
+        )
+        other_prog.program_modules.set(self.program.program_modules.all())
+        other_prog.class_categories.set(self.program.class_categories.all())
+        other_class = ClassSubject.objects.create(
+            title='Other Program Class',
+            category=self.program.class_categories.first(),
+            grade_min=7,
+            grade_max=12,
+            parent_program=other_prog,
+            class_size_max=30,
+            class_info='Class of another program for cross-program checks',
+        )
+        other_class.makeTeacher(self.teachers[0])
+        other_class.accept()
+        if not other_class.get_sections().exists():
+            other_class.add_section(duration=50 / 60.0)
+        return other_class.get_sections()[0]
+
+    def test_reviewclass_ignores_class_of_another_program(self):
+        """reviewClass with a class id from another program leaves that class alone."""
+        url = f'{self.manage_url}reviewClass'
+        status_before = self.other_cls.status
+        unknown = self.client.post(url, {'class_id': 999999, 'review_status': 'REJECT'})
+        response = self.client.post(url, {'class_id': self.other_cls.id, 'review_status': 'REJECT'})
+        self.other_cls.refresh_from_db()
+        self.assertEqual(self.other_cls.status, status_before)
+        self.assertEqual(response.status_code, unknown.status_code)
+
+    def test_reviewclass_still_works_for_own_program(self):
+        """Control: reviewClass still changes a class of the current program."""
+        url = f'{self.manage_url}reviewClass'
+        response = self.client.post(url, {'class_id': self.cls.id, 'review_status': 'REJECT'})
+        self.assertEqual(response.status_code, 200)
+        self.cls.refresh_from_db()
+        self.assertLess(self.cls.status, 0)
