@@ -514,3 +514,20 @@ class CrossProgramAdminClassTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.cls.refresh_from_db()
         self.assertLess(self.cls.status, 0)
+
+    def _deletesection_url(self, sec_id):
+        return f'{self.manage_url}deletesection/{self.cls.id}?sec_id={sec_id}'
+
+    def test_deletesection_post_ignores_section_of_another_program(self):
+        """Confirming a delete with a section id from another program deletes nothing."""
+        unknown = self.client.post(self._deletesection_url(999999), {'sure': 'True'})
+        response = self.client.post(self._deletesection_url(self.other_sec.id), {'sure': 'True'})
+        self.assertTrue(ClassSection.objects.filter(pk=self.other_sec.id).exists())
+        self.assertEqual(response.status_code, unknown.status_code)
+
+    def test_deletesection_get_hides_section_of_another_program(self):
+        """The confirmation page does not show a section of another program."""
+        unknown = self.client.get(self._deletesection_url(999999))
+        response = self.client.get(self._deletesection_url(self.other_sec.id))
+        self.assertEqual(response.status_code, unknown.status_code)
+        self.assertTrue(ClassSection.objects.filter(pk=self.other_sec.id).exists())
