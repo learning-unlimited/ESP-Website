@@ -1,21 +1,13 @@
 from __future__ import absolute_import
-import shutil
-import unittest
-from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from esp.seltests.util import try_normal_login, logout
+from esp.seltests.util import SeleniumTestCase, try_normal_login, logout
 from esp.users.models import ESPUser
 from esp.utils.models import TemplateOverride
 
 
-@unittest.skipUnless(
-    shutil.which('firefox') or shutil.which('firefox-esr'),
-    'Firefox not installed')
-class CsrfTestCase(StaticLiveServerTestCase):
+class CsrfTestCase(SeleniumTestCase):
     def setUp(self):
         super().setUp()
         user, created = ESPUser.objects.get_or_create(username='student', first_name='Student', last_name='Student')
@@ -28,16 +20,8 @@ class CsrfTestCase(StaticLiveServerTestCase):
         else:
             to = TemplateOverride.objects.filter(name='index.html')[0]
             self.good_version = to.next_version() - 1
-        options = Options()
-        options.add_argument("--headless")
-        try:
-            self.selenium = webdriver.Firefox(options=options)
-            self.selenium.implicitly_wait(10)
-        except Exception as e:
-            self.skipTest(f"Firefox WebDriver could not be started: {e}")
 
     def tearDown(self):
-        self.selenium.quit()
         super(CsrfTestCase, self).tearDown()
         if (self.good_version > 1):
             # Tear down the template override for consistent behavior

@@ -57,18 +57,31 @@ def _hideable_fields(form_class, use_labels=False):
             if not field.required]
 
 
+def _hide_fields_field(form_class, use_labels=False):
+    """A two-column selector for the fields of *form_class* that can be hidden.
+
+    Fields move between an 'Available' column (shown on the form) and a 'Chosen'
+    column (hidden from it), which is easier to read and to change than a plain
+    multiple select.  This is the admin's widget; it needs JS and CSS that the
+    tag settings template loads, and is imported here rather than at module
+    level so that importing tagdict doesn't pull in the admin app.
+    """
+    from django.contrib.admin.widgets import FilteredSelectMultiple
+    return forms.MultipleChoiceField(
+        choices=_hideable_fields(form_class, use_labels=use_labels),
+        widget=FilteredSelectMultiple('fields to hide', is_stacked=False))
+
+
 def profile_hide_fields_field(form_class_name):
     def field(key, program):
         from esp.users.forms import user_profile
-        return forms.MultipleChoiceField(
-            choices=_hideable_fields(getattr(user_profile, form_class_name)))
+        return _hide_fields_field(getattr(user_profile, form_class_name))
     return field
 
 
 def teacherreg_hide_fields_field(key, program):
     from esp.program.modules.forms.teacherreg import TeacherClassRegForm
-    return forms.MultipleChoiceField(
-        choices=_hideable_fields(TeacherClassRegForm, use_labels=True))
+    return _hide_fields_field(TeacherClassRegForm, use_labels=True)
 
 
 def record_types_field(key, program):
@@ -160,7 +173,8 @@ class MonthDayWidget(forms.SelectDateWidget):
 
     def value_from_datadict(self, data, files, name):
         # The year isn't rendered, so supply it rather than read it back
-        data = {**data, self.year_field % name: str(self.year)}
+        data = data.copy()
+        data[self.year_field % name] = str(self.year)
         return super().value_from_datadict(data, files, name)
 
 
@@ -389,6 +403,13 @@ all_global_tags = {
         'is_setting': True,
         'field': forms.IntegerField(min_value=1),
     },
+    'onsite_show_paid_field': {
+        'is_boolean': True,
+        'help_text': 'Should the onsite registration form include a "paid in full" checkbox?',
+        'default': True,
+        'category': 'onsite',
+        'is_setting': True,
+    },
     'oktimes_collapse': {
         'is_boolean': True,
         'help_text': 'Collapse feasible start times into a single column in the Viable Times Spreadsheet?',
@@ -583,6 +604,13 @@ all_global_tags = {
         'category': 'learn',
         'is_setting': True,
         'field': profile_hide_fields_field('StudentProfileForm'),
+    },
+    'student_profile_show_guardian_info': {
+        'is_boolean': True,
+        'help_text': 'Should the student profile form ask for parent/guardian contact information?',
+        'default': True,
+        'category': 'learn',
+        'is_setting': True,
     },
     'volunteer_profile_hide_fields': {
         'is_boolean': False,
@@ -1455,12 +1483,59 @@ all_program_tags = {
         'is_setting': True,
         'field': MultilineCharField(),
     },
+    'volunteer_label_comments': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the comments field for the volunteer form',
+        'default': None,
+        'category': 'volunteer',
+        'is_setting': True,
+    },
+    'volunteer_help_text_requests': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the timeslots field for the volunteer form',
+        'default': None,
+        'category': 'volunteer',
+        'is_setting': True,
+        'field': MultilineCharField(),
+    },
+    'volunteer_help_text_confirm': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the text of the confirmation checkbox for the volunteer form',
+        'default': None,
+        'category': 'volunteer',
+        'is_setting': True,
+        'field': MultilineCharField(),
+    },
     'volunteer_require_auth': {
         'is_boolean': True,
         'help_text': 'Do volunteers need to have accounts before signing up? (If not, one will be created when they sign up)',
         'default': False,
         'category': 'volunteer',
         'is_setting': True,
+    },
+    'bigboard_graph_drop_beg': {
+        'is_boolean': False,
+        'help_text': 'How many of the earliest data points each big board registration graph series starts after. Raise this to stop a handful of very early registrations from flattening the graph.',
+        'default': '4',
+        'category': 'manage',
+        'is_setting': True,
+        'field': forms.IntegerField(min_value=0),
+    },
+    'bigboard_graph_drop_end': {
+        'is_boolean': False,
+        'help_text': 'How many of the latest data points each big board registration graph series stops before.',
+        'default': '0',
+        'category': 'manage',
+        'is_setting': True,
+        'field': forms.IntegerField(min_value=0),
+    },
+    'bigboard_graph_min_points': {
+        'is_boolean': False,
+        'help_text': 'The minimum number of data points a series must have to be shown on the big board registration graphs.',
+        'default': '5',
+        'category': 'manage',
+        'is_setting': True,
+        'field': forms.IntegerField(min_value=1),
     },
     'program_center': {
         'is_boolean': False,

@@ -39,6 +39,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.generic import TemplateView
+from django.views.i18n import JavaScriptCatalog
 from django.views.generic.base import RedirectView
 from filebrowser.sites import site as filebrowser_site
 
@@ -78,12 +79,20 @@ urlpatterns += [
     path('robots.txt', TemplateView.as_view(template_name="robots.txt", content_type="text/plain"), name='robots_txt')
 ]
 
+# Translation catalog for the admin widgets we reuse outside the admin site.
+# The admin's own jsi18n view is behind a staff-only login, which admins who
+# manage tags don't necessarily have.
+urlpatterns += [
+    path('jsi18n/', JavaScriptCatalog.as_view(packages=['django.contrib.admin']), name='javascript_catalog')
+]
+
 # Admin stuff
 urlpatterns += [
     re_path(r'^admin_tools/', include('admin_tools.urls')),
     re_path(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     re_path(r'^admin/ajax_qsd/?$', esp.qsd.views.ajax_qsd),
     re_path(r'^admin/ajax_qsd_preview/?$', esp.qsd.views.ajax_qsd_preview),
+    re_path(r'^admin/ajax_qsd_can_edit/?$', esp.qsd.views.ajax_qsd_can_edit),
     re_path(r'^admin/ajax_qsd_history/?$', esp.qsd.views.ajax_qsd_history),
     re_path(r'^admin/ajax_qsd_version_preview/?$', esp.qsd.views.ajax_qsd_version_preview),
     re_path(r'^admin/ajax_qsd_restore/?$', esp.qsd.views.ajax_qsd_restore),
@@ -92,7 +101,7 @@ urlpatterns += [
     re_path(r'^admin/filebrowser/', filebrowser_site.urls),
     re_path(r'^admin/', admin_site.urls),
     re_path(r'^accounts/login/$', esp.users.views.CustomLoginView.as_view()),
-    re_path(r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$', RedirectView.as_view(url='/%(subsection)s/index.html', permanent=True)),
+    re_path(r'^(?P<subsection>(learn|teach|volunteer|program|help|manage|onsite))/?$', RedirectView.as_view(url='/%(subsection)s/index.html', permanent=True)),
 ]
 
 # Adds missing trailing slash to any admin urls that haven't been matched yet.
@@ -133,6 +142,8 @@ urlpatterns += [
 urlpatterns += [
     re_path(r'^(faq|faq\.html)$', main.FAQView.as_view(), name='FAQ'),
     re_path(r'^(contact|contact\.html)$', main.ContactUsView.as_view(), name='Contact Us'),
+    re_path(r'^teach/index\.html$', main.TeachIndexView.as_view(), name='teach_index'),
+    re_path(r'^teach/register/?$', main.teach_register, name='teach_register'),
 ]
 
 urlpatterns += [

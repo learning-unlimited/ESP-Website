@@ -38,6 +38,7 @@ from esp.accounting.models import LineItemType
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
+from django.utils.html import format_html
 from esp.program.modules.handlers.donationmodule import DonationModule
 
 from django.conf import settings
@@ -86,7 +87,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         )
 
     def apply_settings(self):
-        #   Rather than using a model in module_ext.*, configure the module
+        #   Rather than using a model in program_settings.*, configure the module
         #   from a Tag (which can be per-program or global), combining the
         #   Tag's specifications with defaults in the code.
         DEFAULTS = {
@@ -229,7 +230,12 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         #   Check for setup of module.  This is also required to initialize settings.
         if not self.check_setup():
-            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team</a> to get it set up.', True)
+            raise ESPError(format_html(
+                'The site has not yet been properly set up for credit card'
+                ' payments. Administrators should contact the '
+                '<a href="mailto:{}">websupport team</a> to get it set up.',
+                settings.DEFAULT_EMAIL_ADDRESSES['support'],
+            ), True)
 
         user = request.user
 
@@ -297,7 +303,12 @@ class CreditCardModule_Stripe(ProgramModuleObj):
     def charge_payment(self, request, tl, one, two, module, extra, prog):
         #   Check for setup of module.  This is also required to initialize settings.
         if not self.check_setup():
-            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team to get it set up.', True)
+            raise ESPError(format_html(
+                'The site has not yet been properly set up for credit card'
+                ' payments. Administrators should contact the '
+                '<a href="mailto:{}">websupport team</a> to get it set up.',
+                settings.DEFAULT_EMAIL_ADDRESSES['support'],
+            ), True)
 
         context = {'postdata': request.POST.copy()}
 

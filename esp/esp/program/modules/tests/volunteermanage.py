@@ -95,9 +95,23 @@ class VolunteerManageTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         vr = self._make_request()
         vr_id = vr.id
         self.login_as('admin')
-        response = self.client.get(self._url() + '?op=delete&id=%s' % vr_id)
+        response = self.client.post(self._url(), {'op': 'delete', 'id': str(vr_id)})
         self.assertEqual(response.status_code, 200)
         self.assertFalse(VolunteerRequest.objects.filter(id=vr_id).exists())
+
+    def test_get_does_not_delete_volunteer_request(self):
+        vr = self._make_request()
+        self.login_as('admin')
+        response = self.client.get(self._url() + '?op=delete&id=%s' % vr.id)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(VolunteerRequest.objects.filter(id=vr.id).exists())
+
+    def test_delete_ignores_request_from_other_program(self):
+        _, other_vr = self._past_program_with_request()
+        self.login_as('admin')
+        response = self.client.post(self._url(), {'op': 'delete', 'id': str(other_vr.id)})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(VolunteerRequest.objects.filter(id=other_vr.id).exists())
 
     def test_csv_export(self):
         vr = self._make_request()

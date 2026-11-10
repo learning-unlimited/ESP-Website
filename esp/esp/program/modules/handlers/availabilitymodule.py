@@ -64,10 +64,11 @@ class AvailabilityModule(ProgramModuleObj):
         et = EventType.get_from_desc('Class Time Block')
         return et
 
-    def prepare(self, context={}):
+    def prepare(self, context=None):
         """ prepare returns the context for the main availability page.
             Everything else can be gotten from hooks in this module. """
-        if context is None: context = {}
+        if context is None:
+            context = {}
 
         context['availabilitymodule'] = self
         return context

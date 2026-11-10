@@ -11,7 +11,7 @@ from esp.cal.models import Event
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
 from esp.program.models import RegistrationType, Program, ScheduleConstraint, BooleanToken
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
+from esp.program.modules.program_settings import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
 from esp.tagdict import (all_program_tags, tag_categories, initial_choices,
                          is_visible, join_choices, preserve_current_choice)
 from esp.tagdict.models import Tag
@@ -60,6 +60,7 @@ class LunchConstraintsForm(forms.Form):
         timeslots = Event.objects.filter(id__in=self.cleaned_data['timeslots']).order_by('start')
         cg = LunchConstraintGenerator(self.program, timeslots, generate_constraints=(self.cleaned_data['generate_constraints'] is True), autocorrect=(self.cleaned_data['autocorrect'] is True), include_conditions=(self.cleaned_data['include_conditions'] is True))
         cg.generate_all_constraints()
+        return cg.undeleted_sections
 
     timeslots = forms.MultipleChoiceField(choices=[], required=False, widget=forms.CheckboxSelectMultiple)
 

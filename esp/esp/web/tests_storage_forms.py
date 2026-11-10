@@ -6,12 +6,14 @@ Unit tests for:
   - esp/web/forms/fileupload_form.py (FileUploadForm, FileUploadForm_Admin, FileRenameForm)
 """
 
+from io import BytesIO
 from unittest.mock import patch, MagicMock
 
 from django import forms
 from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from PIL import Image
 
 from esp.web.storage import LowercaseExtensionStorage
 from esp.web.forms import ResizeImageField
@@ -153,11 +155,11 @@ class ResizeImageFieldCleanTest(TestCase):
         field = ResizeImageField(size=(100, 100), required=False)
         mock_img = self._mock_pil_image()
         with patch.object(forms.FileField, 'clean', return_value=fake), \
-             patch('PIL.Image.open', return_value=mock_img), \
-             patch('PIL.Image.ANTIALIAS', new=1, create=True):
+             patch('PIL.Image.open', return_value=mock_img):
             result = field.clean(fake, initial=None)
         self.assertIsInstance(result, SimpleUploadedFile)
         self.assertTrue(result.name.endswith('.jpg'))   # extension lowercased
+        mock_img.thumbnail.assert_called_once_with((100, 100), Image.Resampling.LANCZOS)
 
     def test_resize_via_temporary_file_path(self):
         """File has .temporary_file_path — path string passed to Image.open."""
@@ -167,8 +169,7 @@ class ResizeImageFieldCleanTest(TestCase):
         field = ResizeImageField(size=(100, 100), required=False)
         mock_img = self._mock_pil_image()
         with patch.object(forms.FileField, 'clean', return_value=fake), \
-             patch('PIL.Image.open', return_value=mock_img) as mock_open, \
-             patch('PIL.Image.ANTIALIAS', new=1, create=True):
+             patch('PIL.Image.open', return_value=mock_img) as mock_open:
             field.clean(fake, initial=None)
         mock_open.assert_called_once_with("/tmp/upload.JPG")
 
@@ -187,11 +188,20 @@ class ResizeImageFieldCleanTest(TestCase):
         fake = SimpleUploadedFile("shot.jpg", b"data")
         field = ResizeImageField(size=(100, 100), required=False)
         with patch.object(forms.FileField, 'clean', return_value=fake), \
-             patch('PIL.Image.open', side_effect=IOError("corrupt")), \
-             patch('PIL.Image.ANTIALIAS', new=1, create=True):
+             patch('PIL.Image.open', side_effect=IOError("corrupt")):
             with self.assertRaises(forms.ValidationError) as ctx:
                 field.clean(fake, initial=None)
         self.assertIn('Image resize failed', str(ctx.exception))
+
+    def test_resizes_real_image(self):
+        """A real image is shrunk to fit within size, without mocking Pillow."""
+        buf = BytesIO()
+        Image.new('RGB', (800, 600)).save(buf, 'PNG')
+        upload = SimpleUploadedFile("photo.png", buf.getvalue())
+        field = ResizeImageField(size=(300, 300), required=False)
+        result = field.clean(upload, initial=None)
+        with Image.open(BytesIO(result.read())) as resized:
+            self.assertEqual(resized.size, (300, 225))
 
 
 # ---------------------------------------------------------------------------

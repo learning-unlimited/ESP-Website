@@ -17,7 +17,6 @@ Example stylesheet inclusion tag:
 
 {% block javascript %}
 {{ block.super }}
-<script type="text/javascript" src="/media/scripts/theme/sidebar.js"></script>
 {# Customize your scripts here #}
 {% endblock %}
 
@@ -26,7 +25,7 @@ Example stylesheet inclusion tag:
 <a href="#main" class="skip-nav">Skip to main content</a>
 
 {% block navbar %}
-<nav class="navbar navbar-light bg-light navbar-expand-md fixed-top" role="navigation" aria-label="Main navigation">
+<nav class="navbar navbar-light bg-light navbar-expand-md sticky-top" role="navigation" aria-label="Main navigation">
   <div class="container">
     <a class="navbar-brand" href="/">{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}</a>
     <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,10 +48,11 @@ Example stylesheet inclusion tag:
 
 {% block main %}
 
-<div class="container">
+<div class="container mt-3">
   <div class="row">
     {% block sidebar %}
-    <div class="hidden" id="sidebar">
+    {# Shown only to logged-in users; on phones it follows the page content. #}
+    <div class="col-md-3 logged_in order-last order-md-first" id="sidebar">
       <ul class="nav flex-column sidebar">
         {% include "sidebar/me.html" %}
         {% include "sidebar/programs.html" %}
@@ -62,59 +62,8 @@ Example stylesheet inclusion tag:
     </div>
     {% endblock %}
 
-    <main id="main" class="col-md-12 resizable" tabindex="-1">
-      {% if request.COOKIES.esp_testing_role %}
-      <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
-        <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
-        You are logged in as a test account.
-        <a href="{% url 'myesp_stop_testing' %}" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
-      </div>
-      {% endif %}
-      {% if request.mod_required %}
-      <div class="alert alert-danger">
-        <span class="bi bi-info-circle" aria-hidden="true"></span>
-          This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
-      </div>
-      {% endif %}
-      {% if request.show_perm_info %}
-      <div class="alert alert-info">
-        <span class="bi bi-info-circle" aria-hidden="true"></span>
-          <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
-        <br />
-        {% if request.roles_with_perm %}
-        Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
-        {% else %}
-        <strong>No (non-admin) roles have permission to view this page!</strong>
-        {% endif %}
-      </div>
-      {% endif %}
-      {% if active_program_tags %}
-      <div class="alert alert-info alert-dismissible" role="alert">
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        <strong>Admin notice:</strong>
-        This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
-        {% for tag in active_program_tags %}
-          <span class="badge text-bg-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
-        {% endfor %}
-        &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
-      </div>
-      {% endif %}
-      {% if active_global_tags %}
-      <div class="alert alert-info alert-dismissible" role="alert">
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        <strong>Admin notice:</strong>
-        This site has {{ active_global_tags|length }} custom global tag{{ active_global_tags|length|pluralize }} configured that may be modifying page behavior:
-        {% for tag in active_global_tags %}
-          <span class="badge text-bg-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
-        {% endfor %}
-        &mdash; <a href="{{ active_global_tags_url }}" class="alert-link">View tag settings</a>
-      </div>
-      {% endif %}
-      {% if messages %}
-      {% for message in messages %}
-      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-      {% endfor %}
-      {% endif %}
+    <main id="main" class="col-md" tabindex="-1">
+      {% include "elements/banners.html" %}
       {% block content %}
       {% endblock %}
     </main>
