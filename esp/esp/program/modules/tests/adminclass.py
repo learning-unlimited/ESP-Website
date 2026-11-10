@@ -531,3 +531,29 @@ class CrossProgramAdminClassTest(ProgramFrameworkTest):
         response = self.client.get(self._deletesection_url(self.other_sec.id))
         self.assertEqual(response.status_code, unknown.status_code)
         self.assertTrue(ClassSection.objects.filter(pk=self.other_sec.id).exists())
+
+    def test_modify_sec_ignores_section_of_another_program(self):
+        """modify_sec with a secid from another program leaves that section alone."""
+        # Same setup as the valid modify_sec test: the class needs a scheduled section.
+        sec = self.cls.sections.first()
+        timeslot = self.program.getTimeSlots().first()
+        sec.meeting_times.clear()
+        sec.meeting_times.add(timeslot)
+
+        original_capacity = self.other_sec.max_class_capacity
+        prefix = f'sec{sec.index()}'
+        post_data = {
+            f'{prefix}-secid': self.other_sec.id,
+            f'{prefix}-status': ClassStatus.ACCEPTED,
+            f'{prefix}-reg_status': '',
+            f'{prefix}-times': [timeslot.id],
+            f'{prefix}-room': [],
+            f'{prefix}-resources': [],
+            f'{prefix}-class_size': 45,
+        }
+        url = f'{self.manage_url}manageclass/{self.cls.id}?action=modify_sec'
+        response = self.client.post(url, post_data)
+
+        self.other_sec.refresh_from_db()
+        self.assertEqual(self.other_sec.max_class_capacity, original_capacity)
+        self.assertEqual(response.status_code, 404)

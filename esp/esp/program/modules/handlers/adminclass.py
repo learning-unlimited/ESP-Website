@@ -251,7 +251,7 @@ class AdminClass(ProgramModuleObj):
                         sf.data = request.POST
                         sf.is_bound = True
                         if sf.is_valid():
-                            sec = ClassSection.objects.get(id=sf.cleaned_data['secid'])
+                            sec = get_by_id_or_404(ClassSection, sf.cleaned_data['secid'], parent_class=cls)
                             orig_sec_status = sec.status
                             sf.save_data(sec)
                             verbs = RTC.getVisibleRegistrationTypeNames(prog)
