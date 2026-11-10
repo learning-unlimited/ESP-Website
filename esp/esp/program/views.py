@@ -829,6 +829,7 @@ def _redirect_from_identifier(identifier, result):
 @reversion.create_revision()
 @admin_required
 def manage_pages(request):
+    reversion.set_user(request.user)
     if request.method == 'POST':
         data = request.POST
         if request.GET['cmd'] == 'bulk_move':

@@ -1185,6 +1185,32 @@ class QSDModelCoverageTest(TestCase):
 
         self.assertFalse(QuasiStaticData.objects.filter(url=url).exists())
 
+    def test_save_with_conflict_check_records_author_on_revision(self):
+        def populate(rec):
+            rec.title = 't'
+            rec.content = 'c'
+            rec.description = ''
+            rec.keywords = ''
+            rec.nav_category = self.nav_category
+            rec.author = self.admin
+
+        qsd = QuasiStaticData.objects.save_with_conflict_check('qsdmodelstest/revisionuser', None, None, populate)
+        self.assertEqual(reversion.get_for_object(qsd)[0].revision.user_id, self.admin.id)
+
+    def test_backfill_migration_sets_missing_revision_users(self):
+        import importlib
+        from django.apps import apps
+        backfill = importlib.import_module('esp.qsd.migrations.0006_backfill_revision_users')
+        qsd = QuasiStaticData(url='qsdmodelstest/backfill', author=self.admin, nav_category=self.nav_category,
+                              content='c', title='t', description='', keywords='')
+        with reversion.create_revision():
+            qsd.save()
+        revision = reversion.get_for_object(qsd)[0].revision
+        self.assertIsNone(revision.user_id)
+        backfill.backfill_revision_users(apps, None)
+        revision.refresh_from_db()
+        self.assertEqual(revision.user_id, self.admin.id)
+
     def test_manager_repr_and_str(self):
         self.assertEqual(repr(QuasiStaticData.objects), "QSDManager()")
         self.assertEqual(str(QuasiStaticData.objects), "QSDManager()")

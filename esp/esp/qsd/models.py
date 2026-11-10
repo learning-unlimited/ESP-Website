@@ -76,9 +76,9 @@ def edit_history(obj, since_version_id=None, limit=5):
     returns the full history instead of just the most recent few.
 
     Uses the QuasiStaticData snapshot's own author/create_date fields, not
-    reversion's Revision.user/date_created -- this project never calls
-    reversion.set_user() (no RevisionMiddleware either), so Revision.user is
-    always None regardless of who actually made the edit.
+    reversion's Revision.user/date_created -- Revision.user was only
+    recorded for edits made in the admin panel until 2026-11, and is still
+    missing on older revisions.
     """
     if obj is None or obj.pk is None:
         return []
@@ -210,6 +210,8 @@ class QSDManager(models.Manager):
                 # degrade to comparing None != None (i.e. never firing).
                 with transaction.atomic(), reversion.create_revision():
                     qsd_rec.save()
+                    if qsd_rec.author_id:
+                        reversion.set_user(qsd_rec.author)
             except IntegrityError:
                 # Someone else inserted a row at this url between our check
                 # above and this save (only possible for the brand-new-page
