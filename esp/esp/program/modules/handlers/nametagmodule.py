@@ -83,18 +83,28 @@ INK_THRESHOLD = 240
 TEST_LABEL_INSET = 0.05
 
 MAX_PRINTER_OFFSET = 1.0
+# Skew is how far backs move per inch from the page center: about 3 degrees.
+MAX_PRINTER_SKEW = 0.05
 MAX_BACK_SOURCE_LENGTH = 50000
 BACK_COMPILE_TIMEOUT = 8
 MAX_FLAGGED_NAMES = 12
 
-# The scales on the back test sheet span +/- 0.5in with marks every 0.025in.
-SCALE_MINOR_STEP = 0.025
-SCALE_STEPS = 20
-SCALE_STEPS_PER_MAJOR = 4
+# The scales on the back test sheet span +/- 0.5in with marks every 0.02in.
+SCALE_MINOR_STEP = 0.02
+SCALE_STEPS = 25
+SCALE_STEPS_PER_MAJOR = 5
 SCALE_MAJOR_LENGTH = 0.16
 SCALE_MINOR_LENGTH = 0.08
 SCALE_INSET = 0.1
 SCALE_REFERENCE_LENGTH = 0.5
+SCALE_LETTER_GAP = 0.3
+# Calibration lines are drawn thinner than the default 0.4pt, for precise readings.
+CALIBRATION_LINE = r'\linethickness{0.2pt}'
+# How far past the scale marks the front's reference lines stay thin.
+CALIBRATION_THIN_MARGIN = 0.1
+# Distances between the top and bottom scales, and the left and right ones.
+SCALE_SPAN_TB = PAGE_HEIGHT - 2 * (GRID_TOP + SCALE_INSET)
+SCALE_SPAN_LR = PAGE_WIDTH - 2 * GRID_LEFT
 CUT_MARK_LENGTH = 0.85
 CALIBRATION_MARK_LENGTH = 0.2
 LOGO_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.pdf')
@@ -121,32 +131,59 @@ def _cut_marks(length=CUT_MARK_LENGTH):
             for column in range(COLUMNS + 1)]
 
 
-def _grid_lines(x_offset=0.0, y_offset=0.0):
-    """ The outline of every card, drawing each shared edge only once. """
+def _grid_lines(x_offset=0.0, y_offset=0.0, inner_columns=True):
+    """ The outline of every card, drawing each shared edge only once.
+
+    inner_columns=False leaves out the lines between columns.
+    """
     left, top = _card_corner(0, x_offset, y_offset)
     width = COLUMNS * CARD_WIDTH
     height = ROWS * CARD_HEIGHT
     lines = [r'\put(%.3f,%.3f){\line(0,1){%.3f}}' % (left + column * CARD_WIDTH, top - height, height)
-             for column in range(COLUMNS + 1)]
+             for column in range(COLUMNS + 1) if inner_columns or column in (0, COLUMNS)]
     lines.extend(r'\put(%.3f,%.3f){\line(1,0){%.3f}}' % (left, top - row * CARD_HEIGHT, width)
                  for row in range(ROWS + 1))
     return lines
 
 
+def _thin(lines):
+    return [CALIBRATION_LINE] + lines + [r'\thinlines']
+
+
+def _center_line(x_offset=0.0, y_offset=0.0):
+    """ The grid's center line for calibration sheets, thin where it crosses the
+    top and bottom scales, plus a margin, so it doesn't hide their marks. """
+    center_x = PAGE_WIDTH / 2 + x_offset
+    bottom = GRID_TOP - y_offset
+    height = PAGE_HEIGHT - 2 * GRID_TOP
+    thin = SCALE_INSET + SCALE_MAJOR_LENGTH + CALIBRATION_THIN_MARGIN
+    vertical = r'\put(%.3f,%.3f){\line(0,1){%.3f}}'
+    return ([vertical % (center_x, bottom + thin, height - 2 * thin)]
+            + _thin([vertical % (center_x, bottom + height - thin, thin), vertical % (center_x, bottom, thin)]))
+
+
 def _front_reference_marks():
     """ Lines on the front calibration sheet to read against the scales on its back.
 
-    The grid's center line is the reference for the top and bottom scales.
+    The grid's center line is the reference for the top and bottom scales, and
+    short marks at the grid's sides for the left and right ones.  The stretches
+    that cross the scales, plus a margin, are drawn thin for precise reading.
     """
     center_y = PAGE_HEIGHT / 2
     grid_right = PAGE_WIDTH - GRID_LEFT
-    return [r'\put(%.3f,%.3f){\line(0,1){%.3f}}' % (PAGE_WIDTH / 2, PAGE_HEIGHT - GRID_TOP, CALIBRATION_MARK_LENGTH),
-            r'\put(%.3f,%.3f){\line(1,0){%.3f}}' % (GRID_LEFT, center_y, SCALE_REFERENCE_LENGTH),
-            r'\put(%.3f,%.3f){\line(1,0){%.3f}}' % (grid_right - SCALE_REFERENCE_LENGTH, center_y, SCALE_REFERENCE_LENGTH)]
+    lr_thin = SCALE_MAJOR_LENGTH + CALIBRATION_THIN_MARGIN
+    horizontal = r'\put(%.3f,%.3f){\line(1,0){%.3f}}'
+    return ([r'\put(%.3f,%.3f){\line(0,1){%.3f}}' % (PAGE_WIDTH / 2, PAGE_HEIGHT - GRID_TOP, CALIBRATION_MARK_LENGTH),
+             horizontal % (GRID_LEFT + lr_thin, center_y, SCALE_REFERENCE_LENGTH - lr_thin),
+             horizontal % (grid_right - SCALE_REFERENCE_LENGTH, center_y, SCALE_REFERENCE_LENGTH - lr_thin)]
+            + _center_line()
+            + _thin([horizontal % (GRID_LEFT, center_y, lr_thin),
+                     horizontal % (grid_right - lr_thin, center_y, lr_thin)]))
 
 
-def _offset_scale(x, y, horizontal, direction):
-    """ A ruler whose zero is at (x, y), with ticks extending toward direction.
+def _offset_scale(x, y, horizontal, direction, letter):
+    """ A ruler whose zero is at (x, y), with ticks extending toward direction,
+    and a letter naming it.
 
     Horizontal scales read positive to the right and vertical scales read
     positive downward, matching the printer offset fields.
@@ -157,7 +194,8 @@ def _offset_scale(x, y, horizontal, direction):
         major = step % SCALE_STEPS_PER_MAJOR == 0
         length = SCALE_MAJOR_LENGTH if major else SCALE_MINOR_LENGTH
         reach = direction * (SCALE_MAJOR_LENGTH + 0.03)
-        label = '0' if step == 0 else '%.1f' % distance
+        # Labels are in mils (thousandths of an inch).
+        label = '%d' % round(distance * 1000)
         if horizontal:
             items.append(r'\put(%.3f,%.3f){\line(0,%d){%.3f}}' % (x + distance, y, direction, length))
             if major:
@@ -168,6 +206,12 @@ def _offset_scale(x, y, horizontal, direction):
             if major:
                 items.append(r'\put(%.3f,%.3f){\makebox(0,0)[%s]{\ntscale{%s}}}'
                              % (x + reach, y - distance, 'l' if direction > 0 else 'r', label))
+    if horizontal:
+        # Beside the scale's left end, clear of the grid's center line.
+        letter_x, letter_y = x - SCALE_STEPS * SCALE_MINOR_STEP - SCALE_LETTER_GAP / 2, y + direction * SCALE_MAJOR_LENGTH / 2
+    else:
+        letter_x, letter_y = x + direction * (SCALE_MAJOR_LENGTH + SCALE_LETTER_GAP), y
+    items.append(r'\put(%.3f,%.3f){\makebox(0,0){\ntscaleletter{%s}}}' % (letter_x, letter_y, letter))
     return items
 
 
@@ -178,10 +222,30 @@ def _offset_scales(x_offset, y_offset):
     center_y = PAGE_HEIGHT / 2 - y_offset
     grid_left = GRID_LEFT + x_offset
     grid_right = PAGE_WIDTH - GRID_LEFT + x_offset
-    return (_offset_scale(center_x, PAGE_HEIGHT - GRID_TOP - SCALE_INSET - y_offset, True, -1)
-            + _offset_scale(center_x, GRID_TOP + SCALE_INSET - y_offset, True, 1)
-            + _offset_scale(grid_left, center_y, False, 1)
-            + _offset_scale(grid_right, center_y, False, -1))
+    return (_offset_scale(center_x, PAGE_HEIGHT - GRID_TOP - SCALE_INSET - y_offset, True, -1, 'T')
+            + _offset_scale(center_x, GRID_TOP + SCALE_INSET - y_offset, True, 1, 'B')
+            + _offset_scale(grid_left, center_y, False, 1, 'L')
+            + _offset_scale(grid_right, center_y, False, -1, 'R'))
+
+
+def skewed_page(page, x_offset, y_offset, x_skew, y_skew):
+    """ Skew a whole page to correct for paper skewing in the printer.
+
+    The page's items already include the offsets.  The skew pivots on the
+    shifted page center, so the offsets are exactly how far the center moves.
+    x_skew moves things right per inch below that center, and y_skew moves them
+    down per inch right of it.  The page is drawn as one picture transformed as
+    a whole, so everything on it, scales included, moves together.
+    """
+    if not x_skew and not y_skew:
+        return page
+    # The inner picture's origin is shifted by the offsets so that centering it
+    # on the shifted center leaves its items where they were.
+    # PDF maps (x, y) to (a*x + c*y, b*x + d*y), with y pointing up.
+    start = r'\put(%.3f,%.3f){\pdfsave\pdfsetmatrix{1 %.6f %.6f 1}\makebox(0,0){\begin{picture}(%.3f,%.3f)(%.3f,%.3f)' % (
+        PAGE_WIDTH / 2 + x_offset, PAGE_HEIGHT / 2 - y_offset, 0.0 - y_skew, 0.0 - x_skew,
+        PAGE_WIDTH, PAGE_HEIGHT, x_offset, 0.0 - y_offset)
+    return [start] + page + [r'\end{picture}}\pdfrestore}']
 
 
 def _centered_labels(labels, x_offset=0.0, y_offset=0.0):
@@ -194,14 +258,21 @@ def _centered_labels(labels, x_offset=0.0, y_offset=0.0):
     return items
 
 
-def calibration_pages(x_offset, y_offset):
-    """ A two-sided sheet for measuring how far a printer shifts the backs. """
-    front = _grid_lines() + _cut_marks(CALIBRATION_MARK_LENGTH) + _front_reference_marks()
+def calibration_pages(x_offset, y_offset, x_skew=0.0, y_skew=0.0):
+    """ A two-sided sheet for measuring how far a printer shifts and skews the backs.
+
+    The scales are drawn with the current corrections applied, so the readings
+    are what is left to correct, to be added to those corrections.
+    """
+    front = _grid_lines(inner_columns=False) + _cut_marks(CALIBRATION_MARK_LENGTH) + _front_reference_marks()
     front += _centered_labels([r'\#%d' % (slot + 1) for slot in range(CARDS_PER_PAGE)])
-    back = _grid_lines(x_offset, y_offset) + _offset_scales(x_offset, y_offset)
+    front.append(_place(GRID_LEFT, PAGE_HEIGHT - 0.35, r'\ntsettings{%+.3f}{%+.3f}{%+.4f}{%+.4f}'
+                        % (x_offset, y_offset, x_skew, y_skew)))
+    back = (_grid_lines(x_offset, y_offset, inner_columns=False) + _center_line(x_offset, y_offset)
+            + _thin(_offset_scales(x_offset, y_offset)))
     back += _centered_labels([r'\#%d back' % ((slot ^ 1) + 1) for slot in range(CARDS_PER_PAGE)], x_offset, y_offset)
     back.append(_place(GRID_LEFT, PAGE_HEIGHT - 0.35, r'\ntscalehelp'))
-    return [front, back]
+    return [front, skewed_page(back, x_offset, y_offset, x_skew, y_skew)]
 
 
 def numbered_page():
@@ -368,6 +439,9 @@ class NameTagModule(ProgramModuleObj):
         context['include_continue'] = False
         context['self_checkin'] = Tag.getProgramTag('student_self_checkin', program = prog) == 'code'
         context['back_groups'] = nametag_back_groups(prog)
+        context['scale_span_tb'] = SCALE_SPAN_TB
+        context['scale_span_lr'] = SCALE_SPAN_LR
+        context['max_skew'] = MAX_PRINTER_SKEW
 
         return render_to_response(self.baseDir()+'selectoptions.html', request, context)
 
@@ -410,11 +484,13 @@ class NameTagModule(ProgramModuleObj):
 
         x_offset = self._printer_offset(request, 'back_x_offset')
         y_offset = self._printer_offset(request, 'back_y_offset')
+        x_skew = self._printer_offset(request, 'back_x_skew', MAX_PRINTER_SKEW)
+        y_skew = self._printer_offset(request, 'back_y_skew', MAX_PRINTER_SKEW)
         file_type = extra if extra in ('tex', 'log') else 'pdf'
         if idtype == 'calibration':
             context = _back_context('')
             context.update({'paper_width': PAGE_WIDTH, 'paper_height': PAGE_HEIGHT, 'has_back': False,
-                            'pages': calibration_pages(x_offset, y_offset)})
+                            'pages': calibration_pages(x_offset, y_offset, x_skew, y_skew)})
             return render_to_latex(self.baseDir()+'ids.tex', context, file_type)
 
         users = []
@@ -563,7 +639,7 @@ class NameTagModule(ProgramModuleObj):
                     back_page.append(_place(x, y, _barcode_back_tex(user)))
             pages.append(front_page)
             if has_backs:
-                pages.append(back_page)
+                pages.append(skewed_page(back_page, x_offset, y_offset, x_skew, y_skew))
 
         if flagged:
             note = r'\parbox[t]{7.8in}{\small\bfseries %d name(s) had characters that could not be printed; check these nametags: %s%s}' % (
@@ -584,13 +660,13 @@ class NameTagModule(ProgramModuleObj):
             raise ESPError("Please save this back to %s before printing it." % prog.niceName(), log=False)
         return back
 
-    def _printer_offset(self, request, field):
+    def _printer_offset(self, request, field, limit=MAX_PRINTER_OFFSET):
         try:
             offset = float(request.POST.get(field) or 0)
         except ValueError:
             offset = None
-        if offset is None or not -MAX_PRINTER_OFFSET <= offset <= MAX_PRINTER_OFFSET:
-            raise ESPError("Printer alignment offsets must be numbers of inches between -%s and %s." % (MAX_PRINTER_OFFSET, MAX_PRINTER_OFFSET), log=False)
+        if offset is None or not -limit <= offset <= limit:
+            raise ESPError("Printer alignment settings must be numbers between -%s and %s." % (limit, limit), log=False)
         return offset
 
     def _posted_back(self, value, prog=None):

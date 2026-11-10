@@ -203,12 +203,65 @@ Walk-Ins: &amp; Lobby 13, 10:30 am--5:30 pm Sat\\
 <br />
 <details id="printer_alignment">
   <summary style="cursor: pointer;"><strong>Printer alignment</strong></summary>
-  <p>Only needed if backs don't line up with fronts. Print a "Printer calibration scale" to measure this. Inches; negative values move the other way.</p>
-  <label for="back_x_offset">Move backs right:</label>
-  <input type="number" step="0.005" min="-1" max="1" id="back_x_offset" name="back_x_offset" value="0" />
-  <label for="back_y_offset">Move backs down:</label>
-  <input type="number" step="0.005" min="-1" max="1" id="back_y_offset" name="back_y_offset" value="0" />
+  <p>Only needed if backs don't line up with fronts. Print a "Printer calibration scale" to measure this, then enter its readings below. These settings aren't saved, so note them down for next time.</p>
+  <p>
+    <label for="back_x_offset">Move backs right (in):</label>
+    <input type="number" step="any" min="-1" max="1" id="back_x_offset" name="back_x_offset" value="0" />
+    <label for="back_y_offset">Move backs down (in):</label>
+    <input type="number" step="any" min="-1" max="1" id="back_y_offset" name="back_y_offset" value="0" />
+  </p>
+  <p>
+    <label for="back_x_skew">Horizontal skew (in right per in down):</label>
+    <input type="number" step="any" min="-{{ max_skew }}" max="{{ max_skew }}" id="back_x_skew" name="back_x_skew" value="0" />
+    <label for="back_y_skew">Vertical skew (in down per in right):</label>
+    <input type="number" step="any" min="-{{ max_skew }}" max="{{ max_skew }}" id="back_y_skew" name="back_y_skew" value="0" />
+  </p>
+  <div id="scale_readings" class="backs-box">
+    <div class="backs-box-label">Calibration readings</div>
+    <p>Enter the four readings, in mils (thousandths of an inch, as on the scales), from a calibration sheet printed with the settings above. They are <strong>added</strong> to the settings, not used in place of them, so don't change the settings between printing the sheet and applying its readings. The front of the sheet lists the settings it was printed with.</p>
+    <label for="reading_t">T (mils):</label> <input type="number" step="any" id="reading_t" />
+    <label for="reading_b">B (mils):</label> <input type="number" step="any" id="reading_b" />
+    <label for="reading_l">L (mils):</label> <input type="number" step="any" id="reading_l" />
+    <label for="reading_r">R (mils):</label> <input type="number" step="any" id="reading_r" />
+    <button type="button" id="apply_readings">Apply readings</button>
+    <p id="readings_status"></p>
+  </div>
 </details>
+<script type="text/javascript">
+(function() {
+    // Readings are where the front's lines cross the back's scales, in mils,
+    // positive right and down, so each says how far to move the back there.  Their averages are
+    // the shifts and their differences across the sheet are the skews.
+    var SPAN_TB = {{ scale_span_tb }}, SPAN_LR = {{ scale_span_lr }};
+    function round(value, places) {
+        var factor = Math.pow(10, places);
+        return Math.round(value * factor) / factor;
+    }
+    function addTo(field, change, places) {
+        var $field = $j('#' + field);
+        var value = round((parseFloat($field.val()) || 0) + change, places);
+        $field.val(value);
+        return value;
+    }
+    $j('#apply_readings').on('click', function() {
+        var r = {};
+        var missing = ['t', 'b', 'l', 'r'].filter(function(side) {
+            r[side] = parseFloat($j('#reading_' + side).val()) / 1000;
+            return isNaN(r[side]);
+        });
+        if (missing.length) {
+            $j('#readings_status').text('Enter all four readings first.');
+            return;
+        }
+        addTo('back_x_offset', (r.t + r.b) / 2, 4);
+        addTo('back_y_offset', (r.l + r.r) / 2, 4);
+        addTo('back_x_skew', (r.b - r.t) / SPAN_TB, 5);
+        addTo('back_y_skew', (r.r - r.l) / SPAN_LR, 5);
+        $j('#scale_readings input').val('');
+        $j('#readings_status').text('Added to the settings above. Print another calibration sheet to check: it should read close to 0 everywhere.');
+    });
+})();
+</script>
 <br />
 
 <input type="submit" value="Generate IDs!" />

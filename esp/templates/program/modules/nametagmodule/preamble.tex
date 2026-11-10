@@ -27,7 +27,9 @@
 \newcommand{\ntlabel}[1]{\parbox[t]{3.8in}{\fontsize{48}{54}\selectfont\bfseries #1}}
 \newcommand{\ntcenterlabel}[1]{\fontsize{48}{54}\selectfont\bfseries #1}
 \newcommand{\ntscale}[1]{\fontsize{6}{7}\selectfont #1}
-\newcommand{\ntscalehelp}{\parbox[t]{7.8in}{\fontsize{9}{11}\selectfont Hold this sheet up to a light. Where each line printed on the front crosses a scale is how far to move the backs: add the average of the top and bottom readings to ``Move backs right'' and the average of the left and right readings to ``Move backs down''.}}
+\newcommand{\ntscalehelp}{\parbox[t]{7.8in}{\fontsize{9}{11}\selectfont Hold this sheet up to a light. Read where each line printed on the front crosses scales T, B, L and R, in mils (thousandths of an inch), and enter the four readings under ``Printer alignment'' on the nametag print page, with the settings printed on the front still in place.}}
+\newcommand{\ntscaleletter}[1]{\fontsize{14}{16}\selectfont\bfseries #1}
+\newcommand{\ntsettings}[4]{\parbox[t]{7.8in}{\fontsize{9}{11}\selectfont Printed with these printer alignment settings: move backs right #1\,in, move backs down #2\,in, horizontal skew #3, vertical skew #4. Enter readings from this sheet only while the same settings are in place: they are added to them.}}
 \newcommand{\ntcheckin}[1]{\begingroup\large\bfseries Self checkin code: #1\par\endgroup\vspace{0.2in}}
 \newcommand{\ntbarcodeback}[2]{\begin{minipage}[t][3in][c]{3.9in}\centering #1\barcode{#2}\end{minipage}}
 {% endautoescape %}

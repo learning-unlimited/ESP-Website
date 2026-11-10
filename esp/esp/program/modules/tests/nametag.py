@@ -261,6 +261,8 @@ class NameTagModuleTest(ProgramFrameworkTest):
         self.assertIn('id="back-source"', content)
         self.assertIn('id="back-preview-card"', content)
         self.assertIn('value="calibration"', content)
+        self.assertIn('id="back_x_skew"', content)
+        self.assertIn('id="apply_readings"', content)
     def test_dropdown_order_and_create_new(self):
         current = self.make_back()
         newer_program = Program.objects.create(url='Newer/2099', name='Newer 2099', grade_min=7, grade_max=12)
@@ -298,21 +300,77 @@ class NameTagModuleTest(ProgramFrameworkTest):
     def test_calibration_is_one_sheet_with_short_marks(self):
         pages = self.calibration()
         self.assertEqual(len(pages), 2)
-        self.check_single_grid(pages[0])
-        self.check_single_grid(pages[1])
         self.assertEqual(len(re.findall(r'\\line\(0,1\)\{0\.200\}', pages[0])), 4)
-        self.assertEqual(len(re.findall(r'\\line\(1,0\)\{0\.500\}', pages[0])), 2)
+        # The front's center line and side marks are thin only where they cross the scales.
+        front = pages[0]
+        thin = ''.join(re.findall(r'\\linethickness\{0\.2pt\}.*?\\thinlines', front, re.S))
+        normal = re.sub(r'\\linethickness\{0\.2pt\}.*?\\thinlines', '', front, flags=re.S)
+        self.assertEqual(sorted(re.findall(r'\\put\(([\d.]+),[\d.]+\)\{\\line\(0,1\)\{9\.000\}\}', normal)), ['0.350', '8.150'])
+        self.assertIn(r'\put(4.250,1.360){\line(0,1){8.280}}', normal)
+        self.assertIn(r'\put(4.250,9.640){\line(0,1){0.360}}', thin)
+        self.assertIn(r'\put(4.250,1.000){\line(0,1){0.360}}', thin)
+        self.assertIn(r'\put(0.610,5.500){\line(1,0){0.240}}', normal)
+        self.assertIn(r'\put(0.350,5.500){\line(1,0){0.260}}', thin)
+        self.assertIn(r'\put(7.890,5.500){\line(1,0){0.260}}', thin)
         self.assertIn(r'\ntcenterlabel{\#1}', pages[0])
         self.assertIn(r'\ntcenterlabel{\#2 back}', pages[1])
         self.assertNotIn('Back for', pages[1])
     def test_calibration_back_has_four_scales_inside_the_grid(self):
         back_sheet = self.calibration()[1]
-        self.assertEqual(len(re.findall(r'\\line\(0,-?1\)\{0\.(?:16|08)0\}', back_sheet)), 2 * 41)
-        self.assertEqual(len(re.findall(r'\\line\(-?1,0\)\{0\.(?:16|08)0\}', back_sheet)), 2 * 41)
+        # Marks every 0.02in over +/- 0.5in, labeled every 0.1in.
+        self.assertEqual(len(re.findall(r'\\line\(0,-?1\)\{0\.(?:16|08)0\}', back_sheet)), 2 * 51)
+        self.assertEqual(len(re.findall(r'\\line\(-?1,0\)\{0\.(?:16|08)0\}', back_sheet)), 2 * 51)
         self.assertEqual(len(re.findall(r'\\line\(-?[01],-?[01]\)\{0\.160\}', back_sheet)), 4 * 11)
         self.assertIn(r'\put(4.250,9.900){\line(0,-1){0.160}}', back_sheet)
         self.assertIn(r'\put(4.250,1.100){\line(0,1){0.160}}', back_sheet)
+        self.assertIn(r'\put(4.270,9.900){\line(0,-1){0.080}}', back_sheet)
+        for letter in 'TBLR':
+            self.assertIn(r'\ntscaleletter{%s}' % letter, back_sheet)
+        # Labeled in mils, drawn thinner than the grid.
+        for label in ('-500', '-100', '0', '100', '500'):
+            self.assertIn(r'\ntscale{%s}' % label, back_sheet)
+        self.assertLess(back_sheet.index(r'\linethickness{0.2pt}'), back_sheet.index(r'\line(0,-1){0.160}'))
+    def test_back_center_line_is_thin_through_scales(self):
+        back = self.calibration(back_x_offset='0.25', back_y_offset='0.1')[1]
+        thin = ''.join(re.findall(r'\\linethickness\{0\.2pt\}.*?\\thinlines', back, re.S))
+        normal = re.sub(r'\\linethickness\{0\.2pt\}.*?\\thinlines', '', back, flags=re.S)
+        self.assertEqual(sorted(re.findall(r'\\put\(([\d.]+),[\d.]+\)\{\\line\(0,1\)\{9\.000\}\}', normal)), ['0.600', '8.400'])
+        self.assertIn(r'\put(4.500,1.260){\line(0,1){8.280}}', normal)
+        self.assertIn(r'\put(4.500,9.540){\line(0,1){0.360}}', thin)
+        self.assertIn(r'\put(4.500,0.900){\line(0,1){0.360}}', thin)
+
     def test_scales_move_with_offsets(self):
         back_sheet = self.calibration(back_x_offset='0.25', back_y_offset='0.1')[1]
         self.assertIn(r'\put(4.500,9.800){\line(0,-1){0.160}}', back_sheet)
         self.assertIn(r'\put(0.600,5.400){\line(1,0){0.160}}', back_sheet)
+
+    def test_calibration_front_lists_its_settings(self):
+        front = self.calibration(back_x_offset='0.25', back_y_offset='-0.1', back_x_skew='-0.012', back_y_skew='0.005')[0]
+        self.assertIn(r'\ntsettings{+0.250}{-0.100}{-0.0120}{+0.0050}', front)
+
+    def test_skew_transforms_whole_back_page_about_its_center(self):
+        sheets = self.generate('/tex', type='calibration', back_x_skew='-0.012', back_y_skew='0.005').content.decode('utf8')
+        back = sheets.split(r'\clearpage')[1]
+        self.assertIn(r'\put(4.250,5.500){\pdfsave\pdfsetmatrix{1 -0.005000 0.012000 1}\makebox(0,0){\begin{picture}(8.500,11.000)(0.000,0.000)', back)
+        self.assertIn(r'\ntscaleletter{T}', back)
+        self.assertIn(r'\end{picture}}\pdfrestore}', back)
+        self.assertNotIn('pdfsetmatrix', sheets.split(r'\clearpage')[0])
+
+    def test_skew_pivots_on_the_shifted_center(self):
+        sheets = self.generate('/tex', type='calibration', back_x_offset='0.25', back_y_offset='0.1', back_x_skew='0.01')
+        back = sheets.content.decode('utf8').split(r'\clearpage')[1]
+        self.assertIn(r'\put(4.500,5.400){\pdfsave\pdfsetmatrix{1 0.000000 -0.010000 1}\makebox(0,0){\begin{picture}(8.500,11.000)(0.250,-0.100)', back)
+
+    def test_skew_applies_to_nametag_backs_only(self):
+        back = self.make_back()
+        pages = self.generate('/tex', nametag_back=back.id, back_x_skew='0.01').content.decode('utf8').split(r'\clearpage')
+        self.assertNotIn('pdfsetmatrix', pages[2])
+        self.assertIn(r'\pdfsetmatrix{1 0.000000 -0.010000 1}', pages[3])
+        self.assertIn(r'\usebox{\backbox}', pages[3])
+        self.assertNotIn('pdfsetmatrix', self.generate('/tex', nametag_back=back.id).content.decode('utf8'))
+
+    def test_rejects_bad_skews(self):
+        for value in ('nan', '0.06', '-1', 'abc'):
+            response = self.generate('/tex', back_y_skew=value)
+            self.assertNotIn('documentclass', response.content.decode('utf8'))
+        self.assertIn('documentclass', self.generate('/tex', back_y_skew='-0.05').content.decode('utf8'))
