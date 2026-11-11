@@ -167,6 +167,77 @@ class ClassFlag(models.Model):
         if failures:
             raise RuntimeError("Failed to email %d teacher(s): %s" % (len(failures), ', '.join(failures)))
 
+    @classmethod
+    def flag_class(cls, subject, flag_type, comment='', user=None):
+        """Add a flag of type ``flag_type`` to ``subject``, if not already flagged.
+
+        If ``user`` is None, falls back to the current request user (via
+        ClassFlag.save), or the first superuser/staff for background tasks.
+        Emails the teachers if the flag type says to. Returns the
+        (flag, created) tuple from get_or_create, or None if no user could be
+        determined.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        defaults = {
+            "comment": comment,
+        }
+
+        if user is not None:
+            defaults["created_by"] = user
+            defaults["modified_by"] = user
+        else:
+            # Fallback for background tasks where there is no request user
+            request = get_current_request()
+            if request is None:
+                system_user = (
+                    ESPUser.objects.filter(is_superuser=True).first()
+                    or ESPUser.objects.filter(is_staff=True).first()
+                )
+                if system_user:
+                    defaults["created_by"] = system_user
+                    defaults["modified_by"] = system_user
+                else:
+                    logger.warning(
+                        "ClassFlag: Could not find a system user to "
+                        "attribute flag creation for class %s", subject.id
+                    )
+                    return None
+
+        flag, created = cls.objects.get_or_create(
+            subject=subject,
+            flag_type=flag_type,
+            defaults=defaults,
+        )
+
+        if created and flag_type.notify_teacher_by_email:
+            try:
+                flag.send_teacher_notification()
+            except Exception as e:
+                logger.error(
+                    "ClassFlag: Failed to send teacher notification "
+                    "for flag %s on class %s: %s",
+                    flag.id, subject.id, e
+                )
+
+        return flag, created
+
+    @classmethod
+    def flag_classes(cls, subjects, flag_type, comment='', user=None):
+        """Call ``flag_class`` for each class in ``subjects``.
+
+        Returns the number of newly created flags.
+        """
+        created_count = 0
+        for subject in subjects:
+            result = cls.flag_class(subject, flag_type, comment=comment, user=user)
+            if result is not None:
+                _, created = result
+                if created:
+                    created_count += 1
+        return created_count
+
 
 class AutoClassFlagRule(models.Model):
     program = models.ForeignKey('Program', on_delete=models.CASCADE, related_name='autoflag_rules')
@@ -180,73 +251,22 @@ class AutoClassFlagRule(models.Model):
     def __str__(self):
         return "Auto-flag rule for %s in %s" % (self.flag_type, self.program)
 
+    def get_comment(self):
+        """The comment to put on flags added by this rule."""
+        return self.comment or "Automatically added by rule."
+
     def apply_to_class(self, cls, user=None):
         """Apply this auto-flag rule to a single class, if not already flagged.
 
-        Creates a ClassFlag on ``cls`` for this rule's flag_type. If ``user``
-        is None, falls back to the current request user (via ClassFlag.save),
-        or the first superuser/staff for background tasks. Returns the
-        (flag, created) tuple from get_or_create, or None if no user could be
-        determined.
+        See ClassFlag.flag_class for details.
         """
-        import logging
-        logger = logging.getLogger(__name__)
-
-        defaults = {
-            "comment": self.comment or "Automatically added by rule.",
-        }
-
-        if user is not None:
-            defaults["created_by"] = user
-            defaults["modified_by"] = user
-        else:
-            # Fallback for background tasks where there is no request user
-            request = get_current_request()
-            if request is None:
-                from esp.users.models import ESPUser as _ESPUser
-                system_user = (
-                    _ESPUser.objects.filter(is_superuser=True).first()
-                    or _ESPUser.objects.filter(is_staff=True).first()
-                )
-                if system_user:
-                    defaults["created_by"] = system_user
-                    defaults["modified_by"] = system_user
-                else:
-                    logger.warning(
-                        "AutoClassFlagRule: Could not find a system user to "
-                        "attribute flag creation for class %s", cls.id
-                    )
-                    return None
-
-        flag, created = ClassFlag.objects.get_or_create(
-            subject=cls,
-            flag_type=self.flag_type,
-            defaults=defaults,
-        )
-
-        if created and self.flag_type.notify_teacher_by_email:
-            try:
-                flag.send_teacher_notification()
-            except Exception as e:
-                logger.error(
-                    "AutoClassFlagRule: Failed to send teacher notification "
-                    "for flag %s on class %s: %s",
-                    flag.id, cls.id, e
-                )
-
-        return flag, created
+        return ClassFlag.flag_class(cls, self.flag_type,
+                                    comment=self.get_comment(), user=user)
 
     def apply_to_queryset(self, queryset, user=None):
         """Apply this auto-flag rule to all classes in ``queryset``.
 
-        Calls ``apply_to_class`` for each class. Returns the number of newly
-        created flags.
+        Returns the number of newly created flags.
         """
-        created_count = 0
-        for cls in queryset:
-            result = self.apply_to_class(cls, user=user)
-            if result is not None:
-                _, created = result
-                if created:
-                    created_count += 1
-        return created_count
+        return ClassFlag.flag_classes(queryset, self.flag_type,
+                                      comment=self.get_comment(), user=user)

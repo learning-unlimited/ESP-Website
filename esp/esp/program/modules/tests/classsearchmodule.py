@@ -1,11 +1,12 @@
 import json
 
+from django.contrib.messages import get_messages
 from django.template import Template, Context
 from django.test import RequestFactory
 
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
-from esp.program.models import ClassSubject
+from esp.program.models import AutoClassFlagRule, ClassFlag, ClassFlagType, ClassSubject
 from esp.users.models import ESPUser
 
 
@@ -62,6 +63,8 @@ class ClassSearchModuleTest(ProgramFrameworkTest):
         self.assertContains(r, "Course Description")
         self.assertContains(r, "Room Request")
         self.assertContains(r, "Edit Teacher List")
+        self.assertContains(r, "Add Flag to All")
+        self.assertContains(r, 'action="./bulk_add_flag"')
 
     def simple_search_query(self, **params):
         """Run the module's form-to-query translation on the given params."""
@@ -165,3 +168,68 @@ class ClassSearchModuleTest(ProgramFrameworkTest):
             self.assertContains(r, 'data-bs-target="#advancedSearch"')
             self.assertContains(r, 'id="advancedSearch"')
             self.assertContains(r, "sections scheduled")
+
+    # A query matching some, but not all, of the program's classes.
+    BULK_FLAG_QUERY = {'filter': 'title', 'negated': False,
+                       'values': ['Test class 3']}
+
+    def bulk_add_flag(self, **options):
+        """POST BULK_FLAG_QUERY to bulk_add_flag with the given options."""
+        self.flag_type = ClassFlagType.objects.create(name='Bulk Flag')
+        self.program.flag_types.add(self.flag_type)
+        self.client.login(username='admin', password='password')
+        data = {'query_data': json.dumps(self.BULK_FLAG_QUERY),
+                'flag_type_id': self.flag_type.id}
+        data.update(options)
+        return self.client.post(
+            '/manage/' + self.program.url + '/bulk_add_flag', data)
+
+    def bulk_flagged_ids(self):
+        return set(ClassFlag.objects.filter(
+            flag_type=self.flag_type).values_list('subject_id', flat=True))
+
+    def matching_ids(self):
+        return set(self.qb.as_queryset(self.BULK_FLAG_QUERY)
+                   .values_list('id', flat=True))
+
+    def test_bulk_add_flag_existing_only(self):
+        """Flagging existing classes alone shouldn't create a rule."""
+        r = self.bulk_add_flag(apply_existing='1', comment='Bulk comment')
+        self.assertEqual(r.status_code, 302)
+        self.assertGreater(len(self.matching_ids()), 0)
+        self.assertLess(len(self.matching_ids()),
+                        self.program.classsubject_set.count())
+        self.assertEqual(self.bulk_flagged_ids(), self.matching_ids())
+        self.assertEqual(
+            set(ClassFlag.objects.filter(flag_type=self.flag_type)
+                .values_list('comment', flat=True)),
+            {'Bulk comment'})
+        self.assertFalse(AutoClassFlagRule.objects.filter(
+            flag_type=self.flag_type).exists())
+        self.assertIn('Added the "Bulk Flag" flag to %d class' % len(self.matching_ids()),
+                      [str(m) for m in get_messages(r.wsgi_request)][0])
+
+    def test_bulk_add_flag_rule_only(self):
+        """Creating a rule alone shouldn't flag existing classes."""
+        self.bulk_add_flag(create_rule='1')
+        rule = AutoClassFlagRule.objects.get(flag_type=self.flag_type)
+        self.assertEqual(json.loads(rule.rule_data), self.BULK_FLAG_QUERY)
+        self.assertEqual(self.bulk_flagged_ids(), set())
+
+    def test_bulk_add_flag_existing_and_rule(self):
+        self.bulk_add_flag(apply_existing='1', create_rule='1')
+        self.assertTrue(AutoClassFlagRule.objects.filter(
+            flag_type=self.flag_type).exists())
+        self.assertEqual(self.bulk_flagged_ids(), self.matching_ids())
+        # With no comment given, the rule's default comment is used.
+        self.assertEqual(
+            set(ClassFlag.objects.filter(flag_type=self.flag_type)
+                .values_list('comment', flat=True)),
+            {'Automatically added by rule.'})
+
+    def test_bulk_add_flag_no_options(self):
+        """With neither option checked, nothing should happen."""
+        self.bulk_add_flag()
+        self.assertFalse(AutoClassFlagRule.objects.filter(
+            flag_type=self.flag_type).exists())
+        self.assertEqual(self.bulk_flagged_ids(), set())

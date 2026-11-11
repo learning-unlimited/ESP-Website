@@ -115,20 +115,19 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
     <button class="btn btn-success" onclick="approveAll({{ IDs|escapejs }});">Approve All</button>
     <button class="btn btn-light" onclick="unreviewAll({{ IDs|escapejs }});">Unreview All</button>
     <button class="btn btn-warning" onclick="rejectAll({{ IDs|escapejs }});">Reject All</button>
-    <button class="btn btn-info" onclick="showAutoRuleModal();" {% if not query %}style="display:none;"{% endif %}>Create Auto-Flag Rule</button>
+    <button class="btn btn-info" onclick="showBulkFlagModal();" {% if not query %}style="display:none;"{% endif %}>Add Flag to All</button>
 </div>
 
-<!-- Auto-Flag Rule Modal -->
-<div id="autorule-modal" class="modal fade" tabindex="-1">
+<!-- Bulk Flag Modal -->
+<div id="bulkflag-modal" class="modal fade" tabindex="-1">
  <div class="modal-dialog">
   <div class="modal-content">
   <div class="modal-header">
-    <h3 class="modal-title">Create Auto-Flag Rule</h3>
+    <h3 class="modal-title">Add Flag to All</h3>
     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
   </div>
   <div class="modal-body">
-    <p>This will automatically add the selected flag to any class that matches the current search criteria whenever it is saved.</p>
-    <form id="autorule-form" action="./create_autorule" method="POST">
+    <form id="bulkflag-form" action="./bulk_add_flag" method="POST">
         {% csrf_token %}
         <input type="hidden" name="query_data" value="{{ query_json }}">
         <label for="flag_type_id">Flag Type:</label>
@@ -137,26 +136,39 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
                 <option value="{{ ft.id }}">{{ ft.name }}</option>
             {% endfor %}
         </select>
-        <label for="rule_comment">Comment (optional):</label>
-        <textarea name="comment" id="rule_comment" placeholder="Automatically added by rule."></textarea>
+        <label for="bulkflag_comment">Comment (optional):</label>
+        <textarea name="comment" id="bulkflag_comment"></textarea>
         <label style="display:block; margin-top:10px;">
             <input type="checkbox" name="apply_existing" value="1" checked>
-            Also apply this flag to all existing classes matching the current query
+            Add this flag to the {{ queryset|length }} class{{ queryset|length|pluralize:"es" }} currently matching this search
         </label>
+        <label style="display:block; margin-top:10px;">
+            <input type="checkbox" name="create_rule" value="1">
+            Also create an auto-flag rule, which adds this flag to any class matching this search whenever it is saved in the future
+        </label>
+        <p class="text-muted" style="margin-top:10px;">Classes that already have this flag are skipped.</p>
     </form>
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-    <a href="#" class="btn btn-primary text-decoration-none" onclick="$j('#autorule-form').submit();">Save Rule</a>
+    <button type="submit" form="bulkflag-form" class="btn btn-primary" id="bulkflag-submit">Add Flag</button>
   </div>
   </div>
  </div>
 </div>
 
 <script type="text/javascript">
-function showAutoRuleModal() {
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('autorule-modal')).show();
+function showBulkFlagModal() {
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('bulkflag-modal')).show();
 }
+// Require at least one option, and show the rule's default comment when creating a rule.
+$j('#bulkflag-form input[type=checkbox]').on('change', function () {
+    var form = $j('#bulkflag-form');
+    var applyExisting = form.find('[name=apply_existing]').prop('checked');
+    var createRule = form.find('[name=create_rule]').prop('checked');
+    $j('#bulkflag-submit').prop('disabled', !(applyExisting || createRule));
+    $j('#bulkflag_comment').attr('placeholder', createRule ? 'Automatically added by rule.' : '');
+});
 </script>
 <div class="btn-toolbar gap-2 mb-2">
     <a class="btn btn-primary text-decoration-none" id="catalog_links" href="./coursecatalog?clsids={{ IDs|join:',' }}" target="_blank" title="Change sorting with the 'catalog_sort_fields' tag">Course Catalog</a>

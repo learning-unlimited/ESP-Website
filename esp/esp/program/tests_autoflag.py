@@ -129,3 +129,32 @@ class AutoClassFlagTest(TestCase):
         self.assertFalse(
             ClassFlag.objects.filter(subject=non_matching, flag_type=self.flag_type).exists()
         )
+
+    def test_flag_classes_without_rule(self):
+        """Test that flags can be bulk-added without an auto-flag rule."""
+        other_flag_type = ClassFlagType.objects.create(name="Other Flag")
+        classes = [
+            ClassSubject.objects.create(
+                title="Bulk Class %d" % i,
+                parent_program=self.program,
+                category=self.category,
+                grade_min=7,
+                grade_max=12
+            )
+            for i in range(2)
+        ]
+        queryset = ClassSubject.objects.filter(id__in=[cls.id for cls in classes])
+
+        created_count = ClassFlag.flag_classes(
+            queryset, other_flag_type, comment="Bulk flagged!", user=self.system_user)
+
+        self.assertEqual(created_count, 2)
+        for cls in classes:
+            flag = ClassFlag.objects.get(subject=cls, flag_type=other_flag_type)
+            self.assertEqual(flag.comment, "Bulk flagged!")
+            self.assertEqual(flag.created_by, self.system_user)
+        # Classes that already have the flag are skipped.
+        self.assertEqual(ClassFlag.flag_classes(
+            queryset, other_flag_type, user=self.system_user), 0)
+        self.assertEqual(
+            ClassFlag.objects.filter(flag_type=other_flag_type).count(), 2)
