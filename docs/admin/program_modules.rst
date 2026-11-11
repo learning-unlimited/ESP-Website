@@ -559,6 +559,11 @@ category, or any combination thereof.  It can be reached by clicking on "Search
 for Classes" under the complete module list on the program management main
 page.
 
+From the search results, the "Add Flag to All" button adds a flag to every
+class matching the search. It can also create an auto-flag rule, which adds
+the flag to any class that matches the search whenever that class is saved in
+the future. Either or both options can be chosen.
+
 Communications Panel for Admin (CommModule)
 -------------------------------------------
 
