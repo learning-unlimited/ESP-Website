@@ -51,7 +51,7 @@
       <td>{{ student.user.id }}</td>
       <td>{{ student.user.name }}</td>
       {% if "student_profile_pronoun_field"|getBooleanTag %}
-      <td>{{ student.user.getLastProfile.student_info.pronoun }}</td>
+      <td>{{ student.user.getLastProfile.student_info.pronoun|default_if_none:"" }}</td>
       {% endif %}
       <td>{{ student.user|getGradeForProg:program.id }}</td>
       <td>{{ student.user.getLastProfile.contact_user.e_mail }}</td>

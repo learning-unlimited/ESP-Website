@@ -102,7 +102,7 @@ Please select a section from the dropdown below.
                         <td>{{ student.first_name }}</td>
                         <td>{{ student.last_name }}</td>
                         {% if "student_profile_pronoun_field"|getBooleanTag %}
-                            <td>{{ student.getLastProfile.student_info.pronoun }}</td>
+                            <td>{{ student.getLastProfile.student_info.pronoun|default_if_none:"" }}</td>
                         {% endif %}
                         <td align="center">{{ student.id }}</td>
                         <td align="center">{{ student|getGradeForProg:program.id }}</td>

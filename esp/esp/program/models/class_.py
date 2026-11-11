@@ -1802,9 +1802,10 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             if name.strip() == '':
                 name = teacher.username
             prof = RegistrationProfile.getLastProfile(teacher)
-            if prof.teacher_info is not None:
-                if prof.teacher_info.pronoun is not None:
-                    name = name + ' (' + prof.teacher_info.pronoun + ')'
+            # A blank pronoun box saves as '', not None, so test for text.
+            pronoun = (prof.teacher_info.pronoun or '').strip() if prof.teacher_info is not None else ''
+            if pronoun:
+                name = name + ' (' + pronoun + ')'
             teachers.append(name)
         return teachers
 

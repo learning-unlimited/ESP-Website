@@ -29,7 +29,7 @@
    <td>{{ forloop.counter }}</td>
    <td>{{ student.last_name }}, {{ student.first_name}}</td>
    {% if "student_profile_pronoun_field"|getBooleanTag %}
-      <td>{{ student.getLastProfile.student_info.pronoun }}</td>
+      <td>{{ student.getLastProfile.student_info.pronoun|default_if_none:"" }}</td>
    {% endif %}
    <td>{{ student.email}}</td>
    <td>{{ student.getLastProfile.student_info.dob|date:"m/d/Y" }}</td>

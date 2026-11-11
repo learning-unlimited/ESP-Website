@@ -55,7 +55,7 @@ Students Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@{{ EMAIL_HOST_SEN
       <td>{{ student.id }}</td>
       <td>{{ student.name }}</td>
       {% if "student_profile_pronoun_field"|getBooleanTag %}
-      <td>{{ student.getLastProfile.student_info.pronoun }}</td>
+      <td>{{ student.getLastProfile.student_info.pronoun|default_if_none:"" }}</td>
       {% endif %}
       <td>
           {{ student|getGradeForProg:program.id }}</td>

@@ -1232,6 +1232,25 @@ class MeetingTimesTest(ProgramFrameworkTest):
         section.meeting_times.remove(ts2)
         self.assertSetEquals(section.get_meeting_times(), [])
 
+class TeacherNamesWithPronounsTest(ProgramFrameworkTest):
+    def runTest(self):
+        self.add_user_profiles()
+        cls = self.program.classes()[0]
+        teacher = cls.get_teachers()[0]
+        name = teacher.name()
+        info = RegistrationProfile.getLastProfile(teacher).teacher_info
+        # (stored pronoun, expected display); the profile cache is keyed on
+        # RegistrationProfile, so re-save it to invalidate after each change.
+        cases = [(None, name), ('', name), ('   ', name),
+                 ('they/them', name + ' (they/them)'),
+                 (' she/her ', name + ' (she/her)')]
+        for pronoun, expected in cases:
+            info.pronoun = pronoun
+            info.save()
+            RegistrationProfile.getLastProfile(teacher).save()
+            self.assertIn(expected, cls.getTeacherNamesWithPronouns())
+            self.assertNotIn(name + ' ()', cls.getTeacherNamesWithPronouns())
+
 class LSRAssignmentTest(ProgramFrameworkTest):
     def setUp(self):
         random.seed()

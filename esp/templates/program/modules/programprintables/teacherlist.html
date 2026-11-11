@@ -136,7 +136,7 @@
  <td>{{ scheditem.user.username }}</td>
  <td>{{ scheditem.user.last_name }}, {{ scheditem.user.first_name}}</td>
  {% if "teacher_profile_pronoun_field"|getBooleanTag %}
- <td>{{ scheditem.user.getLastProfile.teacher_info.pronoun }}</td>
+ <td>{{ scheditem.user.getLastProfile.teacher_info.pronoun|default_if_none:"" }}</td>
  {% endif %}
  <td>{{ scheditem.user.email }}</td>
  <td>{{ scheditem.phone_day }}</td>
