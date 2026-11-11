@@ -173,9 +173,9 @@ class ClassFlag(models.Model):
 
         If ``user`` is None, falls back to the current request user (via
         ClassFlag.save), or the first superuser/staff for background tasks.
-        Emails the teachers if the flag type says to. Returns the
-        (flag, created) tuple from get_or_create, or None if no user could be
-        determined.
+        Emails the teachers if the flag type says to. Returns a
+        (flag, created) tuple, where flag is an existing flag of this type if
+        there is one, or None if no user could be determined.
         """
         import logging
         logger = logging.getLogger(__name__)
@@ -205,11 +205,11 @@ class ClassFlag(models.Model):
                     )
                     return None
 
-        flag, created = cls.objects.get_or_create(
-            subject=subject,
-            flag_type=flag_type,
-            defaults=defaults,
-        )
+        # Not get_or_create: a class can already have several flags of a type.
+        flag = cls.objects.filter(subject=subject, flag_type=flag_type).first()
+        created = flag is None
+        if created:
+            flag = cls.objects.create(subject=subject, flag_type=flag_type, **defaults)
 
         if created and flag_type.notify_teacher_by_email:
             try:

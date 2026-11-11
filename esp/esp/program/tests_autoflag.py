@@ -158,3 +158,31 @@ class AutoClassFlagTest(TestCase):
             queryset, other_flag_type, user=self.system_user), 0)
         self.assertEqual(
             ClassFlag.objects.filter(flag_type=other_flag_type).count(), 2)
+
+    def test_flag_classes_with_duplicate_flags(self):
+        """Classes that already have several flags of the type are skipped."""
+        other_flag_type = ClassFlagType.objects.create(name="Other Flag")
+        duplicated, fresh = [
+            ClassSubject.objects.create(
+                title="Bulk Class %d" % i,
+                parent_program=self.program,
+                category=self.category,
+                grade_min=7,
+                grade_max=12
+            )
+            for i in range(2)
+        ]
+        for _ in range(2):
+            ClassFlag.objects.create(subject=duplicated, flag_type=other_flag_type,
+                                     created_by=self.system_user,
+                                     modified_by=self.system_user)
+        queryset = ClassSubject.objects.filter(id__in=[duplicated.id, fresh.id])
+
+        created_count = ClassFlag.flag_classes(
+            queryset, other_flag_type, user=self.system_user)
+
+        self.assertEqual(created_count, 1)
+        self.assertEqual(ClassFlag.objects.filter(
+            subject=duplicated, flag_type=other_flag_type).count(), 2)
+        self.assertTrue(ClassFlag.objects.filter(
+            subject=fresh, flag_type=other_flag_type).exists())

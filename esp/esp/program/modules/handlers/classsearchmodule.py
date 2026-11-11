@@ -278,6 +278,10 @@ class ClassSearchModule(ProgramModuleObj):
 
         try:
             flag_type = self.program.flag_types.get(id=flag_type_id)
+            # Build the queryset first so an invalid query doesn't create a rule.
+            qb = self.query_builder()
+            decoded = json.loads(query_data)
+            matching_classes = qb.as_queryset(decoded).distinct()
             rule = None
             if create_rule:
                 # Create the rule
@@ -291,9 +295,6 @@ class ClassSearchModule(ProgramModuleObj):
 
             # If checkbox is checked, apply flag to all existing matching classes
             if apply_existing:
-                qb = self.query_builder()
-                decoded = json.loads(query_data)
-                matching_classes = qb.as_queryset(decoded).distinct()
                 if rule is not None:
                     created_count = rule.apply_to_queryset(matching_classes, user=request.user)
                 else:

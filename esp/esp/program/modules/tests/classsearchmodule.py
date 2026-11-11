@@ -233,3 +233,14 @@ class ClassSearchModuleTest(ProgramFrameworkTest):
         self.assertFalse(AutoClassFlagRule.objects.filter(
             flag_type=self.flag_type).exists())
         self.assertEqual(self.bulk_flagged_ids(), set())
+
+    def test_bulk_add_flag_invalid_query(self):
+        """An invalid query shouldn't create a rule."""
+        self.flag_type = ClassFlagType.objects.create(name='Bulk Flag')
+        self.program.flag_types.add(self.flag_type)
+        self.client.login(username='admin', password='password')
+        self.client.post('/manage/' + self.program.url + '/bulk_add_flag',
+                         {'query_data': 'not json', 'flag_type_id': self.flag_type.id,
+                          'create_rule': '1'})
+        self.assertFalse(AutoClassFlagRule.objects.filter(
+            flag_type=self.flag_type).exists())
