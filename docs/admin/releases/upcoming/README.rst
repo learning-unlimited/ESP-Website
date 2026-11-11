@@ -46,10 +46,10 @@ the teacher class registration form (``teacher_profile_hide_fields``,
 hidden from the form. The settings themselves are unchanged, so any values you
 have set already carry over and keep working.
 
-Bulk Class Flagging
-===================
+Bulk and Automatic Class Flagging
+=================================
 
-The class search page's "Create Auto-Flag Rule" button is now "Add Flag to All". Its popup lets you add a flag to all of the classes currently matching your search, create an auto-flag rule that adds the flag to matching classes whenever they are saved in the future, or both. Previously, flags could only be added in bulk by also creating an auto-flag rule. Classes that already have the flag are skipped, and a message after saving reports how many classes were flagged.
+The class search page has a new "Add Flag to All" button. Its popup lets you add a flag to all of the classes currently matching your search, create an auto-flag rule that adds the flag to any class matching your search whenever it is saved in the future, or both. Classes that already have the flag are skipped, and a message after saving reports how many classes were flagged.
 
 Bug Fixes
 =========
