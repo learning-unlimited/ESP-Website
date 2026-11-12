@@ -329,7 +329,9 @@ class Resource(models.Model):
         if timeslot is None:
             test_resource = self
         else:
-            test_resource = self.identical_resources().filter(event=timeslot)[0]
+            test_resource = self.identical_resources().filter(event=timeslot).first()
+            if test_resource is None:
+                return Q(pk__in=[]) if QObjects else False
 
         if QObjects:
             return ~Q(test_resource.is_taken(True))

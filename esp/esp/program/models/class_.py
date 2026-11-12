@@ -781,7 +781,8 @@ class ClassSection(models.Model):
 
         #   This means we have to clear the classrooms.
         #   But we will try to re-assign the same room at the new times if it is available.
-        current_rooms = self.initial_rooms()
+        #   list() so this is evaluated before clearRooms() deletes the assignments.
+        current_rooms = list(self.initial_rooms())
 
         self.clearRooms()
         self.clearFloatingResources()
@@ -793,7 +794,7 @@ class ClassSection(models.Model):
         availability = True
         for e in event_list:
             for room in current_rooms:
-                if not room.is_available(e):
+                if not room.is_available(timeslot=e):
                     availability = False
 
         #   If the desired rooms are available, assign them.  (If not, no big deal.)
