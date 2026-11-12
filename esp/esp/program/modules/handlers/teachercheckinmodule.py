@@ -523,9 +523,10 @@ class TeacherCheckinModule(ProgramModuleObj):
         default_phone = request.GET.get('default_phone', '(missing contact info)')
         if 'start' in request.GET:
             try:
-                starttime = Event.objects.get(id=int(request.GET['start']), program=prog)
+                _event = Event.objects.get(id=int(request.GET['start']), program=prog)
                 times = prog.getTimeSlotList()
-                if starttime in times:
+                if _event in times:
+                    starttime = _event
                     date = starttime.start.date()
                     i = times.index(starttime)
                     if i > 0:
