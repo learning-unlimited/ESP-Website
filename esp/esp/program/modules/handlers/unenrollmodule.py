@@ -45,6 +45,34 @@ from esp.utils.web import render_to_response
 
 logger = logging.getLogger(__name__)
 
+_MAX_INT32 = 2**31 - 1
+
+
+def _parse_enrollment_ids(raw):
+    """Parse comma-separated enrollment IDs into a deduplicated list of ints.
+
+    Returns ``(ids, has_invalid)`` where ``ids`` preserves input order for
+    valid positive 32-bit integer IDs after stripping whitespace and skipping
+    empty tokens, and ``has_invalid`` is True if any non-empty token is not
+    a valid positive 32-bit integer.
+    """
+    ids = []
+    seen = set()
+    for token in raw.split(','):
+        token = token.strip()
+        if not token:
+            continue
+        if not (token.isascii() and token.isdigit()):
+            return [], True
+        pk = int(token)
+        if pk < 1 or pk > _MAX_INT32:
+            return [], True
+        if pk not in seen:
+            seen.add(pk)
+            ids.append(pk)
+    return ids, False
+
+
 class UnenrollModule(ProgramModuleObj):
     doc = """Frontend to unenroll students from classes."""
 
@@ -73,20 +101,26 @@ class UnenrollModule(ProgramModuleObj):
         """
         context = {}
         if request.method == 'POST':
-            selected_enrollments = request.POST.get(
-                'selected_enrollments', ''
-            ).strip()
-            if not selected_enrollments:
+            selected_enrollments = request.POST.get('selected_enrollments', '')
+            ids, has_invalid = _parse_enrollment_ids(selected_enrollments)
+            if has_invalid:
+                messages.error(request, 'Invalid enrollment selection.')
+                context['error'] = 'Invalid enrollment selection.'
+            elif not ids:
                 messages.error(request, 'No enrollments selected.')
                 context['error'] = 'No enrollments selected.'
             else:
+                qs = StudentRegistration.objects.filter(
+                    id__in=ids,
+                    section__parent_class__parent_program=prog,
+                ).select_related('user', 'section', 'section__parent_class')
+                reg_list = list(qs)
+                matched_ids = {reg.id for reg in reg_list}
+                updated_ids = [reg_id for reg_id in ids if reg_id in matched_ids]
                 if 'undo' in request.POST:
-                    ids = [int(id) for id in selected_enrollments.split(',')]
-                    qs = StudentRegistration.objects.filter(id__in=ids).select_related(
-                        'user', 'section', 'section__parent_class')
-                    reg_list = list(qs)
-                    qs.update(end_date=None)
-                    logger.info("Unexpired student registrations: %s", ids)
+                    if reg_list:
+                        qs.update(end_date=None)
+                    logger.info("Unexpired student registrations: %s", updated_ids)
                     for reg in reg_list:
                         signals.post_save.send(sender=StudentRegistration, instance=reg)
 
@@ -107,13 +141,10 @@ class UnenrollModule(ProgramModuleObj):
 
                     context['undo'] = True
                 else:
-                    ids = [int(id) for id in selected_enrollments.split(',')]
                     now = datetime.datetime.now()
-                    qs = StudentRegistration.objects.filter(id__in=ids).select_related(
-                        'user', 'section', 'section__parent_class')
-                    reg_list = list(qs)
-                    qs.update(end_date=now)
-                    logger.info("Expired student registrations: %s", ids)
+                    if reg_list:
+                        qs.update(end_date=now)
+                    logger.info("Expired student registrations: %s", updated_ids)
                     for reg in reg_list:
                         signals.post_save.send(sender=StudentRegistration, instance=reg)
 
@@ -139,7 +170,7 @@ class UnenrollModule(ProgramModuleObj):
                                 relationship__name='Enrolled',
                         ).exists():
                             remove_list_member(program_list, users_by_id[user_id].email)
-                context['ids'] = ids
+                context['ids'] = updated_ids
                 return render_to_response(
                     self.baseDir()+'result.html', request, context)
 

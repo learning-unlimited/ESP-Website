@@ -1,9 +1,11 @@
+from datetime import datetime
 import json
 import random
 
-from esp.program.models import ClassSection, StudentRegistration
+from esp.program.models import ClassSection, RegistrationType, StudentRegistration
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
+from esp.tests.factories import make_class, make_program
 from esp.users.models import ESPUser, Record, RecordType
 
 class UnenrollModuleTest(ProgramFrameworkTest):
@@ -194,3 +196,160 @@ class UnenrollModuleTest(ProgramFrameworkTest):
             'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
         ))
         self.assertEqual(regs_before, regs_after)
+
+    def test_comma_only_selection(self):
+        """Verify that comma/whitespace-only selected_enrollments is treated as empty without altering registrations."""
+        self.client.login(username='admin', password='password')
+        regs_before = list(StudentRegistration.objects.all().values(
+            'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
+        ))
+
+        for raw in (',', ',,, ', ' , , '):
+            r = self.client.post(
+                '/onsite/' + self.program.url + '/unenroll_students',
+                {'selected_enrollments': raw}
+            )
+            self.assertEqual(r.status_code, 200)
+            self.assertContains(r, "Select Students to Unenroll")
+            self.assertContains(r, "No enrollments selected.")
+
+        regs_after = list(StudentRegistration.objects.all().values(
+            'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
+        ))
+        self.assertEqual(regs_before, regs_after)
+
+    def test_trailing_comma_and_whitespace_sanitized(self):
+        """Verify that trailing commas, empty tokens, and whitespace around valid IDs succeed for unenroll and undo."""
+        self.client.login(username='admin', password='password')
+        response = self.client.get('/onsite/' + self.program.url + '/unenroll_status')
+        data = json.loads(str(response.content, encoding='UTF-8'))
+        enrollment_ids = list(data['enrollments'].keys())[:2]
+        self.assertEqual(len(enrollment_ids), 2)
+
+        payload = f' , {enrollment_ids[0]} , {enrollment_ids[1]}, '
+        r = self.client.post(
+            '/onsite/' + self.program.url + '/unenroll_students',
+            {'selected_enrollments': payload}
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'Expired 2 student registrations')
+        self.assertContains(r, f'value="{",".join(enrollment_ids)}"')
+
+        enrollments = StudentRegistration.objects.filter(id__in=enrollment_ids)
+        self.assertFalse(enrollments.filter(StudentRegistration.is_valid_qobject()).exists())
+
+        r_undo = self.client.post(
+            '/onsite/' + self.program.url + '/unenroll_students',
+            {'selected_enrollments': payload, 'undo': ''}
+        )
+        self.assertEqual(r_undo.status_code, 200)
+        self.assertContains(r_undo, 'Unexpired 2 student registrations')
+        self.assertEqual(
+            enrollments.filter(StudentRegistration.is_valid_qobject()).count(),
+            2
+        )
+
+    def test_malformed_and_out_of_range_selection(self):
+        """Verify that non-integer or out-of-range IDs return a validation error without mutating registrations."""
+        self.client.login(username='admin', password='password')
+        response = self.client.get('/onsite/' + self.program.url + '/unenroll_status')
+        data = json.loads(str(response.content, encoding='UTF-8'))
+        valid_id = next(iter(data['enrollments'].keys()))
+
+        regs_before = list(StudentRegistration.objects.all().values(
+            'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
+        ))
+
+        bad_inputs = [
+            'abc',
+            f'{valid_id},abc',
+            f'{valid_id}, 1.5',
+            '-1',
+            '0',
+            '1_0',
+            '99999999999999999999',
+        ]
+        for bad in bad_inputs:
+            for extra in ({}, {'undo': ''}):
+                r = self.client.post(
+                    '/onsite/' + self.program.url + '/unenroll_students',
+                    {'selected_enrollments': bad, **extra}
+                )
+                self.assertEqual(r.status_code, 200)
+                self.assertContains(r, "Select Students to Unenroll")
+                self.assertContains(r, "Invalid enrollment selection.")
+
+        regs_after = list(StudentRegistration.objects.all().values(
+            'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
+        ))
+        self.assertEqual(regs_before, regs_after)
+
+    def test_unenroll_and_undo_scoped_to_program(self):
+        """Verify that unenroll_students cannot expire or unexpire registrations from another program."""
+        other_program = make_program(
+            program_type='OtherProgram',
+            instance_name='2223_Fall',
+            instance_label='Fall 2223',
+            start_time=datetime(2223, 7, 7, 7, 5),
+            admins=[self.admin],
+            categories=self.categories,
+        )
+        other_cls = make_class(
+            other_program,
+            self.teachers[0],
+            title='Other Program Class',
+            accept=True,
+        )
+        other_section = other_cls.get_sections().first()
+        enrolled_rt = RegistrationType.objects.get(name='Enrolled')
+        other_reg = StudentRegistration.objects.create(
+            user=self.students[0],
+            section=other_section,
+            relationship=enrolled_rt,
+        )
+
+        own_reg = StudentRegistration.valid_objects().filter(
+            section__parent_class__parent_program=self.program,
+            relationship=enrolled_rt,
+        ).first()
+        self.assertIsNotNone(own_reg)
+
+        self.client.login(username='admin', password='password')
+
+        # Foreign-only ID should expire 0 registrations and leave other_reg active
+        r_foreign = self.client.post(
+            '/onsite/' + self.program.url + '/unenroll_students',
+            {'selected_enrollments': str(other_reg.id)}
+        )
+        self.assertEqual(r_foreign.status_code, 200)
+        self.assertContains(r_foreign, 'Expired 0 student registrations')
+        self.assertContains(r_foreign, 'value=""')
+        other_reg.refresh_from_db()
+        self.assertIsNone(other_reg.end_date)
+
+        # Mixed own + foreign IDs should only expire own_reg
+        r_mixed = self.client.post(
+            '/onsite/' + self.program.url + '/unenroll_students',
+            {'selected_enrollments': f'{own_reg.id},{other_reg.id}'}
+        )
+        self.assertEqual(r_mixed.status_code, 200)
+        self.assertContains(r_mixed, 'Expired 1 student registrations')
+        self.assertContains(r_mixed, f'value="{own_reg.id}"')
+        own_reg.refresh_from_db()
+        other_reg.refresh_from_db()
+        self.assertIsNotNone(own_reg.end_date)
+        self.assertIsNone(other_reg.end_date)
+
+        # Undo with mixed own + foreign IDs should only unexpire own_reg
+        frozen_end = datetime(2223, 1, 1, 12, 0)
+        StudentRegistration.objects.filter(id=other_reg.id).update(end_date=frozen_end)
+        r_undo = self.client.post(
+            '/onsite/' + self.program.url + '/unenroll_students',
+            {'selected_enrollments': f'{own_reg.id},{other_reg.id}', 'undo': ''}
+        )
+        self.assertEqual(r_undo.status_code, 200)
+        self.assertContains(r_undo, 'Unexpired 1 student registrations')
+        own_reg.refresh_from_db()
+        other_reg.refresh_from_db()
+        self.assertIsNone(own_reg.end_date)
+        self.assertEqual(other_reg.end_date, frozen_end)
