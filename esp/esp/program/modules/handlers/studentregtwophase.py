@@ -408,14 +408,16 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 continue
 
             cls_id = int(cls_id)
+            # A class can have several sections starting in the same
+            # timeblock, but a priority is stored on a single section.  Use
+            # an approved section if there is one, and the lowest id
+            # otherwise, so the choice is deterministic.
             sec = ClassSection.objects.annotate(Min('meeting_times__start'))
-            try:
-                sec = sec.get(parent_class=cls_id,
-                              parent_class__parent_program=prog,
-                              meeting_times__start__min=timeslot.start)
-            except (ClassSection.DoesNotExist,
-                    ClassSection.MultipleObjectsReturned):
-                # XXX: what if a class has multiple sections in a timeblock?
+            sec = sec.filter(parent_class=cls_id,
+                             parent_class__parent_program=prog,
+                             meeting_times__start__min=timeslot.start)
+            sec = sec.order_by('-status', 'id').first()
+            if sec is None:
                 logger.warning("Could not save priority for class %s in "
                                "timeblock %s", cls_id, timeslot_id)
                 continue
