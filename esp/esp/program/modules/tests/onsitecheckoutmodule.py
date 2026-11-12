@@ -2,6 +2,8 @@
 Unit tests for OnSiteCheckoutModule (onsitecheckoutmodule.py).
 
 """
+from unittest.mock import patch
+
 from esp.program.modules.tests.support import ModuleHandlerTestMixin
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import Record, RecordType
@@ -67,12 +69,122 @@ class OnSiteCheckoutModuleTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         })
         self.assertEqual(response.status_code, 200)
         self.assertIn('checkout_all_message', response.context)
+        self.assertEqual(
+            response.context['checkout_all_message'],
+            'Successfully checked out 2 students',
+        )
+        self.assertEqual(
+            Record.objects.filter(event=self.checkout_rt, program=self.program).count(),
+            2,
+        )
         for student in self.students[:2]:
-            self.assertTrue(
+            self.assertEqual(
+                Record.objects.filter(
+                    user=student, event=self.checkout_rt, program=self.program
+                ).count(),
+                1,
+            )
+        for student in self.students[2:]:
+            self.assertFalse(
                 Record.objects.filter(
                     user=student, event=self.checkout_rt, program=self.program
                 ).exists()
             )
+
+    def test_checkout_all_zero_students(self):
+        self.login_as('admin')
+        response = self.client.post(self._url(), {
+            'checkoutall': '1',
+            'confirm': '1',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('checkout_all_message', response.context)
+        self.assertEqual(
+            response.context['checkout_all_message'],
+            'Successfully checked out 0 students',
+        )
+        self.assertEqual(
+            Record.objects.filter(event=self.checkout_rt, program=self.program).count(),
+            0,
+        )
+
+    def test_checkout_all_single_student(self):
+        self._check_in(self.students[0])
+        self.login_as('admin')
+        response = self.client.post(self._url(), {
+            'checkoutall': '1',
+            'confirm': '1',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('checkout_all_message', response.context)
+        self.assertEqual(
+            response.context['checkout_all_message'],
+            'Successfully checked out 1 student',
+        )
+        self.assertEqual(
+            Record.objects.filter(event=self.checkout_rt, program=self.program).count(),
+            1,
+        )
+
+    def test_checkout_all_excludes_already_checked_out(self):
+        self._check_in(self.students[0])
+        self._check_in(self.students[1])
+        # Student 1 is already checked out beforehand
+        Record.objects.create(
+            user=self.students[1], event=self.checkout_rt, program=self.program
+        )
+        self.login_as('admin')
+        response = self.client.post(self._url(), {
+            'checkoutall': '1',
+            'confirm': '1',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context['checkout_all_message'],
+            'Successfully checked out 1 student',
+        )
+        # Student 0 received exactly 1 checkout record
+        self.assertEqual(
+            Record.objects.filter(
+                user=self.students[0], event=self.checkout_rt, program=self.program
+            ).count(),
+            1,
+        )
+        # Student 1 was already checked out; no duplicate record was created
+        self.assertEqual(
+            Record.objects.filter(
+                user=self.students[1], event=self.checkout_rt, program=self.program
+            ).count(),
+            1,
+        )
+
+    def test_checkout_all_atomic_rollback_on_error(self):
+        for student in self.students[:2]:
+            self._check_in(student)
+        self.login_as('admin')
+
+        original_create = Record.objects.create
+        call_count = 0
+
+        def failing_create(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 2:
+                raise RuntimeError("Simulated DB error during checkout")
+            return original_create(*args, **kwargs)
+
+        with patch.object(Record.objects, 'create', side_effect=failing_create):
+            with self.assertRaises(RuntimeError):
+                self.client.post(self._url(), {
+                    'checkoutall': '1',
+                    'confirm': '1',
+                })
+
+        # Due to transaction.atomic, no checkout records should remain from the failed batch
+        self.assertEqual(
+            Record.objects.filter(event=self.checkout_rt, program=self.program).count(),
+            0,
+        )
 
     def test_invalid_user_raises_error(self):
         self.login_as('admin')

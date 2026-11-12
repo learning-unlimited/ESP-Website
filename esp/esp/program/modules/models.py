@@ -110,4 +110,4 @@ def install(model=None):
 
     updateModules(table_data, overwriteExisting=True, deleteExtra=True, model=model)
 
-from esp.program.modules.module_ext import *
+from esp.program.modules.program_settings import *

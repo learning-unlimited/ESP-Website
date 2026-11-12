@@ -1,12 +1,15 @@
 from __future__ import absolute_import
 
+import functools
 import json
 from unittest.mock import patch
 
 from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.test.client import Client
 
+from esp.db.autocomplete import allow_non_staff_autocomplete
+from esp.db.views import autocomplete_wrapper
 from esp.users.models import ESPUser, K12School
 
 
@@ -285,6 +288,27 @@ class AutocompleteNonStaffAccessTest(TestCase):
         self.non_staff.save()
         self.client.login(username='regular_user', password='pw')
 
+        student_group, _ = Group.objects.get_or_create(name='Student')
+        teacher_group, _ = Group.objects.get_or_create(name='Teacher')
+
+        # Records the staff-only ESPUser autocompletes can actually return, so that a
+        # gating regression shows up as leaked results rather than an empty query.
+        self.student = ESPUser.objects.create_user(
+            username='gatetest_student', email='gs@x.com', password='pw',
+            first_name='Gate', last_name='Gatetest'
+        )
+        self.student.groups.add(student_group)
+        self.teacher = ESPUser.objects.create_user(
+            username='gatetest_teacher', email='gt@x.com', password='pw',
+            first_name='Gate', last_name='Gatetest'
+        )
+        self.teacher.groups.add(teacher_group)
+        self.staff = ESPUser.objects.create_user(
+            username='gatetest_staff', email='gst@x.com', password='pw'
+        )
+        self.staff.is_staff = True
+        self.staff.save()
+
         K12School.objects.get_or_create(name='Test Academy')
 
     def test_non_staff_cannot_search_espuser(self):
@@ -300,11 +324,26 @@ class AutocompleteNonStaffAccessTest(TestCase):
         self.assertEqual(data['result'], [],
                          "Non-staff users must not be able to search ESPUser records")
 
+    def test_non_staff_can_search_real_k12school(self):
+        """The real K12School.ajax_autocomplete carries the marker, unpatched."""
+        response = self.client.get(AUTOCOMPLETE_URL, {
+            'model_module': 'esp.users.models',
+            'model_name': 'K12School',
+            'ajax_data': 'Test',
+            'prog': '',
+        })
+        self.assertEqual(response.status_code, 200)
+        ids = [r['id'] for r in json.loads(response.content)['result']]
+        self.assertIn(
+            K12School.objects.get(name='Test Academy').id, ids,
+            "K12School.ajax_autocomplete must stay opted in for non-staff users")
+
     def test_non_staff_can_search_k12school(self):
-        """A non-staff user can search K12School (allow_non_staff=True)."""
+        """A non-staff user can search K12School (@allow_non_staff_autocomplete)."""
         original_ajax = K12School.ajax_autocomplete.__func__
 
         @classmethod
+        @allow_non_staff_autocomplete
         def patched_ajax(cls, data, allow_non_staff=True, **kwargs):
             # Forward any additional kwargs so the test reflects production semantics
             return original_ajax(cls, data, allow_non_staff=allow_non_staff, **kwargs)
@@ -322,3 +361,115 @@ class AutocompleteNonStaffAccessTest(TestCase):
         ids = [r['id'] for r in data['result']]
         school = K12School.objects.get(name='Test Academy')
         self.assertIn(school.id, ids)
+
+    def _search_espuser(self, ajax_func):
+        response = self.client.get(AUTOCOMPLETE_URL, {
+            'model_module': 'esp.users.models',
+            'model_name': 'ESPUser',
+            'ajax_func': ajax_func,
+            'ajax_data': 'Gatetest',
+            'prog': '',
+        })
+        self.assertEqual(response.status_code, 200)
+        return json.loads(response.content)['result']
+
+    def test_non_staff_cannot_search_espuser_via_kwargs_only_funcs(self):
+        """Accepting **kwargs is not an opt-in to non-staff access."""
+        for ajax_func in ('ajax_autocomplete_student', 'ajax_autocomplete_teacher'):
+            with self.subTest(ajax_func=ajax_func):
+                self.assertEqual(
+                    self._search_espuser(ajax_func), [],
+                    "%s takes **kwargs but is staff-only; non-staff users must "
+                    "not receive results from it" % ajax_func)
+
+    def test_staff_can_search_espuser_via_kwargs_only_funcs(self):
+        """Control: the records the test above must not leak are findable by staff."""
+        self.client.login(username='gatetest_staff', password='pw')
+        for ajax_func, user in (('ajax_autocomplete_student', self.student),
+                                ('ajax_autocomplete_teacher', self.teacher)):
+            with self.subTest(ajax_func=ajax_func):
+                ids = [r['id'] for r in self._search_espuser(ajax_func)]
+                self.assertIn(user.id, ids)
+
+
+class AutocompleteWrapperGatingTest(SimpleTestCase):
+    """Non-staff access is granted by @allow_non_staff_autocomplete and nothing else."""
+
+    def test_marked_function_opts_in(self):
+        """The decorator is the opt-in."""
+        @allow_non_staff_autocomplete
+        def ajax_autocomplete(data):
+            return ['called']
+
+        self.assertEqual(
+            autocomplete_wrapper(ajax_autocomplete, 'q', False), ['called'])
+
+    def test_marker_survives_classmethod_binding(self):
+        """The K12School shape: the marker is readable through the bound method."""
+        class Model(object):
+            @classmethod
+            @allow_non_staff_autocomplete
+            def ajax_autocomplete(cls, data, **kwargs):
+                return ['called']
+
+        self.assertEqual(
+            autocomplete_wrapper(Model.ajax_autocomplete, 'q', False), ['called'])
+
+    def test_marker_survives_decoration(self):
+        """functools.wraps copies __dict__, so a wrapped autocomplete stays marked."""
+        @allow_non_staff_autocomplete
+        def ajax_autocomplete(data):
+            return ['called']
+
+        @functools.wraps(ajax_autocomplete)
+        def wrapper(*args, **kwargs):
+            return ajax_autocomplete(*args, **kwargs)
+
+        self.assertEqual(autocomplete_wrapper(wrapper, 'q', False), ['called'])
+
+    def test_unmarked_function_is_denied(self):
+        """Without the marker non-staff get nothing, but staff still get through."""
+        def ajax_autocomplete(data, **kwargs):
+            return ['called']
+
+        self.assertEqual(autocomplete_wrapper(ajax_autocomplete, 'q', False), [])
+        self.assertEqual(
+            autocomplete_wrapper(ajax_autocomplete, 'q', True), ['called'])
+
+    def test_parameter_name_alone_does_not_opt_in(self):
+        """Declaring an allow_non_staff parameter is not an opt-in."""
+        def ajax_autocomplete(data, allow_non_staff=True):
+            return ['called']
+
+        self.assertEqual(autocomplete_wrapper(ajax_autocomplete, 'q', False), [])
+
+    def test_marked_callable_without_signature_opts_in(self):
+        """The marker is read as an attribute, so signatures need not be readable."""
+        class Uninspectable(object):
+            # Mirrors a C builtin, for which inspect.signature raises.
+            __signature__ = 'not a signature'
+            allow_non_staff = True
+
+            def __call__(self, data, **kwargs):
+                return ['called']
+
+        self.assertEqual(
+            autocomplete_wrapper(Uninspectable(), 'q', False), ['called'])
+
+    def test_request_is_only_passed_when_accepted(self):
+        """request is dropped for callees that do not declare it."""
+        @allow_non_staff_autocomplete
+        def wants_request(data, request=None, **kwargs):
+            return ['got request'] if request is not None else ['no request']
+
+        @allow_non_staff_autocomplete
+        def no_request(data, **kwargs):
+            return sorted(kwargs)
+
+        sentinel = object()
+        self.assertEqual(
+            autocomplete_wrapper(wants_request, 'q', False, request=sentinel),
+            ['got request'])
+        self.assertEqual(
+            autocomplete_wrapper(no_request, 'q', False, request=sentinel, prog=None),
+            ['prog'])

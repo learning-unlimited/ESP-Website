@@ -41,6 +41,7 @@ from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, need
 from esp.program.models import ClassFlag, ClassFlagType
 from esp.program.forms import ClassFlagForm
 from esp.users.models import ESPUser
+from esp.utils.ids import filter_by_id
 
 import json
 import logging
@@ -117,7 +118,7 @@ class ClassFlagModule(ProgramModuleObj):
         '''Given a post request, take extra as the id of the flag, update its comment using the post data, and return its new detail display.'''
         if not extra or request.method != 'POST' or 'comment' not in request.POST:
             return HttpResponseBadRequest('')
-        flag = ClassFlag.objects.filter(id=extra, subject__parent_program=prog).first()
+        flag = filter_by_id(ClassFlag.objects, extra, subject__parent_program=prog).first()
         if flag is None:
             return HttpResponseBadRequest('')
         flag.comment = request.POST['comment']
@@ -161,7 +162,7 @@ class ClassFlagModule(ProgramModuleObj):
         '''Given a post request with the ID, delete the flag.'''
         if request.method != 'POST' or 'id' not in request.POST:
             return HttpResponseBadRequest('')
-        flag = ClassFlag.objects.filter(id=request.POST['id'], subject__parent_program=prog).first()
+        flag = filter_by_id(ClassFlag.objects, request.POST['id'], subject__parent_program=prog).first()
         if flag is None:
             return HttpResponseBadRequest('')
         flag.delete()
@@ -180,7 +181,7 @@ class ClassFlagModule(ProgramModuleObj):
         action = request.POST.get('action', '')
         if action not in ('resolve', 'unresolve'):
             return HttpResponseBadRequest('')
-        flag = ClassFlag.objects.filter(id=extra, subject__parent_program=prog).first()
+        flag = filter_by_id(ClassFlag.objects, extra, subject__parent_program=prog).first()
         if flag is None:
             return HttpResponseBadRequest('')
         want_resolved = (action == 'resolve')

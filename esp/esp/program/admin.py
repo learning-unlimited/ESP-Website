@@ -386,12 +386,13 @@ admin_site.register(StudentAppResponse, Admin_StudentAppResponse)
 class Admin_StudentAppReview(admin.ModelAdmin):
     list_display = (
         'reviewer',
+        'class_subject',
         'date',
         'score',
         'comments',
     )
     search_fields = default_user_search('reviewer')
-    list_filter = ('date',)
+    list_filter = ('date', 'class_subject__parent_program')
 admin_site.register(StudentAppReview, Admin_StudentAppReview)
 
 class ClassFlagTypeAdmin(admin.ModelAdmin):

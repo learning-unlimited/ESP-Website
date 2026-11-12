@@ -82,6 +82,15 @@ class PageTest(TestCase):
         self.assertStringContains(str(response.content, encoding='UTF-8'), "<html")
         self.assertNotStringContains(str(response.content, encoding='UTF-8'), "You're seeing this error because you have <code>DEBUG = True</code>")
 
+    def testSectionIndexRedirects(self):
+        """ Bare section URLs, which the default homepage links to, redirect to their index pages """
+        c = Client()
+        for section in ('learn', 'teach', 'volunteer'):
+            for path in (f'/{section}', f'/{section}/'):
+                response = c.get(path)
+                self.assertEqual(response.status_code, 301)
+                self.assertEqual(response['Location'], f'/{section}/index.html')
+
 class NavbarTest(TestCase):
 
     def get_navbar_titles(self, path='/'):

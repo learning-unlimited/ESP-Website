@@ -27,15 +27,15 @@ Surveys for students and teachers can be associated with {{ program.program_type
 	</div>
 	<div class="button_wrapper">
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/surveys/manage"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/surveys/manage" class="module_link_large">
                 <div class="module_link_main"><i class="bi bi-list-task"></i> Create a new survey</div>
-            </button></a>
+            </a>
         </div>
 		<div class="module_button">
 			{% if surveys %}
-			<a href="/manage/{{ program.getUrlBase }}/surveys/review"><button type="button" class="module_link_large">
+			<a href="/manage/{{ program.getUrlBase }}/surveys/review" class="module_link_large">
 				<div class="module_link_main"><i class="bi bi-bar-chart"></i> Review all survey results</div>
-			</button></a>
+			</a>
 			{% else %}
 			<button type="button" class="module_link_large_dead" title="No surveys have been created for this program!">
 				<div class="module_link_main"><i class="bi bi-bar-chart"></i> Review all survey results</div>
@@ -44,9 +44,9 @@ Surveys for students and teachers can be associated with {{ program.program_type
         </div>
 		<div class="module_button">
 			{% if surveys %}
-			<a href="/manage/{{ program.getUrlBase }}/surveys/review_pdf"><button type="button" class="module_link_large">
+			<a href="/manage/{{ program.getUrlBase }}/surveys/review_pdf" class="module_link_large">
 				<div class="module_link_main"><i class="bi bi-file-earmark"></i> Review all survey results (PDF format)</div>
-			</button></a>
+			</a>
 			{% else %}
 			<button type="button" class="module_link_large_dead" title="No surveys have been created for this program!">
 				<div class="module_link_main"><i class="bi bi-file-earmark"></i> Review all survey results (PDF format)</div>
@@ -55,9 +55,9 @@ Surveys for students and teachers can be associated with {{ program.program_type
         </div>
 		<div class="module_button">
 			{% if surveys %}
-			<a href="/manage/{{ program.getUrlBase }}/surveys/dump"><button type="button" class="module_link_large">
+			<a href="/manage/{{ program.getUrlBase }}/surveys/dump" class="module_link_large">
 				<div class="module_link_main"><i class="bi bi-card-list"></i> Export all survey results (XLS format)</div>
-			</button></a>
+			</a>
 			{% else %}
 			<button type="button" class="module_link_large_dead" title="No surveys have been created for this program!">
 				<div class="module_link_main"><i class="bi bi-card-list"></i> Export all survey results (XLS format)</div>
@@ -66,9 +66,9 @@ Surveys for students and teachers can be associated with {{ program.program_type
         </div>
 		<div class="module_button">
 			{% if surveys %}
-			<a href="/manage/{{ program.getUrlBase }}/surveys/top_classes"><button type="button" class="module_link_large">
+			<a href="/manage/{{ program.getUrlBase }}/surveys/top_classes" class="module_link_large">
 				<div class="module_link_main"><i class="bi bi-heart"></i> List the favorite classes</div>
-			</button></a>
+			</a>
 			{% else %}
 			<button type="button" class="module_link_large_dead"  title="No surveys have been created for this program!">
 				<div class="module_link_main"><i class="bi bi-heart"></i> List the favorite classes</div>

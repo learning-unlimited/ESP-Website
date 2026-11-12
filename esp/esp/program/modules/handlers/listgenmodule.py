@@ -326,7 +326,10 @@ class ListGenModule(ProgramModuleObj):
 
         if filterObj is None:
             if 'filterid' in request.GET:
-                filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+                try:
+                    filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+                except (PersistentQueryFilter.DoesNotExist, ValueError):
+                    raise ESPError('The specified filter no longer exists or is invalid. Please restart the process.', log=False)
             else:
                 raise ESPError('Could not determine the query filter ID.', log=False)
 

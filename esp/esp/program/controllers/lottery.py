@@ -451,8 +451,19 @@ class LotteryAssignmentController(object):
             #   capacity of the section, with the students' weight values serving as the probability
             #   distribution to draw from.
             weights = self.student_weights[candidate_students]
-            weights /= numpy.sum(weights)
-            selected_students = numpy.random.choice(candidate_students, num_spaces, replace=False, p=weights)
+            positive = weights > 0
+            if numpy.count_nonzero(positive) >= num_spaces:
+                #   Enough students have non-zero weight for a weighted draw without replacement.
+                weights = weights / numpy.sum(weights)
+                selected_students = numpy.random.choice(candidate_students, num_spaces, replace=False, p=weights)
+            else:
+                #   Too few non-zero weights for numpy.random.choice(replace=False, p=...), which would
+                #   raise ValueError (or produce NaNs if all weights are zero).  Take every student with
+                #   positive weight, then fill the remaining spaces uniformly from the rest.
+                guaranteed = candidate_students[positive]
+                remaining = candidate_students[~positive]
+                filler = numpy.random.choice(remaining, num_spaces - guaranteed.shape[0], replace=False)
+                selected_students = numpy.concatenate([guaranteed, filler])
             section_filled = True
 
         #   Update student section assignments
@@ -698,9 +709,17 @@ class LotteryAssignmentController(object):
         else:
             stats['overall_interest_ratio'] = 'NA'
 
+        section_enrollments = numpy.sum(self.student_sections, 0)
+        stats['section_enrollments'] = section_enrollments
         stats['num_registrations'] = numpy.sum(self.student_sections)
-        stats['num_full_classes'] = numpy.sum(self.section_capacities == numpy.sum(self.student_sections, 0))
+        stats['num_empty_classes'] = numpy.sum(section_enrollments == 0)
+        stats['num_enrolled_classes'] = numpy.sum(section_enrollments > 0)
+        stats['num_full_classes'] = numpy.sum((self.section_capacities > 0) & (section_enrollments >= self.section_capacities))
         stats['total_spaces'] = numpy.sum(self.section_capacities)
+        if stats['total_spaces'] > 0:
+            stats['overall_capacity_ratio'] = float(stats['num_registrations']) / stats['total_spaces']
+        else:
+            stats['overall_capacity_ratio'] = 'NA'
 
         #   Timeslot-based metrics
         stats['timeslots_filled'] = numpy.sum(self.student_schedules, axis=1)
@@ -786,6 +805,7 @@ class LotteryAssignmentController(object):
             """
 
     def extract_stats(self, stats):
+        """ Format computed lottery statistics into labeled sections for display. """
         sections = []
 
         distribution = []
@@ -797,7 +817,10 @@ class LotteryAssignmentController(object):
             f'{stats["num_lottery_students"]:6d} students applied to the lottery',
             f'{stats["num_enrolled_students"]:6d} students were enrolled in at least 1 class',
             f'{stats["num_registrations"]:6d} total enrollments',
+            f'{stats["total_spaces"]:6d} total available spaces',
             f'{stats["num_sections"]:6d} available sections',
+            f'{stats["num_enrolled_classes"]:6d} sections had at least 1 student enrolled',
+            f'{stats["num_empty_classes"]:6d} sections were empty',
             f'{stats["num_full_classes"]:6d} sections were filled to capacity',
         ]))
 
@@ -818,6 +841,11 @@ class LotteryAssignmentController(object):
             ratios.append('NA%% of interested classes were enrolled')
         else:
             ratios.append(f'{stats["overall_interest_ratio"] * 100.0:2.2f}% of interested classes were enrolled')
+
+        if stats['overall_capacity_ratio'] == 'NA':
+            ratios.append('NA% of available spaces were filled')
+        else:
+            ratios.append(f'{stats["overall_capacity_ratio"] * 100.0:2.2f}% of available spaces were filled')
         sections.append(('ratios', ratios))
 
         return sections

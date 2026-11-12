@@ -39,6 +39,7 @@ from esp.program.models          import ClassSubject
 from esp.users.models            import ESPUser
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.web               import render_to_response
+from esp.utils.ids import get_by_id_or_404
 
 class TeacherPreviewModule(ProgramModuleObj):
     doc = """This program module allows teachers to view classes already added to the program.
@@ -63,7 +64,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
+                teacher = get_by_id_or_404(ESPUser, request.GET['user'])
             else:
                 teacher = request.user
             scheditems = []
@@ -98,7 +99,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
+                teacher = get_by_id_or_404(ESPUser, request.GET['user'])
             else:
                 teacher = request.user
             scheditems = []
@@ -138,7 +139,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
+                teacher = get_by_id_or_404(ESPUser, request.GET['user'])
             else:
                 teacher = request.user
             scheditems = []
@@ -179,7 +180,11 @@ class TeacherPreviewModule(ProgramModuleObj):
             cls = qs[0]
         except (ValueError, IndexError, TypeError):
             raise Http404('The requested class could not be found.')
-        cls = ClassSubject.objects.catalog(cls.parent_program, force_all=True, initial_queryset=qs)[0]
+        #   make sure the class is actually catalog-visible
+        catalog_entries = ClassSubject.objects.catalog(cls.parent_program, force_all=True, initial_queryset=qs)
+        if not catalog_entries:
+            raise Http404('The requested class is not catalog-visible.')
+        cls = catalog_entries[0]
         return render_to_response(self.baseDir()+'catalogpreview.html', request, {'class': cls})
 
     def get_handouts(self):
@@ -190,8 +195,9 @@ class TeacherPreviewModule(ProgramModuleObj):
         else:
             return {}
 
-    def prepare(self, context={}):
-        if context is None: context = {}
+    def prepare(self, context=None):
+        if context is None:
+            context = {}
 
         classes = ClassSubject.objects.catalog(self.program, None, True)
 

@@ -3,42 +3,40 @@
 {% block content %}
 
   {% block heading %}
-    <div class="row" style="margin-top: 20px;">
-      <div class="col-md-12">
-        <div class="well">
-          <h1>New Site</h1>
-          <h3>You've just set up a Web site for {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}!</h3>
-          <a href="{% url 'themes_landing' %}" class="btn btn-lg w-100 btn-primary" style="width: 75%; font-size: 1.5em;">
-            Configure site appearance
-          </a>
-        </div>
+    <div class="card text-center mt-4 mb-4">
+      <div class="card-body p-4">
+        <h1 class="card-title">New Site</h1>
+        <p class="card-text fs-5 mb-4">You've just set up a Web site for {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}!</p>
+        <a href="{% url 'themes_landing' %}" class="btn btn-primary btn-lg">Configure site appearance</a>
       </div>
     </div>
   {% endblock heading %}
 
   {% load render_qsd %}
 
+  {# d-flex rather than .row: bootstrap_initial.css (BS2) overrides .row's #}
+  {# left margin, which pulls a grid row out of alignment on this shell.   #}
   {% inline_qsd_block "homepage_qsdpart" %}
-    <div class="row" style="margin-top:30px; text-align:center;">
+    <div class="d-flex flex-column flex-md-row gap-3 text-center">
 
-      <div class="col-md-4">
-        <div class="well" style="padding:30px; min-height:160px;">
-          <a href="{% url 'qsd_page' url='learn/index' %}"><h2>Learn</h2></a>
-          <p>Edit this page to serve as a starting point for your students.</p>
+      <div class="card flex-fill w-100">
+        <div class="card-body p-4">
+          <h2 class="card-title h4"><a href="{% url 'qsd_page' url='learn/index' %}">Learn</a></h2>
+          <p class="card-text">Edit this page to serve as a starting point for your students.</p>
         </div>
       </div>
 
-      <div class="col-md-4">
-        <div class="well" style="padding:30px; min-height:160px;">
-          <a href="{% url 'qsd_page' url='teach/index' %}"><h2>Teach</h2></a>
-          <p>Edit this page to serve as a starting point for your teachers.</p>
+      <div class="card flex-fill w-100">
+        <div class="card-body p-4">
+          <h2 class="card-title h4"><a href="{% url 'qsd_page' url='teach/index' %}">Teach</a></h2>
+          <p class="card-text">Edit this page to serve as a starting point for your teachers.</p>
         </div>
       </div>
 
-      <div class="col-md-4">
-        <div class="well" style="padding:30px; min-height:160px;">
-          <a href="{% url 'qsd_page' url='volunteer/index' %}"><h2>Volunteer</h2></a>
-          <p>Edit this page to serve as a starting point for your volunteers.</p>
+      <div class="card flex-fill w-100">
+        <div class="card-body p-4">
+          <h2 class="card-title h4"><a href="{% url 'qsd_page' url='volunteer/index' %}">Volunteer</a></h2>
+          <p class="card-text">Edit this page to serve as a starting point for your volunteers.</p>
         </div>
       </div>
 

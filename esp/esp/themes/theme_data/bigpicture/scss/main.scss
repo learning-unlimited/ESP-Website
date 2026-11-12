@@ -19,7 +19,9 @@
         font-weight: normal;
         margin-bottom: 0.3em;
     }
-    a {
+    /*  Anchors rendered as buttons keep their button colours; :where()
+        means the exclusions add no specificity. */
+    a:where(:not(.btn, .module_link_large, .link_button)) {
         @if not $bootswatch-active { color: $accent2; }
         text-decoration: underline;
     }
@@ -332,6 +334,25 @@ div.navbar-collapse.collapse {
         font-family: inherit;
         font-size: 1em;
         line-height: normal;
+    }
+}
+
+//  On phones the login bar sits above the header instead of floating over the
+//  logo, and the header drops its wide desktop spacing.
+@media (max-width: 767px) {
+    .navbar {
+        position: static;
+        display: block;
+    }
+    .jumbotron {
+        padding-left: min(#{$jumbotronPaddingHorizontal}, 16px);
+        padding-right: min(#{$jumbotronPaddingHorizontal}, 16px);
+    }
+    .header-cell {
+        display: block;
+    }
+    .logo {
+        margin-right: 0;
     }
 }
 
