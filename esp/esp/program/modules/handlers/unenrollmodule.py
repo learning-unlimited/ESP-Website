@@ -64,7 +64,10 @@ def _parse_enrollment_ids(raw):
             continue
         if not (token.isascii() and token.isdigit()):
             return [], True
-        pk = int(token)
+        try:
+            pk = int(token)
+        except ValueError:
+            return [], True
         if pk < 1 or pk > _MAX_INT32:
             return [], True
         if pk not in seen:

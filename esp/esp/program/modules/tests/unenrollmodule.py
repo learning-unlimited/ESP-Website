@@ -268,6 +268,7 @@ class UnenrollModuleTest(ProgramFrameworkTest):
             '0',
             '1_0',
             '99999999999999999999',
+            '9' * 5000,
         ]
         for bad in bad_inputs:
             for extra in ({}, {'undo': ''}):
