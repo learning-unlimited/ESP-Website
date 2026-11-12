@@ -32,9 +32,11 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from datetime import datetime
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.tests.support import ProgramManagerTestHelper
-from esp.program.modules.program_settings import AJAXChangeLog
+from esp.program.modules.program_settings import AJAXChangeLog, AJAXSectionDetail
+from esp.tests.factories import make_class, make_program
 import json
 import time
 
@@ -244,3 +246,297 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         res = moduleobj.prepare(empty_ctx)
         self.assertIs(res, empty_ctx)
         self.assertEqual(res['schedulingmodule'], moduleobj)
+
+    def _create_other_program_section(self):
+        """Create a separate program with its own scheduled section for scoping tests."""
+        other_program = make_program(
+            program_type='OtherProgram',
+            instance_name='2223_Fall',
+            instance_label='Fall 2223',
+            start_time=datetime(2223, 7, 7, 7, 5),
+            num_timeslots=4,
+            timeslot_length=50,
+            timeslot_gap=10,
+            num_rooms=2,
+            admins=[self.admins[0]],
+            categories=self.categories,
+        )
+        other_cls = make_class(
+            other_program,
+            self.teachers[0],
+            title='Other Program Class',
+            duration=1.83,
+            accept=True,
+        )
+        other_sec = other_cls.get_sections().first()
+        other_times = list(other_program.getTimeSlots().order_by('start')[:2])
+        other_room = other_program.getClassrooms(other_times[0]).first()
+        other_sec.assign_meeting_times(other_times)
+        ok, _ = other_sec.assign_room(other_room, clear_others=True)
+        self.assertTrue(ok)
+        return other_program, other_sec, other_times, other_room
+
+    def test_cross_program_scoping(self):
+        """Verify AjaxSchedulingModule endpoints reject sections and timeslots from other programs."""
+        self.clearScheduleAvailability()
+        other_program, other_sec, other_times, _ = self._create_other_program_section()
+        own_sec = self.teachers[0].getTaughtSections(self.program)[0]
+        own_times = list(self.timeslots.order_by('start')[:2])
+        own_room = self.rooms[0].identical_resources().filter(event=own_times[0]).first()
+
+        # Schedule own_sec so we can verify atomic swap failure does not unschedule it
+        r_sched = self.client.post(
+            self.schedule_class_url,
+            {
+                'action': 'assignreg',
+                'cls': own_sec.id,
+                'block_room_assignments': '\n'.join(
+                    f'{ts.id},{own_room.identical_id()}' for ts in own_times
+                ),
+                'override': 'false',
+            },
+        )
+        self.assertTrue(json.loads(r_sched.content)['ret'])
+        initial_changelog_count = self.changelog.entries.count()
+
+        # 1. deletereg against foreign section is rejected
+        r_del = self.client.post(
+            self.schedule_class_url,
+            {'action': 'deletereg', 'cls': other_sec.id},
+        )
+        self.assertEqual(r_del.status_code, 200)
+        self.assertFalse(json.loads(r_del.content)['ret'])
+        self.assertEqual(set(other_sec.get_meeting_times()), set(other_times))
+        self.assertTrue(other_sec.classrooms().exists())
+
+        # 2. assignreg against foreign section is rejected
+        r_assign = self.client.post(
+            self.schedule_class_url,
+            {
+                'action': 'assignreg',
+                'cls': other_sec.id,
+                'block_room_assignments': f'{own_times[0].id},{own_room.identical_id()}',
+                'override': 'true',
+            },
+        )
+        self.assertEqual(r_assign.status_code, 200)
+        self.assertFalse(json.loads(r_assign.content)['ret'])
+        self.assertEqual(set(other_sec.get_meeting_times()), set(other_times))
+
+        # 3. assignreg with foreign timeslots against own section is rejected
+        unscheduled_sec = self.teachers[0].getTaughtSections(self.program)[1]
+        r_foreign_ts = self.client.post(
+            self.schedule_class_url,
+            {
+                'action': 'assignreg',
+                'cls': unscheduled_sec.id,
+                'block_room_assignments': '\n'.join(
+                    f'{ts.id},{own_room.identical_id()}' for ts in other_times
+                ),
+                'override': 'true',
+            },
+        )
+        self.assertEqual(r_foreign_ts.status_code, 200)
+        self.assertFalse(json.loads(r_foreign_ts.content)['ret'])
+        self.assertFalse(unscheduled_sec.get_meeting_times().exists())
+
+        # 4. swap mixing own + foreign section rejects before mutating own_sec
+        r_swap = self.client.post(
+            self.schedule_class_url,
+            {
+                'action': 'swap',
+                'assignments': json.dumps([
+                    {'section': own_sec.id, 'timeslots': [], 'room_id': None},
+                    {'section': other_sec.id, 'timeslots': [], 'room_id': None},
+                ]),
+                'override': 'true',
+            },
+        )
+        self.assertEqual(r_swap.status_code, 200)
+        self.assertFalse(json.loads(r_swap.content)['ret'])
+        self.assertEqual(set(own_sec.get_meeting_times()), set(own_times))
+        self.assertEqual(set(other_sec.get_meeting_times()), set(other_times))
+
+        # 5. ajax_assign_moderator assignmod / removemod against foreign section is rejected
+        mod_url = self.ajax_url_base + 'ajax_assign_moderator'
+        mod_user = self.teachers[1]
+        r_mod_add = self.client.post(
+            mod_url,
+            {'action': 'assignmod', 'sec': other_sec.id, 'mod': mod_user.id, 'override': 'true'},
+        )
+        self.assertEqual(r_mod_add.status_code, 200)
+        self.assertFalse(json.loads(r_mod_add.content)['ret'])
+        self.assertFalse(other_sec.moderators.filter(id=mod_user.id).exists())
+
+        other_sec.moderators.add(mod_user)
+        r_mod_rem = self.client.post(
+            mod_url,
+            {'action': 'removemod', 'sec': other_sec.id, 'mod': mod_user.id},
+        )
+        self.assertEqual(r_mod_rem.status_code, 200)
+        self.assertFalse(json.loads(r_mod_rem.content)['ret'])
+        self.assertTrue(other_sec.moderators.filter(id=mod_user.id).exists())
+
+        # 6. ajax_set_comment against foreign section is rejected and does not alter other program detail
+        other_detail = AJAXSectionDetail()
+        other_detail.initialize(other_program, other_sec.id, 'Original', False)
+        comment_url = self.ajax_url_base + 'ajax_set_comment'
+        r_comment = self.client.post(
+            comment_url,
+            {'cls': other_sec.id, 'comment': 'Tampered', 'locked': 'yes'},
+        )
+        self.assertEqual(r_comment.status_code, 200)
+        self.assertFalse(json.loads(r_comment.content)['ret'])
+        other_detail.refresh_from_db()
+        self.assertEqual(other_detail.comment, 'Original')
+        self.assertFalse(other_detail.locked)
+        self.assertFalse(AJAXSectionDetail.objects.filter(program=self.program, cls_id=other_sec.id).exists())
+
+        # Verify none of the rejected cross-program calls wrote to self.program's changelog
+        self.assertEqual(self.changelog.entries.count(), initial_changelog_count)
+
+    def test_invalid_and_missing_inputs_do_not_crash(self):
+        """Verify missing, malformed, and out-of-range inputs return JSON errors without HTTP 500."""
+        self.clearScheduleAvailability()
+        own_sec = self.teachers[0].getTaughtSections(self.program)[0]
+        other_sec = self.teachers[1].getTaughtSections(self.program)[0]
+        times = list(self.timeslots.order_by('start'))
+        room0 = self.rooms[0].identical_resources().filter(event=times[0]).first()
+        room1 = self.rooms.exclude(name=room0.name).first().identical_resources().filter(event=times[0]).first()
+
+        # Trailing newlines in block_room_assignments should succeed cleanly
+        r_trailing = self.client.post(
+            self.schedule_class_url,
+            {
+                'action': 'assignreg',
+                'cls': own_sec.id,
+                'block_room_assignments': '\n'.join(
+                    f'{ts.id},{room0.identical_id()}' for ts in times[:2]
+                ) + '\n\n',
+            },
+        )
+        self.assertEqual(r_trailing.status_code, 200)
+        self.assertTrue(json.loads(r_trailing.content)['ret'])
+
+        # Valid swap should succeed cleanly
+        r_swap_ok = self.client.post(
+            self.schedule_class_url,
+            {
+                'action': 'swap',
+                'assignments': json.dumps([
+                    {'section': own_sec.id, 'timeslots': [t.id for t in times[2:4]], 'room_id': room1.identical_id()},
+                    {'section': other_sec.id, 'timeslots': [t.id for t in times[0:2]], 'room_id': room0.identical_id()},
+                ]),
+                'override': 'false',
+            },
+        )
+        self.assertEqual(r_swap_ok.status_code, 200)
+        self.assertTrue(json.loads(r_swap_ok.content)['ret'])
+
+        bad_ids = [None, '', 'abc', '0', '-1', '999999', '99999999999999999999', '9' * 5000]
+        for bad in bad_ids:
+            payload_del = {'action': 'deletereg'}
+            if bad is not None:
+                payload_del['cls'] = bad
+            r = self.client.post(self.schedule_class_url, payload_del)
+            self.assertEqual(r.status_code, 200)
+            self.assertFalse(json.loads(r.content)['ret'])
+
+            payload_assign = {'action': 'assignreg', 'block_room_assignments': f'{times[0].id},{room0.identical_id()}'}
+            if bad is not None:
+                payload_assign['cls'] = bad
+            r = self.client.post(self.schedule_class_url, payload_assign)
+            self.assertEqual(r.status_code, 200)
+            self.assertFalse(json.loads(r.content)['ret'])
+
+        # Malformed block_room_assignments
+        for bad_block in (None, '', 'not_a_pair', 'abc,123', '123,abc', f'{times[0].id},99999999999999999999'):
+            payload = {'action': 'assignreg', 'cls': own_sec.id}
+            if bad_block is not None:
+                payload['block_room_assignments'] = bad_block
+            r = self.client.post(self.schedule_class_url, payload)
+            self.assertEqual(r.status_code, 200)
+            self.assertFalse(json.loads(r.content)['ret'])
+
+        # Malformed swap payloads
+        for bad_swap in (
+            None,
+            '',
+            '{bad_json',
+            '{}',
+            '[123]',
+            json.dumps([{'section': 'abc'}]),
+            json.dumps([{'section': own_sec.id, 'timeslots': ['abc'], 'room_id': room0.identical_id()}]),
+            json.dumps([{'section': own_sec.id, 'timeslots': [times[0].id], 'room_id': 'bad'}]),
+        ):
+            payload = {'action': 'swap'}
+            if bad_swap is not None:
+                payload['assignments'] = bad_swap
+            r = self.client.post(self.schedule_class_url, payload)
+            self.assertEqual(r.status_code, 200)
+            self.assertFalse(json.loads(r.content)['ret'])
+
+        # Moderator endpoint invalid/missing inputs
+        mod_url = self.ajax_url_base + 'ajax_assign_moderator'
+        for bad in bad_ids:
+            payload_sec = {'action': 'assignmod', 'mod': self.teachers[0].id}
+            if bad is not None:
+                payload_sec['sec'] = bad
+            r = self.client.post(mod_url, payload_sec)
+            self.assertEqual(r.status_code, 200)
+            self.assertFalse(json.loads(r.content)['ret'])
+
+            payload_mod = {'action': 'assignmod', 'sec': own_sec.id}
+            if bad is not None:
+                payload_mod['mod'] = bad
+            r = self.client.post(mod_url, payload_mod)
+            self.assertEqual(r.status_code, 200)
+            self.assertFalse(json.loads(r.content)['ret'])
+
+        r_bad_act = self.client.post(mod_url, {'action': 'unknown'})
+        self.assertEqual(r_bad_act.status_code, 200)
+        self.assertFalse(json.loads(r_bad_act.content)['ret'])
+
+        # Valid assignmod and removemod
+        mod_user = self.teachers[2]
+        r_mod_ok = self.client.post(
+            mod_url,
+            {'action': 'assignmod', 'sec': own_sec.id, 'mod': mod_user.id, 'override': 'true'},
+        )
+        self.assertEqual(r_mod_ok.status_code, 200)
+        self.assertTrue(json.loads(r_mod_ok.content)['ret'])
+        self.assertTrue(own_sec.moderators.filter(id=mod_user.id).exists())
+
+        r_mod_rem_ok = self.client.post(
+            mod_url,
+            {'action': 'removemod', 'sec': own_sec.id, 'mod': mod_user.id},
+        )
+        self.assertEqual(r_mod_rem_ok.status_code, 200)
+        self.assertTrue(json.loads(r_mod_rem_ok.content)['ret'])
+        self.assertFalse(own_sec.moderators.filter(id=mod_user.id).exists())
+
+        # Comment endpoint invalid/missing inputs and valid update
+        comment_url = self.ajax_url_base + 'ajax_set_comment'
+        for bad in bad_ids:
+            payload = {'comment': 'hello'}
+            if bad is not None:
+                payload['cls'] = bad
+            r = self.client.post(comment_url, payload)
+            self.assertEqual(r.status_code, 200)
+            self.assertFalse(json.loads(r.content)['ret'])
+
+        r_comment_ok = self.client.post(
+            comment_url,
+            {'cls': own_sec.id, 'comment': 'Valid note', 'locked': 'yes'},
+        )
+        self.assertEqual(r_comment_ok.status_code, 200)
+        self.assertTrue(json.loads(r_comment_ok.content)['ret'])
+        detail = AJAXSectionDetail.objects.get(program=self.program, cls_id=own_sec.id)
+        self.assertEqual(detail.comment, 'Valid note')
+        self.assertTrue(detail.locked)
+
+        # Changelog invalid last_fetched_index
+        for bad_idx in (None, 'abc', '99999999999999999999'):
+            params = {} if bad_idx is None else {'last_fetched_index': bad_idx}
+            r_log = self.client.get(self.changelog_url, params)
+            self.assertEqual(r_log.status_code, 200)

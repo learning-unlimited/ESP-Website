@@ -50,6 +50,41 @@ from esp.utils.decorators        import json_response
 import json
 import time
 
+_MAX_INT32 = 2**31 - 1
+
+
+def _parse_pos_int32(value):
+    """Return a positive 32-bit integer from value, or None if invalid or out of range."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        pk = value
+    elif isinstance(value, str):
+        token = value.strip()
+        if not (token.isascii() and token.isdigit()):
+            return None
+        try:
+            pk = int(token)
+        except ValueError:
+            return None
+    else:
+        return None
+    if pk < 1 or pk > _MAX_INT32:
+        return None
+    return pk
+
+
+def _get_program_section(prog, raw_id):
+    """Return the ClassSection matching raw_id within prog, or None if invalid or foreign."""
+    sec_id = _parse_pos_int32(raw_id)
+    if sec_id is None:
+        return None
+    return ClassSection.objects.filter(
+        id=sec_id,
+        parent_class__parent_program=prog,
+    ).first()
+
+
 class AJAXSchedulingModule(ProgramModuleObj):
     doc = """Provides an application to use for scheduling classes."""
 
@@ -128,6 +163,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return response
 
     def ajax_schedule_deletereg(self, prog, cls, user=None):
+        if cls is None or cls.parent_class.parent_program_id != prog.id:
+            return self.makeret(prog, ret=False, msg="Class section not found in this program.")
         cls.clearRooms()
         cls.clear_meeting_times()
         self.get_change_log(prog).appendScheduling([], "", int(cls.id), user)
@@ -135,19 +172,30 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return self.makeret(prog, ret=True, msg="Schedule removed for Class Section '%s'" % cls.emailcode())
 
     def ajax_schedule_assignreg(self, prog, cls, timeslot_ids, classroom_ids, user=None, override=False):
+        if cls is None or cls.parent_class.parent_program_id != prog.id:
+            return self.makeret(prog, ret=False, msg="Class section not found in this program.")
+
         if len(timeslot_ids) < 1:
             return self.makeret(prog, ret=False, msg="No times specified!, can't assign to a timeblock")
 
         if len(classroom_ids) < 1:
             return self.makeret(prog, ret=False, msg="No classrooms specified!, can't assign to a timeblock")
 
-        basic_cls = classroom_ids[0]
-        for c in classroom_ids:
+        parsed_timeslot_ids = [_parse_pos_int32(ts_id) for ts_id in timeslot_ids]
+        if any(ts_id is None for ts_id in parsed_timeslot_ids):
+            return self.makeret(prog, ret=False, msg="Specified Events not found in the database")
+
+        parsed_classroom_ids = [_parse_pos_int32(c_id) for c_id in classroom_ids]
+        if any(c_id is None for c_id in parsed_classroom_ids):
+            return self.makeret(prog, ret=False, msg="Specified Classrooms not found in the database")
+
+        basic_cls = parsed_classroom_ids[0]
+        for c in parsed_classroom_ids:
             if c != basic_cls:
                 return self.makeret(prog, ret=False, msg="Assigning one section to multiple rooms.  This interface doesn't support this feature currently; assign it to one room for now and poke a Webmin to do this for you manually.")
 
-        times = Event.objects.filter(id__in=timeslot_ids).order_by('start')
-        if len(times) < 1:
+        times = Event.objects.filter(id__in=parsed_timeslot_ids, program=prog).order_by('start')
+        if len(times) < 1 or len(times) != len(set(parsed_timeslot_ids)):
             return self.makeret(prog, ret=False, msg="Specified Events not found in the database")
 
         classrooms = Resource.objects.filter(id=basic_cls, res_type__name="Classroom")
@@ -170,24 +218,45 @@ class AJAXSchedulingModule(ProgramModuleObj):
             return self.makeret(prog, ret=False, msg=" | ".join(errors))
 
         #add things to the change log here
-        self.get_change_log(prog).appendScheduling([int(t.id) for t in times], classroom_ids[0], int(cls.id), user)
+        self.get_change_log(prog).appendScheduling([int(t.id) for t in times], basic_cls, int(cls.id), user)
 
         return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
 
     def ajax_schedule_swap(self, prog, assignments, user=None, override=False):
         # assignments: the list of new assignments for the section(s) in json format
-        # Unschedule all of the section(s)
+        if not isinstance(assignments, list):
+            return self.makeret(prog, ret=False, msg="Assignments must be a list.")
+
+        validated = []
         for asmt in assignments:
-            cls = ClassSection.objects.get(id=asmt['section'])
+            if not isinstance(asmt, dict):
+                return self.makeret(prog, ret=False, msg="Invalid assignment entry.")
+            cls = _get_program_section(prog, asmt.get('section'))
+            if cls is None:
+                return self.makeret(prog, ret=False, msg="Class section not found in this program.")
+            room_id = asmt.get('room_id')
+            if room_id:
+                parsed_room = _parse_pos_int32(room_id)
+                raw_timeslots = asmt.get('timeslots')
+                if parsed_room is None or not isinstance(raw_timeslots, list) or not raw_timeslots:
+                    return self.makeret(prog, ret=False, msg="Invalid assignment entry.")
+                parsed_timeslots = [_parse_pos_int32(ts) for ts in raw_timeslots]
+                if any(ts is None for ts in parsed_timeslots):
+                    return self.makeret(prog, ret=False, msg="Invalid assignment entry.")
+                validated.append((cls, parsed_room, parsed_timeslots))
+            else:
+                validated.append((cls, None, []))
+
+        # Unschedule all of the section(s)
+        for cls, _, _ in validated:
             retval = self.ajax_schedule_deletereg(prog, cls, user)
             if not json.loads(retval.content)['ret']:
                 return retval
 
         # Reschedule all of the section(s)
-        for asmt in assignments:
-            if asmt['room_id']:
-                cls = ClassSection.objects.get(id=asmt['section'])
-                retval = self.ajax_schedule_assignreg(prog, cls, asmt['timeslots'], [asmt['room_id']], user, override)
+        for cls, room_id, timeslots in validated:
+            if room_id is not None:
+                retval = self.ajax_schedule_assignreg(prog, cls, timeslots, [room_id], user, override)
                 if not json.loads(retval.content)['ret']:
                     return retval
 
@@ -198,7 +267,12 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @json_response()
     def ajax_change_log(self, request, tl, one, two, module, extra, prog):
         cl = self.get_change_log(prog)
-        last_fetched_index = int(request.GET['last_fetched_index'])
+        try:
+            last_fetched_index = int(request.GET.get('last_fetched_index', 0))
+        except (ValueError, TypeError):
+            last_fetched_index = 0
+        if last_fetched_index < -_MAX_INT32 - 1 or last_fetched_index > _MAX_INT32:
+            last_fetched_index = 0
 
         #check whether we have a log entry at least as old as the last fetched time
         #if not, we return a command to reload instead of the log
@@ -255,26 +329,41 @@ class AJAXSchedulingModule(ProgramModuleObj):
         action = request.POST['action']
 
         if action == 'deletereg':
-            cls_id = request.POST['cls']
-            cls = ClassSection.objects.get(id=cls_id)
-            times = []
-            classrooms = [ None ]
-            retval =  self.ajax_schedule_deletereg(prog, cls, request.user)
+            cls = _get_program_section(prog, request.POST.get('cls'))
+            if cls is None:
+                return self.makeret(prog, ret=False, msg="Class section not found in this program.")
+            retval = self.ajax_schedule_deletereg(prog, cls, request.user)
         elif action == 'assignreg':
-            cls_id = request.POST['cls']
-            cls = ClassSection.objects.get(id=cls_id)
-            blockrooms = request.POST['block_room_assignments'].split("\n")
+            cls = _get_program_section(prog, request.POST.get('cls'))
+            if cls is None:
+                return self.makeret(prog, ret=False, msg="Class section not found in this program.")
+            raw_assignments = request.POST.get('block_room_assignments', '')
             times = []
             classrooms = []
-            for br in blockrooms:
+            for br in raw_assignments.splitlines():
+                br = br.strip()
+                if not br:
+                    continue
+                if ',' not in br:
+                    return self.makeret(prog, ret=False, msg="Invalid block room assignment.")
                 timeslot, classroom = br.split(",", 1)
-                times.append(timeslot)
-                classrooms.append(classroom)
-            override = request.POST['override'] == "true"
+                ts_id = _parse_pos_int32(timeslot)
+                room_id = _parse_pos_int32(classroom)
+                if ts_id is None or room_id is None:
+                    return self.makeret(prog, ret=False, msg="Invalid block room assignment.")
+                times.append(ts_id)
+                classrooms.append(room_id)
+            override = request.POST.get('override') == "true"
             retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user, override)
         elif action == 'swap':
-            assignments = json.loads(request.POST['assignments'])
-            override = request.POST['override'] == "true"
+            raw_assignments = request.POST.get('assignments')
+            if not raw_assignments:
+                return self.makeret(prog, ret=False, msg="No assignments specified.")
+            try:
+                assignments = json.loads(raw_assignments)
+            except (ValueError, TypeError):
+                return self.makeret(prog, ret=False, msg="Invalid assignments JSON.")
+            override = request.POST.get('override') == "true"
             retval = self.ajax_schedule_swap(prog, assignments, request.user, override)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
@@ -286,53 +375,63 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_assign_moderator(self, request, tl, one, two, module, extra, prog):
         # DON'T CACHE this function!
         # It's supposed to have side effects, that's the whole point!
-        if not 'action' in request.POST:
+        if 'action' not in request.POST:
             raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
 
-        # Pull relevant data out of the JSON structure
-        sec_id = request.POST['sec']
-        sec = ClassSection.objects.get(id=sec_id)
-        mod_id = request.POST['mod']
-        mod = ESPUser.objects.get(id=mod_id)
         action = request.POST['action']
+        if action not in ('removemod', 'assignmod'):
+            return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
+
+        # Pull relevant data out of the JSON structure
+        sec = _get_program_section(prog, request.POST.get('sec'))
+        if sec is None:
+            return self.makeret(prog, ret=False, msg="Class section not found in this program.")
+
+        mod_id = _parse_pos_int32(request.POST.get('mod'))
+        mod = ESPUser.objects.filter(id=mod_id).first() if mod_id is not None else None
+        if mod is None:
+            return self.makeret(prog, ret=False, msg="Moderator not found.")
 
         if action == 'removemod':
             sec.moderators.remove(mod)
-            self.get_change_log(prog).appendModerator(mod_id, sec_id, False, request.user)
+            self.get_change_log(prog).appendModerator(mod.id, sec.id, False, request.user)
             return self.makeret(prog, ret=True, msg=f"Moderator '{mod.name()}' removed from Class Section '{sec.emailcode()}'")
-        elif action == 'assignmod':
-            override = request.POST['override'] == "true"
+        else:
+            override = request.POST.get('override') == "true"
             if not override:
                 # check availability
-                avail_times = [time.id for time in mod.getAvailableTimes(prog)]
-                for time in sec.meeting_times.all():
-                    if time.id not in avail_times:
+                avail_times = [t.id for t in mod.getAvailableTimes(prog)]
+                for t in sec.meeting_times.all():
+                    if t.id not in avail_times:
                         return self.makeret(prog, ret=False, msg=f"Moderator '{mod.name()}' is not available to moderate Class Section '{sec.emailcode()}'")
             sec.moderators.add(mod)
-            self.get_change_log(prog).appendModerator(mod_id, sec_id, True, request.user)
+            self.get_change_log(prog).appendModerator(mod.id, sec.id, True, request.user)
             return self.makeret(prog, ret=True, msg=f"Moderator '{mod.name()}' assigned to Class Section '{sec.emailcode()}'")
-        else:
-            return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 
     @aux_call
     @needs_admin
     def ajax_set_comment(self, request, tl, one, two, module, extra, prog):
-        if not 'comment' in request.POST:
+        if 'comment' not in request.POST:
             raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
 
         # Pull relevant data out of the JSON structure
-        cls_id = request.POST['cls']
+        cls = _get_program_section(prog, request.POST.get('cls'))
+        if cls is None:
+            return self.makeret(prog, ret=False, msg="Class section not found in this program.")
         comment = request.POST['comment']
         locked = 'locked' in request.POST
 
-        try:
-            program_settings.AJAXSectionDetail.objects.get(cls_id=cls_id).update(comment, locked)
-        except program_settings.AJAXSectionDetail.DoesNotExist:
-            sectionDetail = program_settings.AJAXSectionDetail()
-            sectionDetail.initialize(prog, cls_id, comment, locked)
+        section_detail = program_settings.AJAXSectionDetail.objects.filter(
+            program=prog, cls_id=cls.id
+        ).first()
+        if section_detail is not None:
+            section_detail.update(comment, locked)
+        else:
+            section_detail = program_settings.AJAXSectionDetail()
+            section_detail.initialize(prog, cls.id, comment, locked)
 
-        self.get_change_log(prog).appendComment(comment, locked, cls_id, request.user)
-        return self.makeret(prog, ret=True, msg="Class Section #%s successfully updated" % cls_id)
+        self.get_change_log(prog).appendComment(comment, locked, cls.id, request.user)
+        return self.makeret(prog, ret=True, msg="Class Section #%s successfully updated" % cls.id)
 
     @aux_call
     @needs_admin
