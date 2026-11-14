@@ -2491,3 +2491,13 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
             'count1': '2.6',
             'groups': ('Student', 'BulkAccountGroup')
         })
+
+
+class SubmitTransactionRequiresPostTest(TestCase):
+    # From LU #4855: a GET (e.g. a crawler) must not log a postback, which
+    # would be listed as a failed payment and emailed to treasury
+    def test_get_returns_405(self):
+        from esp.accounting.models import CybersourcePostback
+        response = self.client.get('/manage/submit_transaction/')
+        self.assertEqual(response.status_code, 405)
+        self.assertFalse(CybersourcePostback.objects.exists())
