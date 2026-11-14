@@ -1028,3 +1028,106 @@ class HTMLCommentSanitizationTest(TestCase):
         result = markdown(content)
         self.assertIsNotNone(result)
         self.assertEqual(str(result).count("<!--"), 1)
+
+
+class QSDEditNavCategoryTest(TestCase):
+    """Tests for nav_category validation and fallback in qsd edit POST (#6273)."""
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='qsd_nav_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        self.client.login(username='qsd_nav_admin', password='password')
+
+        self.default_cat, _ = NavBarCategory.objects.get_or_create(
+            name='default', defaults={'long_explanation': ''})
+        self.other_cat = NavBarCategory.objects.create(
+            name='other_nav_cat', long_explanation='')
+
+        self.qsd_rec = QuasiStaticData.objects.create(
+            url='learn/navtest',
+            name='learn:navtest',
+            author=self.admin,
+            nav_category=self.default_cat,
+            content='Original content',
+            title='Original Title',
+            description='',
+            keywords='',
+        )
+
+    def test_edit_non_numeric_nav_category_returns_404(self):
+        """A non-numeric nav_category returns 404 without modifying the QSD."""
+        response = self.client.post('/learn/navtest.edit.html', {
+            'post_edit': '1',
+            'nav_category': 'abc',
+            'content': 'Updated content',
+            'title': 'Updated Title',
+            'description': '',
+            'keywords': '',
+        })
+        self.assertEqual(response.status_code, 404)
+        self.qsd_rec.refresh_from_db()
+        self.assertEqual(self.qsd_rec.content, 'Original content')
+
+    def test_edit_unknown_nav_category_returns_404(self):
+        """A non-existent nav_category ID returns 404 without modifying the QSD."""
+        response = self.client.post('/learn/navtest.edit.html', {
+            'post_edit': '1',
+            'nav_category': '999999',
+            'content': 'Updated content',
+            'title': 'Updated Title',
+            'description': '',
+            'keywords': '',
+        })
+        self.assertEqual(response.status_code, 404)
+        self.qsd_rec.refresh_from_db()
+        self.assertEqual(self.qsd_rec.content, 'Original content')
+
+    def test_edit_missing_nav_category_preserves_existing_category(self):
+        """Omitting nav_category preserves the existing QSD nav_category."""
+        self.qsd_rec.nav_category = self.other_cat
+        self.qsd_rec.save()
+
+        response = self.client.post('/learn/navtest.edit.html', {
+            'post_edit': '1',
+            'content': 'Updated content',
+            'title': 'Updated Title',
+            'description': '',
+            'keywords': '',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.qsd_rec.refresh_from_db()
+        self.assertEqual(self.qsd_rec.content, 'Updated content')
+        self.assertEqual(self.qsd_rec.nav_category, self.other_cat)
+
+    def test_edit_empty_nav_category_falls_back_to_default_on_new_page(self):
+        """An empty nav_category falls back to default_navbarcategory on create."""
+        response = self.client.post('/learn/brand_new_navtest.edit.html', {
+            'post_edit': '1',
+            'nav_category': '',
+            'content': 'New content',
+            'title': 'New Title',
+            'description': '',
+            'keywords': '',
+        })
+        self.assertEqual(response.status_code, 200)
+        created = QuasiStaticData.objects.get_by_url('learn/brand_new_navtest')
+        self.assertIsNotNone(created)
+        self.assertEqual(created.content, 'New content')
+        self.assertEqual(created.nav_category, default_navbarcategory())
+
+    def test_edit_valid_nav_category_updates_category(self):
+        """A valid nav_category ID updates the QSD's nav_category."""
+        response = self.client.post('/learn/navtest.edit.html', {
+            'post_edit': '1',
+            'nav_category': str(self.other_cat.id),
+            'content': 'Updated content',
+            'title': 'Updated Title',
+            'description': '',
+            'keywords': '',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.qsd_rec.refresh_from_db()
+        self.assertEqual(self.qsd_rec.content, 'Updated content')
+        self.assertEqual(self.qsd_rec.nav_category, self.other_cat)

@@ -63,6 +63,7 @@ from django.views.decorators.http import require_POST
 
 from reversion import revisions as reversion
 
+from esp.utils.ids import get_by_id_or_404
 from esp.utils.sanitize import strip_base64_images
 from esp.utils.templatetags.markup import markdown
 
@@ -233,7 +234,13 @@ def qsd(request, url):
             messages.error(request, "Sorry, you do not have permission to edit this page.")
             return redirect('/' + base_url + '.html')
 
-        nav_category_target = NavBarCategory.objects.get(id=request.POST['nav_category'])
+        nav_category_id = request.POST.get('nav_category')
+        if nav_category_id:
+            nav_category_target = get_by_id_or_404(NavBarCategory, nav_category_id)
+        else:
+            nav_category_target = qsd_rec.nav_category or default_navbarcategory()
+            if nav_category_target is None:
+                raise Http404('Navigation category not found.')
 
         data = request.POST['content']
         if class_qsd:
