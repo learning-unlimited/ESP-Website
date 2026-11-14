@@ -393,20 +393,32 @@ class SchedulingCheckRunner:
 
     def hungry_teachers(self, ignore_open_classes=True):
         lunches = self.lunch_blocks
-        if ignore_open_classes:
-            open_class_cat = self.p.open_class_category
+        open_class_cat = self.p.open_class_category if ignore_open_classes else None
+        moderating_label = self.p.getModeratorGerund().lower()
         bads = []
         for lunch in lunches:
             if lunch:
-                q=ESPUser.objects.all()
+                # For each lunch block, find everyone teaching or moderating
+                # ("observing" at MIT) a section during it
+                busy_by_block = []
+                commitments = {}  # user id -> [(label, section), ...]
                 for block in lunch:
-                    q=q.filter(classsubject__sections__meeting_times=block)
-                for t in q.distinct():
-                    classes = [ClassSection.objects.filter(parent_class__teachers=t,meeting_times=block)[0] for block in lunch]
-                    if open_class_cat.id not in [c.category.id for c in classes]:
+                    busy = set()
+                    for sec in ClassSection.objects.filter(meeting_times=block).distinct():
+                        for label, users in (('teaching', sec.parent_class.get_teachers()),
+                                             (moderating_label, sec.get_moderators())):
+                            for user in users:
+                                busy.add(user)
+                                commitments.setdefault(user.id, []).append((label, sec))
+                    busy_by_block.append(busy)
+
+                # Hungry = busy during every lunch block of the day
+                hungry = set.intersection(*busy_by_block)
+                for t in sorted(hungry, key=lambda user: user.username):
+                    classes = commitments[t.id]
+                    if open_class_cat is None or open_class_cat.id not in [sec.category.id for label, sec in classes]:
                         #converts the list of class section objects to a single string
-                        str1 = ', '
-                        classes = str1.join([str(c) for c in classes])
+                        classes = ', '.join(['%s %s' % (label, sec) for label, sec in classes])
                         bads.append({
                             'Username': t,
                             'Teacher Name': t.name(),
@@ -414,12 +426,13 @@ class SchedulingCheckRunner:
                             })
         return self.formatter.format_table(bads,
                         {'headings': ['Username', 'Teacher Name', 'Classes over lunch']},
-                        help_text="A list of teachers scheduled to teach " +
+                        help_text="A list of teachers scheduled to teach or " +
+                        self.p.getModeratorInfinitive().lower() + " " +
                         "during all lunch blocks of any day. Requires that " +
                         "lunch blocks are set up for the program. Ignores " +
-                        "teachers who are teaching at least one " +
-                        "open class / walk-in activity during that day's " +
-                        "lunch.")
+                        "teachers who are teaching or " + moderating_label +
+                        " at least one open class / walk-in activity during " +
+                        "that day's lunch.")
 
     #for classes_by_category and capacity_by_category
     def _calculate_d_categories(self):
