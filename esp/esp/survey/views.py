@@ -213,10 +213,13 @@ def get_survey_info(request, tl, program, instance):
         #   Meerp, no problem... I took care of it.   -Michael
         surveys = prog.getSurveys().order_by('category').select_related()
         t_id = None
-        if 'teacher_id' in request.GET:
-            t_id = int( request.GET['teacher_id'] )
-        elif 'teacher_id' in request.POST:
-            t_id = int( request.POST['teacher_id'] )
+        if 'teacher_id' in request.GET or 'teacher_id' in request.POST:
+            raw_t_id = request.GET['teacher_id'] if 'teacher_id' in request.GET else request.POST['teacher_id']
+            # Ignore a malformed teacher_id, as survey_graphing does
+            try:
+                t_id = int(raw_t_id)
+            except (ValueError, TypeError):
+                t_id = None
         elif 'target_user' in request.POST:
             form = ApprovedTeacherSearchForm(request.POST)
             if form.is_valid():
