@@ -2,13 +2,11 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from reversion import revisions as reversion
 
 __all__ = ['NametagBack']
 
 
-@python_2_unicode_compatible
 class NametagBack(models.Model):
     """A program's saved design for the back of a nametag, written in LaTeX.
 

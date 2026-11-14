@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 from __future__ import division
-from django.utils.encoding import python_2_unicode_compatible
 from six.moves import map
 from six.moves import range
 from functools import reduce
@@ -77,7 +76,6 @@ from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
 
 # Create your models here.
-@python_2_unicode_compatible
 class ProgramModule(models.Model):
     """ Program Modules for a Program """
 
@@ -142,7 +140,6 @@ class ProgramModule(models.Model):
     def __str__(self):
         return '{}'.format(self.admin_title)
 
-@python_2_unicode_compatible
 class ArchiveClass(models.Model):
     """ Old classes throughout the years """
     program = models.CharField(max_length=256)
@@ -259,7 +256,6 @@ def _get_type_url(type):
 
     return _really_get_type_url
 
-@python_2_unicode_compatible
 class Program(models.Model, CustomFormsLinkModel):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     #customforms definitions
@@ -1390,7 +1386,6 @@ class Program(models.Model, CustomFormsLinkModel):
 
 Program.setup_user_filters()
 
-@python_2_unicode_compatible
 class SplashInfo(models.Model):
     """ A model that can be used to track additional student preferences specific to
         a program.  Stanford has used this for lunch selection and a sibling discount.
@@ -1451,7 +1446,6 @@ class SplashInfo(models.Model):
         super(SplashInfo, self).save()
         self.execute_sibling_discount()
 
-@python_2_unicode_compatible
 class RegistrationProfile(models.Model):
     """ A student registration form """
     user = AjaxForeignKey(ESPUser)
@@ -1679,7 +1673,6 @@ class _RollBackPreview(Exception):
     FinancialAidRequest.preview_approval_email(). """
     pass
 
-@python_2_unicode_compatible
 class FinancialAidRequest(models.Model):
     """
     Student financial Aid Request
@@ -1843,7 +1836,6 @@ def get_subclass_instance(cls, obj):
     #   If you couldn't find any, return the original object.
     return obj
 
-@python_2_unicode_compatible
 class BooleanToken(models.Model):
     """ A true/false value or Boolean operation.
         Meant to be extended to more meaningful Boolean functions operating on
@@ -1922,7 +1914,6 @@ class BooleanToken(models.Model):
         else:
             return False
 
-@python_2_unicode_compatible
 class BooleanExpression(models.Model):
     """ A combination of BooleanTokens that can be manipulated and evaluated.
         Arbitrary arguments can be supplied to the evaluate function in order
@@ -1983,7 +1974,6 @@ class BooleanExpression(models.Model):
         (value, post_stack) = BooleanToken.evaluate(stack, *args, **kwargs)
         return value
 
-@python_2_unicode_compatible
 class ScheduleMap:
     """ The schedule map is a dictionary mapping Event IDs to lists of class sections.
         It can be generated and cached for a user, then modified
@@ -2023,7 +2013,6 @@ class ScheduleMap:
     def __str__(self):
         return '%s' % self.map
 
-@python_2_unicode_compatible
 class ScheduleConstraint(models.Model):
     """ A scheduling constraint that can be tested:
         IF [condition] THEN [requirement]
@@ -2160,7 +2149,6 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
 
         return cls.objects.filter( reduce(operator.or_, q_list) )
 
-@python_2_unicode_compatible
 class VolunteerRequest(models.Model):
     program = models.ForeignKey(Program)
     timeslot = models.ForeignKey('cal.Event')
@@ -2178,7 +2166,6 @@ class VolunteerRequest(models.Model):
     def __str__(self):
         return '%s (%s)' % (self.timeslot.description, self.timeslot.short_time())
 
-@python_2_unicode_compatible
 class VolunteerOffer(models.Model):
     request = models.ForeignKey(VolunteerRequest)
     confirmed = models.BooleanField(default=False)
@@ -2217,7 +2204,6 @@ class VolunteerOffer(models.Model):
     Note: These models fit better in class_.py but cause validation errors
     due to Django's import scheme if they are placed there.
 """
-@python_2_unicode_compatible
 class RegistrationType(models.Model):
     #   The 'key' (not really the primary key since we may want duplicate names)
     name = models.CharField(max_length=32)
@@ -2266,7 +2252,6 @@ class RegistrationType(models.Model):
         else:
             return self.name
 
-@python_2_unicode_compatible
 class PhaseZeroRecord(models.Model):
     def __str__(self):
         return str(self.id)
@@ -2280,7 +2265,6 @@ class PhaseZeroRecord(models.Model):
         return ', '.join([user.username for user in self.user.all()])
     display_user.short_description = 'Username(s)'
 
-@python_2_unicode_compatible
 class ModeratorRecord(models.Model):
     def __str__(self):
         return str(self.id)
@@ -2295,7 +2279,6 @@ class ModeratorRecord(models.Model):
     class Meta:
         app_label = 'program'
 
-@python_2_unicode_compatible
 class StudentRegistration(ExpirableModel):
     """
     Model relating a student with a class section (interest, priority,
@@ -2311,7 +2294,6 @@ class StudentRegistration(ExpirableModel):
     def __str__(self):
         return '%s %s in %s' % (self.user, self.relationship, self.section)
 
-@python_2_unicode_compatible
 class StudentSubjectInterest(ExpirableModel):
     """
     Model indicating a student interest in a class section.

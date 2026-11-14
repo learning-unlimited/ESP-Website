@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
 import six
 from six.moves import range
 from six.moves import zip
@@ -114,7 +113,6 @@ def admin_required(func):
         return func(request, *args, **kwargs)
     return wrapped
 
-@python_2_unicode_compatible
 class UserAvailability(models.Model):
     user = AjaxForeignKey('ESPUser')
     event = models.ForeignKey(Event)
@@ -1417,7 +1415,6 @@ class ESPUserData(models.Model):
         db_table = 'users_espuserdata'
 
 
-@python_2_unicode_compatible
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
@@ -1588,7 +1585,6 @@ AFFILIATION_POSTDOC = 'Postdoc'
 AFFILIATION_OTHER = 'Other'
 AFFILIATION_NONE = 'None'
 
-@python_2_unicode_compatible
 class TeacherInfo(models.Model, CustomFormsLinkModel):
     """ ESP Teacher-specific contact information """
 
@@ -1706,7 +1702,6 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     class Meta:
         app_label = 'users'
 
-@python_2_unicode_compatible
 class GuardianInfo(models.Model):
     """ ES Guardian-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
@@ -1767,7 +1762,6 @@ class GuardianInfo(models.Model):
     def get_absolute_url(self):
         return self.user.get_absolute_url()
 
-@python_2_unicode_compatible
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
@@ -1845,7 +1839,6 @@ class EducatorInfo(models.Model):
     def get_absolute_url(self):
         return self.user.get_absolute_url()
 
-@python_2_unicode_compatible
 class ZipCode(models.Model):
     """ Zip Code information """
     zip_code = models.CharField(max_length=5)
@@ -1915,7 +1908,6 @@ class ZipCode(models.Model):
                                 self.latitude)
 
 
-@python_2_unicode_compatible
 class ZipCodeSearches(models.Model):
     zip_code = models.ForeignKey(ZipCode)
     distance = models.DecimalField(max_digits = 15, decimal_places = 3)
@@ -1930,7 +1922,6 @@ class ZipCodeSearches(models.Model):
         return '%s Zip Codes that are less than %s miles from %s' % \
                (len(self.zipcodes.split(',')), self.distance, self.zip_code)
 
-@python_2_unicode_compatible
 class ContactInfo(models.Model, CustomFormsLinkModel):
     """ ESP-specific contact information for (possibly) a specific user """
 
@@ -2086,7 +2077,6 @@ class K12SchoolManager(models.Manager):
     def most(self):
         return self.exclude(name='Other').order_by('name')
 
-@python_2_unicode_compatible
 class K12School(models.Model):
     """
     All the schools that we know about.
@@ -2133,7 +2123,6 @@ class K12School(models.Model):
         lst.append( (o.id, o.name + other_help_text) )
         return lst
 
-@python_2_unicode_compatible
 class PersistentQueryFilter(models.Model):
     """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and
         to pass the query along to multiple pages and retrival (et al). """
@@ -2250,7 +2239,6 @@ class PersistentQueryFilter(models.Model):
     def __str__(self):
         return str(self.useful_name) + " (" + str(self.id) + ")"
 
-@python_2_unicode_compatible
 class PasswordRecoveryTicket(models.Model):
     """ A ticket for changing your password. """
     RECOVER_KEY_LEN = 30
@@ -2336,7 +2324,6 @@ class PasswordRecoveryTicket(models.Model):
         """ Cancel all tickets belong to user. """
         PasswordRecoveryTicket.objects.filter(user=user).delete()
 
-@python_2_unicode_compatible
 class DBList(object):
     """ Useful abstraction for the list of users.
         Not meant for anything but users_get_list...
@@ -2396,7 +2383,6 @@ class DBList(object):
     def __str__(self):
         return self.key
 
-@python_2_unicode_compatible
 class RecordType(models.Model):
     name = models.CharField(max_length=80, help_text = "A unique short name for the record type", unique=True)
     description = models.CharField(max_length=255, help_text = "A unique sentence case description for the record type", unique=True)
@@ -2425,7 +2411,6 @@ class RecordType(models.Model):
     class Meta:
         app_label = 'users'
 
-@python_2_unicode_compatible
 class Record(models.Model):
     event = models.ForeignKey("RecordType", blank=True, null=True)
     program = models.ForeignKey("program.Program", blank=True, null=True)
@@ -2504,7 +2489,6 @@ def flatten(choices):
         else: l=l+flatten(x[1])
     return l
 
-@python_2_unicode_compatible
 class Permission(ExpirableModel):
 
     #a permission can be assigned to a user, or a role
@@ -2907,7 +2891,6 @@ def install():
 #   but esp.dbmail.models imports ESPUser.
 from esp.dbmail.models import send_mail
 
-@python_2_unicode_compatible
 class GradeChangeRequest(TimeStampedModel):
     """
         A grade change request is issued by a student when it is felt

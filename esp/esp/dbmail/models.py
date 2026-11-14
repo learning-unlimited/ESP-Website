@@ -1,7 +1,6 @@
 
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
 import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -174,7 +173,6 @@ _MESSAGE_CREATED_AT_HELP_TEXT = """
 """
 _MESSAGE_CREATED_AT_HELP_TEXT = re.sub(r'\s+', ' ', _MESSAGE_CREATED_AT_HELP_TEXT.strip())
 
-@python_2_unicode_compatible
 class MessageRequest(models.Model):
     """ An initial request to broadcast an email message """
 
@@ -417,7 +415,6 @@ class MessageRequest(models.Model):
 
         logger.info('Prepared emails to send for message request %d: %s', self.id, self.subject)
 
-@python_2_unicode_compatible
 class TextOfEmail(models.Model):
     """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
     messagerequest = models.ForeignKey(MessageRequest, null=True, blank=True)
@@ -513,7 +510,6 @@ class TextOfEmail(models.Model):
     class Meta:
         verbose_name_plural = 'Email texts'
 
-@python_2_unicode_compatible
 class MessageVars(models.Model):
     """ A storage of message variables for a specific message. """
     messagerequest = models.ForeignKey(MessageRequest)
@@ -579,7 +575,6 @@ class MessageVars(models.Model):
     class Meta:
         verbose_name_plural = 'Message variables'
 
-@python_2_unicode_compatible
 class EmailRequest(models.Model):
     """ Each email is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
     target = AjaxForeignKey(ESPUser)
@@ -589,7 +584,6 @@ class EmailRequest(models.Model):
     def __str__(self):
         return six.text_type(self.msgreq.subject) + ' <' + six.text_type(self.target.username) + '>'
 
-@python_2_unicode_compatible
 class EmailList(models.Model):
     """
     A list that gets handled when an email comes in to @esp.mit.edu.
@@ -630,7 +624,6 @@ class EmailList(models.Model):
     def __str__(self):
         return '%s (%s)' % (self.description, self.regex)
 
-@python_2_unicode_compatible
 class PlainRedirect(models.Model):
     """
     A simple catch-all for mail redirection.
