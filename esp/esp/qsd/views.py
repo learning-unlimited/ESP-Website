@@ -277,7 +277,7 @@ def qsd(request, url):
         }
         diff_found = False
         for field, new_value in copy_map.items():
-            if getattr(qsd_rec, field) != new_value:
+            if getattr(qsd_rec, field, None) != new_value:
                 setattr(qsd_rec, field, new_value)
                 diff_found = True
 

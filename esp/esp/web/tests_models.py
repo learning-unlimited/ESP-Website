@@ -147,6 +147,12 @@ class DefaultNavBarCategoryTest(TestCase):
         if not NavBarCategory.objects.filter(name='default').exists():
             _make_category('default')
 
+    def tearDown(self):
+        # Remove the class-level cache so later tests start without a stale default.
+        if hasattr(NavBarCategory, '_default'):
+            del NavBarCategory._default
+        super().tearDown()
+
     def test_returns_default_category(self):
         result = default_navbarcategory()
         self.assertIsNotNone(result)
