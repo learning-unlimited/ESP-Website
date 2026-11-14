@@ -866,7 +866,7 @@ class StudentRegTest(ProgramFrameworkTest):
             "not covered by financial aid, you'll need to pay for those.\n"
             "\n"
             "You already paid $80.00 before your financial aid was approved, so you're now "
-            "eligible for a refund of $70.00. If you would like us to process a refund, "
+            "eligible for a refund of $70.00. To initiate a refund, "
             "please send us an email at %s.\n"
             "\n"
             "Questions?" % (self.program.niceName(), self.program.director_email))
