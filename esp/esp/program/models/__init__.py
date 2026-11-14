@@ -1771,16 +1771,16 @@ class FinancialAidRequest(models.Model):
                 send_mail(email['subject'], email['body'], email['from'], email['to'])
             except Exception:
                 logger.exception('Failed to send financial aid approval email to user %d', self.user.id)
-            # DISABLED pending review, along with the refund paragraph in
-            # finaidapprovemodule/approval_email.txt; enable both together
-            # (and test_finaid_approved_after_payment).
-            # self._notify_treasury_if_already_paid()
+            # If they had already paid, they may now be owed a refund (the
+            # approval email tells them how to ask for one)
+            self._notify_treasury_if_already_paid()
 
     def _notify_treasury_if_already_paid(self):
-        """ (Not currently called; see approve().) If the student paid before this request was approved and has now
-        paid more than they owe, let treasury know (for information only: the
-        approval email tells the student to ask if they want a refund). Never
-        raises, since the grant is already approved. """
+        """ If the student paid before this request was approved and has now
+        paid more than they owe, let treasury know: the approval email tells
+        the student to ask if they want a refund, and they're now listed as
+        overpaid on the program's payment issues page. Never raises, since the
+        grant is already approved. """
         from esp.accounting.controllers import IndividualAccountingController
         try:
             iac = IndividualAccountingController(self.program, self.user)
@@ -1793,10 +1793,13 @@ class FinancialAidRequest(models.Model):
                       'already paying $%.2f, so they have now paid $%.2f more than they owe.\n\n'
                       'No action is needed right now. Their approval email tells them '
                       'they are eligible for a refund of $%.2f and to email %s if they '
-                      'would like one, so a refund request may follow.\n' % (
+                      'would like one, so a refund request may follow. Refund if '
+                      'they ask; once it is settled, mark it resolved on the payment '
+                      'issues page:\n\n    https://%s/manage/%s/viewpay\n' % (
                           self.user.name(), self.user.username, self.user.id,
                           self.program.niceName(), amount_paid, -amount_due,
-                          -amount_due, self.program.director_email),
+                          -amount_due, self.program.director_email,
+                          settings.DEFAULT_HOST, self.program.getUrlBase()),
                       settings.SERVER_EMAIL, [settings.DEFAULT_EMAIL_ADDRESSES['treasury']])
         except Exception:
             logger.exception('Failed to tell treasury about financial aid approved after payment for user %d', self.user.id)

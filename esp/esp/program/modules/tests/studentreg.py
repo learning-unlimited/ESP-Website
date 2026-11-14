@@ -468,7 +468,7 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertIn('$70.00', treasury[0].subject)
         self.assertEqual(treasury[0].to, [settings.DEFAULT_EMAIL_ADDRESSES['treasury']])
         self.assertIn('txn-over', treasury[0].body)
-        self.assertIn('only if they ask for a refund', treasury[0].body)
+        self.assertIn('refund the difference in CyberSource', treasury[0].body)
         self.assertIn('/manage/%s/viewpay' % self.program.getUrlBase(), treasury[0].body)
 
     def test_cybersource_exact_payment_no_notification(self):
@@ -840,20 +840,6 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertEqual(len(sent), 1)
         self.assertIn("Your grant covers the full cost of:\n", sent[0].body)
 
-    def test_finaid_approved_after_payment_notices_disabled(self):
-        """ While the refund notices are disabled, a student who paid before
-        their aid was approved gets the ordinary approval email, and treasury
-        isn't emailed. Remove this test when enabling them. """
-        iac = self._setup_shirt_program()
-        iac.set_preference('Shirt', 1)
-        iac.submit_payment(Decimal('80.00'), 'txn-before-aid')
-        body = self._approval_email_body(iac)
-        self.assertEqual(iac.amount_due(), -70)
-        self.assertNotIn('refund', body)
-        self.assertNotIn('DISABLED', body)
-        self.assertEqual(self._treasury_mail('[ESP CC]'), [])
-
-    @unittest.skip('refund notices are disabled pending review; see FinancialAidRequest.approve()')
     def test_finaid_approved_after_payment(self):
         """ A student who paid before their aid was approved is told what
         refund they can ask for, and treasury is told for information. """
@@ -888,6 +874,7 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertIn('after already paying $80.00, so they have now paid $70.00 more than they owe', treasury[0].body)
         self.assertIn('No action is needed right now.', treasury[0].body)
         self.assertIn(self.program.director_email, treasury[0].body)
+        self.assertIn('/manage/%s/viewpay' % self.program.getUrlBase(), treasury[0].body)
 
     def test_finaid_approved_after_payment_nothing_to_refund(self):
         """ No refund is mentioned, and treasury isn't emailed, when the

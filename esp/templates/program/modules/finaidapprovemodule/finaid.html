@@ -298,7 +298,8 @@ function toggle(source) {
         }
         if (data.already_paid.length) {
             html += '<br />Already paid: ' +
-                    esc(data.already_paid.join(', '));
+                    esc(data.already_paid.join(', ')) +
+                    " (their email will mention any refund they're now due)";
         }
         if (data.already_approved.length) {
             html += '<br />Skipped, already approved: ' + esc(data.already_approved.join(', '));

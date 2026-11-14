@@ -75,7 +75,7 @@ ISSUE_STEPS = {
     ],
     'overpaid': [
         'Check "What happened" above to see why: e.g. financial aid approved after they paid, a duplicate payment, or a removed item.',
-        "Refund only if the student or their family asks for one: refund the overpaid amount in CyberSource "
+        "If the student or their family asks for a refund, refund the overpaid amount in CyberSource "
         "(their transaction IDs are under their line items & payments).",
         'Mark resolved once it is settled (refunded, or they want to keep it as a donation), saying what you did. '
         'If their balance changes again later, the issue reopens.',
