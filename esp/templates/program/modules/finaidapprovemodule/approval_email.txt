@@ -13,7 +13,10 @@ Based on what you've selected so far, that's ${{ aid.amount_now|floatformat:2 }}
 {% endfor %}{% if aid.any_optional_not_covered %}You're only charged for optional items you select.
 {% endif %}{% endif %}
 {% if aid.amount_due > 0 %}Your current balance is ${{ aid.amount_due|floatformat:2 }}.{% if payment_url %} You can pay online at: {{ payment_url }}{% endif %}{% else %}You don't owe anything for {{ program.niceName }} right now.{% if aid.any_optional_not_covered %} If you select any optional items not covered by financial aid, you'll need to pay for those.{% endif %}{% endif %}
-{% if note %}
+{% comment %}DISABLED pending review: refund notice for students who paid before their aid was approved. To enable, remove this comment tag and its endcomment (and see FinancialAidRequest.approve()).
+{% if aid.refund > 0 %}
+You already paid ${{ aid.amount_paid|floatformat:2 }} before your financial aid was approved, so you're now eligible for a refund of ${{ aid.refund|floatformat:2 }}. If you would like us to process a refund, please send us an email at {{ program.director_email }}.
+{% endif %}{% endcomment %}{% if note %}
 Note from the program directors: {{ note }}
 {% endif %}
 Questions? Contact the directors at {{ program.director_email }}.

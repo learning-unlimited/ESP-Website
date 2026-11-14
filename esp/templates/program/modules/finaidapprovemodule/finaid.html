@@ -296,6 +296,10 @@ function toggle(source) {
             html += '<b>Submitting will approve ' + n + ' student' + (n === 1 ? '' : 's') +
                     ' and email each of them.</b>';
         }
+        if (data.already_paid.length) {
+            html += '<br />Already paid: ' +
+                    esc(data.already_paid.join(', '));
+        }
         if (data.already_approved.length) {
             html += '<br />Skipped, already approved: ' + esc(data.already_approved.join(', '));
         }

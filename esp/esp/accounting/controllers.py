@@ -684,6 +684,8 @@ class IndividualAccountingController(ProgramAccountingController):
         percent = grant.percent or None             # 0% adds nothing
         covered = [i for i in items if i['covered']]
         not_covered = [i for i in items if not i['covered']]
+        amount_paid = self.amount_paid()
+        amount_due = self.amount_due()
         return {
             'applies': bool(covered) and bool(dollars or percent),
             'full': percent == 100,
@@ -693,7 +695,11 @@ class IndividualAccountingController(ProgramAccountingController):
             'not_covered': not_covered,
             'any_optional_not_covered': any(not i['required'] for i in not_covered),
             'amount_now': self.amount_finaid(),
-            'amount_due': self.amount_due(),
+            'amount_due': amount_due,
+            # If the student paid before the grant was approved, they may now
+            # have paid more than they owe
+            'amount_paid': amount_paid,
+            'refund': -amount_due if (amount_paid > 0 and amount_due < 0) else Decimal('0'),
         }
 
     def amount_donation(self):

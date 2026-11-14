@@ -41,6 +41,7 @@ from esp.accounting.models import FinancialAidGrant, Transfer
 from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
 from esp.middleware import ESPError
 from esp.middleware.esperrormiddleware import ESPError_NoLog
+from django.db.models import Sum
 from django.http import HttpResponse
 from decimal import Decimal, InvalidOperation
 import json
@@ -96,6 +97,18 @@ class FinAidApproveModule(ProgramModuleObj):
                 to_approve.append(req)
         return (to_approve, already_approved, blank)
 
+    @staticmethod
+    def _already_paid(prog, reqs):
+        """ Which of these requests' students have already paid something
+        for the program, as "name ($amount)" strings in the order given. """
+        paid = dict(Transfer.objects.filter(
+            user__in=[req.user for req in reqs],
+            line_item=ProgramAccountingController(prog).default_payments_lineitemtype(),
+            source__isnull=True,
+        ).values_list('user').annotate(Sum('amount_dec')))
+        return ['%s ($%.2f)' % (req.user.name(), paid[req.user.id])
+                for req in reqs if paid.get(req.user.id, 0) > 0]
+
     @main_call
     @needs_admin
     def finaidapprove(self, request, tl, one, two, module, extra, prog):
@@ -148,6 +161,7 @@ class FinAidApproveModule(ProgramModuleObj):
             'to_approve': [{'id': req.user.id, 'name': req.user.name()} for req in to_approve],
             'already_approved': [req.user.name() for req in already_approved],
             'blank': [req.user.name() for req in blank],
+            'already_paid': self._already_paid(prog, to_approve),
             'student': None,
             'email': None,
             'error': None,

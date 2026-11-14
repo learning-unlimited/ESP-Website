@@ -48,6 +48,7 @@ from django.test import override_settings
 from django.core import mail
 from unittest import mock
 import json
+import unittest
 import random
 import re
 
@@ -833,6 +834,75 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertEqual(len(sent), 1)
         self.assertIn("Your grant covers the full cost of:\n", sent[0].body)
 
+    def test_finaid_approved_after_payment_notices_disabled(self):
+        """ While the refund notices are disabled, a student who paid before
+        their aid was approved gets the ordinary approval email, and treasury
+        isn't emailed. Remove this test when enabling them. """
+        iac = self._setup_shirt_program()
+        iac.set_preference('Shirt', 1)
+        iac.submit_payment(Decimal('80.00'), 'txn-before-aid')
+        body = self._approval_email_body(iac)
+        self.assertEqual(iac.amount_due(), -70)
+        self.assertNotIn('refund', body)
+        self.assertNotIn('DISABLED', body)
+        self.assertEqual(self._treasury_mail('[ESP CC]'), [])
+
+    @unittest.skip('refund notices are disabled pending review; see FinancialAidRequest.approve()')
+    def test_finaid_approved_after_payment(self):
+        """ A student who paid before their aid was approved is told what
+        refund they can ask for, and treasury is told for information. """
+        iac = self._setup_shirt_program()
+        iac.set_preference('Shirt', 1)
+        iac.submit_payment(Decimal('80.00'), 'txn-before-aid')
+        request = FinancialAidRequest.objects.create(user=iac.user, program=self.program)
+        refund_text = (
+            "You don't owe anything for %s right now. If you select any optional items "
+            "not covered by financial aid, you'll need to pay for those.\n"
+            "\n"
+            "You already paid $80.00 before your financial aid was approved, so you're now "
+            "eligible for a refund of $70.00. If you would like us to process a refund, "
+            "please send us an email at %s.\n"
+            "\n"
+            "Questions?" % (self.program.niceName(), self.program.director_email))
+
+        #   The preview shows the refund, and emails nobody
+        mail.outbox = []
+        self.assertIn(refund_text, request.preview_approval_email()['body'])
+        self.assertEqual(mail.outbox, [])
+
+        request.approve()
+        self.assertEqual(iac.amount_due(), -70)
+        sent = [m for m in mail.outbox if m.subject.startswith('Financial Aid Approved')]
+        self.assertEqual(len(sent), 1)
+        self.assertIn(refund_text, sent[0].body)
+        treasury = self._treasury_mail('[ESP CC] FYI: financial aid approved after payment')
+        self.assertEqual(len(treasury), 1)
+        self.assertEqual(treasury[0].to, [settings.DEFAULT_EMAIL_ADDRESSES['treasury']])
+        self.assertIn(iac.user.username, treasury[0].body)
+        self.assertIn('after already paying $80.00, so they have now paid $70.00 more than they owe', treasury[0].body)
+        self.assertIn('No action is needed right now.', treasury[0].body)
+        self.assertIn(self.program.director_email, treasury[0].body)
+
+    def test_finaid_approved_after_payment_nothing_to_refund(self):
+        """ No refund is mentioned, and treasury isn't emailed, when the
+        student hasn't paid. """
+        iac = self._setup_shirt_program()
+        body = self._approval_email_body(iac)
+        self.assertNotIn('refund', body)
+        self.assertEqual(self._treasury_mail('[ESP CC]'), [])
+
+    def test_finaid_approved_after_exact_payment(self):
+        """ Paid for the shirt only; full aid then covers admission exactly,
+        so there's nothing to refund. """
+        iac = self._setup_shirt_program()
+        iac.set_preference('Shirt', 1)
+        iac.submit_payment(Decimal('10.00'), 'txn-shirt-only', link_transfers=False)
+        body = self._approval_email_body(iac)
+        self.assertEqual(iac.amount_due(), 0)
+        self.assertNotIn('refund', body)
+        self.assertIn("You don't owe anything for %s right now." % self.program.niceName(), body)
+        self.assertEqual(self._treasury_mail('[ESP CC]'), [])
+
     def test_finaid_approval_email_preview(self):
         """ The preview is the email approve() then sends, and saves nothing. """
         iac = self._setup_shirt_program()
@@ -887,6 +957,7 @@ class StudentRegTest(ProgramFrameworkTest):
         #   Page order is newest request first
         self.assertEqual([s['id'] for s in result['to_approve']], [unpaid.id, paid.id])
         self.assertEqual((result['already_approved'], result['blank']), ([approved.name()], [blank.name()]))
+        self.assertEqual(result['already_paid'], ['%s ($70.00)' % paid.name()])
         self.assertEqual(result['student']['id'], unpaid.id)
         self.assertIn("Your grant covers the full cost of:\n", result['email']['body'])
 
