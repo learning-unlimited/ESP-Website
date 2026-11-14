@@ -38,6 +38,7 @@ from esp.program.models import PhaseZeroRecord, RegistrationProfile
 from esp.users.models import ESPUser, StudentInfo
 from esp.tagdict.models import Tag
 from django.contrib.auth.models import Group
+from django.test import RequestFactory
 from esp.users.models import Permission
 
 
@@ -231,3 +232,37 @@ class StudentRegPhaseZeroManageTest(ProgramFrameworkTest):
         self.assertEqual(stats['Invalid Grade']['in_lottery'], 1)
         self.assertEqual(stats['Invalid Grade']['num_accepted'], 1)
         self.assertEqual(stats['Invalid Grade']['per_accepted'], 100.0)
+
+    def test_add_to_existing_group_moves_student_message(self):
+        student1 = self.students[0]
+        student2 = self.students[1]
+        rec1 = PhaseZeroRecord.objects.create(program=self.program)
+        rec1.user.add(student1)
+        rec2 = PhaseZeroRecord.objects.create(program=self.program)
+        rec2.user.add(student2)
+
+        request = RequestFactory().post('/', {
+            'mode': 'addtoexisting',
+            'student_selected2': str(student1.id),
+            'student_selected3': str(student2.id),
+        })
+        request.user = self.admins[0]
+        response = self.moduleobj.phasezero(request, 'manage', 'one', 'two', None, None, self.program)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('has been moved to a different lottery group.', response.context['success'])
+
+    def test_add_to_existing_group_adds_new_student_message(self):
+        student1 = self.students[0]
+        student2 = self.students[1]
+        rec2 = PhaseZeroRecord.objects.create(program=self.program)
+        rec2.user.add(student2)
+
+        request = RequestFactory().post('/', {
+            'mode': 'addtoexisting',
+            'student_selected2': str(student1.id),
+            'student_selected3': str(student2.id),
+        })
+        request.user = self.admins[0]
+        response = self.moduleobj.phasezero(request, 'manage', 'one', 'two', None, None, self.program)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('has been added to the lottery group.', response.context['success'])

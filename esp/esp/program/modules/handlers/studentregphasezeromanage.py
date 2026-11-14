@@ -179,7 +179,8 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                             if not old_rec.user.exists():
                                 old_rec.delete()
                             context['success'] = f"{add_user.name()} has been moved to a different lottery group."
-                        context['success'] = f"{add_user.name()} has been added to the lottery group."
+                        else:
+                            context['success'] = f"{add_user.name()} has been added to the lottery group."
                     else:
                         context['error'] = f'Error - This group already contains the maximum number of students ({num_allowed_users}).'
             elif request.POST.get('mode') == 'remove':
