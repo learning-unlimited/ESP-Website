@@ -35,8 +35,31 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web       import render_to_response
-from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
-from argcache            import cache_function
+from esp.accounting.controllers import ProgramAccountingController
+from esp.accounting import payment_issues
+from esp.accounting.payment_issues import PaymentIssueError
+from esp.users.models import ESPUser
+from django.contrib import messages
+from django.http import HttpResponseRedirect
+from decimal import Decimal, InvalidOperation
+
+
+def _student(user_id):
+    try:
+        return ESPUser.objects.get(id=int(user_id))
+    except (TypeError, ValueError, ESPUser.DoesNotExist):
+        raise PaymentIssueError("That student wasn't found.")
+
+
+def _amount(value):
+    try:
+        amount = Decimal(value).quantize(Decimal('0.01'))
+    except (TypeError, InvalidOperation):
+        raise PaymentIssueError('Please enter a valid amount.')
+    if not amount.is_finite():
+        raise PaymentIssueError('Please enter a valid amount.')
+    return amount
+
 
 class CreditCardViewer(ProgramModuleObj):
     doc = """Lists the credit card payments for the program."""
@@ -54,13 +77,15 @@ class CreditCardViewer(ProgramModuleObj):
     @main_call
     @needs_admin
     def viewpay(self, request, tl, one, two, module, extra, prog):
+        if request.method == 'POST':
+            self._change_payment_issue(request, prog)
+            return HttpResponseRedirect(request.get_full_path())
+
         pac = ProgramAccountingController(prog)
         student_list = list(pac.all_students())
-        payment_table = []
-
-        #   Fetch detailed information for every student associated with the program
-        for student in student_list:
-            payment_table.append(self._payment_table_row_cached(prog, student))
+        payment_table = pac.student_payment_rows(student_list)
+        for row in payment_table:
+            row['link_amounts'] = ' '.join('%.2f' % amount for amount in payment_issues.linkable_payment_amounts(row))
 
         #   Also fetch summary information about the payments
         (num_payments, total_payment) = pac.payments_summary()
@@ -72,26 +97,49 @@ class CreditCardViewer(ProgramModuleObj):
             'num_payments': num_payments,
             'total_payment': total_payment,
         }
+        context.update(payment_issues.payment_issues(prog, payment_table))
+
+        #   Students with open issues go at the top of the table
+        payment_table.sort(key=lambda row: not row['issues'])
+        context['num_with_issues'] = sum(1 for row in payment_table if row['issues'])
 
         return render_to_response(self.baseDir() + 'viewpay.html', request, context)
 
-    @staticmethod
-    @cache_function
-    def _payment_table_row_cached(prog, student):
-        iac = IndividualAccountingController(prog, student)
-        #   Financial aid and sibling discounts are computed live rather than
-        #   read from their stored transfers (get_transfers() leaves those out),
-        #   since the stored amounts are snapshots that drift as the student's
-        #   items, prices, or grant change.
-        return (student, iac.get_transfers(), iac.amount_requested(), iac.amount_due(),
-                iac.latest_finaid_grant(), iac.amount_finaid(), iac.amount_siblingdiscount())
-    _payment_table_row_cached.__func__.depend_on_model('accounting.LineItemType')
-    _payment_table_row_cached.__func__.depend_on_model('accounting.LineItemOptions')
-    _payment_table_row_cached.__func__.depend_on_model('accounting.FinancialAidGrant')
-    _payment_table_row_cached.__func__.depend_on_model('accounting.Account')
-    _payment_table_row_cached.__func__.depend_on_model('accounting.Transfer')
-    _payment_table_row_cached.__func__.depend_on_model('program.SplashInfo')
-    _payment_table_row_cached.__func__.depend_on_model('program.Program')
+    def _change_payment_issue(self, request, prog):
+        """ Carries out a form submitted from the payment issues box (or an
+        "Add a payment" form) and queues a message saying what happened. """
+        post = request.POST
+        try:
+            if 'add_payment' in post:
+                student = _student(post.get('payment_user'))
+                amount = _amount(post.get('amount'))
+                (payment, linked) = payment_issues.record_payment(
+                    prog, student, amount, post.get('transaction_id'), request.user, post.get('note'),
+                    postback_id=post.get('postback') or None)
+                messages.success(request, 'Recorded a payment of $%.2f (transaction %s) for %s.' % (
+                    payment.amount_dec, payment.transaction_id, student.name()))
+                if not linked:
+                    messages.warning(request, "It doesn't add up to a set of %s's unpaid items, so none of "
+                                     "their items were marked paid by it. It still counts toward their balance." % student.name())
+            elif 'resolve' in post and post.get('postback'):
+                payment_issues.resolve_postback(prog, post['postback'], request.user, post.get('note'))
+                messages.success(request, 'Marked the payment notice #%s resolved.' % post['postback'])
+            elif 'resolve' in post and post.get('overpaid_user'):
+                student = _student(post['overpaid_user'])
+                payment_issues.resolve_overpayment(prog, student, _amount(post.get('overpaid_amount')),
+                                                   request.user, post.get('note'))
+                messages.success(request, "Marked %s's overpayment resolved." % student.name())
+            elif 'reopen' in post and post.get('postback'):
+                payment_issues.reopen_postback(prog, post['postback'], request.user)
+                messages.success(request, 'Reopened the payment notice #%s.' % post['postback'])
+            elif 'reopen' in post and post.get('overpaid_user'):
+                student = _student(post['overpaid_user'])
+                payment_issues.reopen_overpayment(prog, student, request.user)
+                messages.success(request, "Reopened %s's overpayment." % student.name())
+            else:
+                messages.error(request, "Sorry, that request wasn't understood; nothing was changed.")
+        except PaymentIssueError as e:
+            messages.error(request, '%s Nothing was changed.' % e)
 
     def isStep(self):
         return self.program.hasModule('CreditCardModule_Stripe')

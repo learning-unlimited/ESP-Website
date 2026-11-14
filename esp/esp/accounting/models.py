@@ -46,6 +46,7 @@ from esp.db.fields import AjaxForeignKey
 
 from django.db import models
 from django.db.models import Sum
+from django.utils import timezone
 
 from decimal import Decimal
 
@@ -333,6 +334,51 @@ class CybersourcePostback(models.Model):
 
     def __str__(self):
         return '%d' % self.id
+
+class PaymentIssueResolution(models.Model):
+    """ Treasury's note about a payment issue listed on a program's credit
+    card viewer page (see esp.accounting.payment_issues): a problem postback
+    or an overpaid student that was dealt with, or a payment recorded by hand
+    there. Reopening an issue keeps its resolution, marked reopened; resolving
+    it again adds a new one. """
+    KIND_CHOICES = (
+        ('postback', 'Problem postback'),
+        ('overpayment', 'Overpaid student'),
+        ('manual_payment', 'Payment recorded by hand'),
+    )
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES)
+    #   The problem postback, for kind 'postback'
+    postback = models.ForeignKey(CybersourcePostback, blank=True, null=True,
+                                 on_delete=models.CASCADE, related_name='resolutions')
+    #   The payment recorded by hand, if one was (kind 'manual_payment', or a
+    #   'postback' resolved by recording its payment)
+    transfer = models.ForeignKey(Transfer, blank=True, null=True, on_delete=models.SET_NULL,
+                                 related_name='+')
+    #   The student and program the issue is about (for a postback, copied from
+    #   it; both blank for a postback that couldn't be linked to anyone)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.SET_NULL)
+    program = models.ForeignKey(Program, blank=True, null=True, on_delete=models.SET_NULL)
+    #   For an overpaid student, how much they were overpaid by when this was
+    #   resolved (the issue reopens by itself if that amount changes); for a
+    #   postback or payment, the amount paid
+    amount = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True)
+    note = models.TextField()
+    resolved_by = models.ForeignKey(ESPUser, blank=True, null=True, on_delete=models.SET_NULL,
+                                    related_name='+')
+    resolved_at = models.DateTimeField(default=timezone.now)
+    reopened_by = models.ForeignKey(ESPUser, blank=True, null=True, on_delete=models.SET_NULL,
+                                    related_name='+')
+    reopened_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['resolved_at', 'id']
+
+    def __str__(self):
+        if self.kind == 'postback':
+            return 'Postback %s resolved %s' % (self.postback_id, self.resolved_at)
+        if self.kind == 'manual_payment':
+            return 'Payment of %s for %s recorded by hand %s' % (self.amount, self.user, self.resolved_at)
+        return 'Overpayment of %s by %s resolved %s' % (self.amount, self.user, self.resolved_at)
 
 def install():
     """Set up the default accounts."""

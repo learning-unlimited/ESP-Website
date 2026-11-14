@@ -35,7 +35,8 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.models import FinancialAidRequest, SplashInfo
-from esp.accounting.models import CybersourcePostback, FinancialAidGrant, LineItemType, Transfer
+from esp.accounting.models import CybersourcePostback, FinancialAidGrant, LineItemType, PaymentIssueResolution, Transfer
+from esp.accounting import payment_issues
 
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.middleware.esperrormiddleware import ESPError_NoLog
@@ -43,9 +44,12 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 
 from decimal import Decimal
+from datetime import datetime
 from django.conf import settings
 from django.test import override_settings
 from django.core import mail
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from unittest import mock
 import json
 import unittest
@@ -903,6 +907,56 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertIn("You don't owe anything for %s right now." % self.program.niceName(), body)
         self.assertEqual(self._treasury_mail('[ESP CC]'), [])
 
+    def test_student_payment_rows(self):
+        """ The bulk numbers behind the credit card payments page are the same
+        as each student's own, and don't take more queries for more students. """
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(70, [('Shirt', 10, 1)], [])
+        students = list(self.students[:6])
+        iacs = [IndividualAccountingController(self.program, student) for student in students]
+
+        #   0: nothing yet, not even the required admission transfer
+        #   1: paid in full for admission and a shirt
+        iacs[1].set_preference('Shirt', 1)
+        iacs[1].submit_payment(Decimal('80.00'), 'txn-full')
+        #   2: paid, then got full financial aid: overpaid
+        iacs[2].ensure_required_transfers()
+        iacs[2].submit_payment(Decimal('70.00'), 'txn-then-aid')
+        FinancialAidRequest.objects.create(user=students[2], program=self.program).approve()
+        #   3: partial aid (dollars and percent) with an uncovered shirt, unpaid
+        iacs[3].set_preference('Shirt', 1)
+        FinancialAidRequest.objects.create(user=students[3], program=self.program).approve(
+            dollar_amount=Decimal('20.00'), discount_percent=50)
+        #   4: sibling discount and one third aid (which needs rounding)
+        splashinfo = SplashInfo.getForUser(students[4], self.program)
+        splashinfo.siblingdiscount = True
+        splashinfo.save()
+        FinancialAidRequest.objects.create(user=students[4], program=self.program).approve(discount_percent=33)
+        #   5: admission billed at an old price, not yet paid
+        iacs[5].ensure_required_transfers()
+        Transfer.objects.filter(user=students[5], line_item__text='Program admission').update(amount_dec=Decimal('55.00'))
+
+        rows = pac.student_payment_rows(students)
+        self.assertEqual([row['student'] for row in rows], students)
+        for row, iac in zip(rows, iacs):
+            self.assertEqual(row['transfers'], list(iac.get_transfers()))
+            self.assertEqual(row['grant'], iac.latest_finaid_grant())
+            self.assertEqual(
+                (row['amount_requested'], row['amount_finaid'], row['amount_siblingdiscount'],
+                 row['amount_paid'], row['amount_due']),
+                (iac.amount_requested(), iac.amount_finaid(), iac.amount_siblingdiscount(),
+                 iac.amount_paid(), iac.amount_due()))
+        self.assertEqual([row['amount_due'] for row in rows],
+                         [Decimal(due) for due in ('70.00', '0.00', '-70.00', '35.00', '33.50', '70.00')])
+
+        with CaptureQueriesContext(connection) as queries_for_two:
+            pac.student_payment_rows(students[:2])
+        with CaptureQueriesContext(connection) as queries_for_six:
+            pac.student_payment_rows(students)
+        self.assertEqual(len(queries_for_six), len(queries_for_two))
+
     def test_finaid_approval_email_preview(self):
         """ The preview is the email approve() then sends, and saves nothing. """
         iac = self._setup_shirt_program()
@@ -1023,3 +1077,195 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertEqual(lunch.options_cost_range, (Decimal('3'), Decimal('9')))
         lunch.lineitemoptions_set.update(is_custom=True)
         self.assertIsNone(lunch.options_cost_range)
+
+    ##  Payment issues on the credit card viewer (esp.accounting.payment_issues)
+
+    def _postback(self, user, status, amount='80.00', transaction_id='', program=True, detail=''):
+        return CybersourcePostback.objects.create(
+            post_data=json.dumps({'decision': 'ACCEPT', 'req_amount': amount, 'transaction_id': transaction_id}),
+            transaction_id=transaction_id, user=user, program=self.program if program else None,
+            status=status, status_detail=detail)
+
+    def _issues(self):
+        pac = ProgramAccountingController(self.program)
+        rows = pac.student_payment_rows(list(self.students))
+        return (payment_issues.payment_issues(self.program, rows), rows)
+
+    def test_payment_issues_postbacks(self):
+        """ Problem postbacks for the program are listed until resolved, and
+        come back (keeping the earlier resolution) when reopened. """
+        iac = self._setup_shirt_program()
+        admin = self.admins[0]
+        failed = self._postback(iac.user, 'failed', transaction_id='txn-f', detail='Traceback (most recent call last):\n...')
+        review = self._postback(iac.user, 'needs_review', amount='10.00', detail='ReconciliationError: no Shirt')
+        self._postback(iac.user, 'processed')
+        self._postback(iac.user, 'not_paid')
+
+        (issues, rows) = self._issues()
+        self.assertEqual(sorted(card['id'] for card in issues['postbacks']), sorted([failed.id, review.id]))
+        card = [card for card in issues['postbacks'] if card['id'] == failed.id][0]
+        self.assertEqual(card['amount'], Decimal('80.00'))
+        self.assertEqual(card['status_label'], 'Payment not recorded')
+        self.assertEqual(card['detail'], 'The website hit an error while processing it.')
+        self.assertTrue(card['can_record'])
+        self.assertEqual(issues['num_open'], 2)
+        row = [row for row in rows if row['student'] == iac.user][0]
+        self.assertEqual(len(row['issues']), 2)
+
+        with self.assertRaises(payment_issues.PaymentIssueError):
+            payment_issues.resolve_postback(self.program, failed.id, admin, '   ')
+        payment_issues.resolve_postback(self.program, failed.id, admin, 'Refunded in CyberSource.')
+        (issues, rows) = self._issues()
+        self.assertEqual([card['id'] for card in issues['postbacks']], [review.id])
+        self.assertEqual([(r['kind'], r['id'], r['note']) for r in issues['resolved']],
+                         [('postback', failed.id, 'Refunded in CyberSource.')])
+
+        payment_issues.reopen_postback(self.program, failed.id, admin)
+        (issues, rows) = self._issues()
+        self.assertEqual(sorted(card['id'] for card in issues['postbacks']), sorted([failed.id, review.id]))
+        self.assertEqual(issues['resolved'], [])
+        self.assertEqual(PaymentIssueResolution.objects.filter(postback=failed).count(), 1)
+        with self.assertRaises(payment_issues.PaymentIssueError):
+            payment_issues.reopen_postback(self.program, failed.id, admin)
+
+    def test_payment_issues_overpaid(self):
+        """ Overpaid students are listed until resolved, and reopen by
+        themselves when the amount they're overpaid by changes. """
+        iac = self._setup_shirt_program()
+        admin = self.admins[0]
+        iac.submit_payment(Decimal('70.00'), 'txn-paid')
+        FinancialAidRequest.objects.create(user=iac.user, program=self.program).approve()
+
+        (issues, rows) = self._issues()
+        self.assertEqual([(card['user']['id'], card['overpaid']) for card in issues['overpaid']],
+                         [(iac.user.id, Decimal('70.00'))])
+        card = issues['overpaid'][0]
+        self.assertEqual([event['text'] for event in card['history']],
+                         ['Paid $70.00 by credit card', 'Financial aid approved (100% grant)'])
+        self.assertIsNone(card['previous'])
+
+        payment_issues.resolve_overpayment(self.program, iac.user, Decimal('70.00'), admin, 'No refund asked for yet.')
+        (issues, rows) = self._issues()
+        self.assertEqual(issues['overpaid'], [])
+        self.assertEqual([(r['kind'], r['summary']) for r in issues['resolved']],
+                         [('overpayment', 'Overpaid by $70.00')])
+
+        #   A shirt (not covered by aid) brings the overpayment down to $60
+        iac.set_preference('Shirt', 1)
+        (issues, rows) = self._issues()
+        self.assertEqual([card['overpaid'] for card in issues['overpaid']], [Decimal('60.00')])
+        self.assertEqual(issues['overpaid'][0]['previous']['note'], 'No refund asked for yet.')
+        self.assertEqual(issues['resolved'], [])
+
+        payment_issues.resolve_overpayment(self.program, iac.user, Decimal('60.00'), admin, 'Still no request.')
+        payment_issues.reopen_overpayment(self.program, iac.user, admin)
+        (issues, rows) = self._issues()
+        self.assertEqual(issues['overpaid'][0]['previous']['reopened_by'], admin.name())
+
+    def test_payment_issues_unlinked_postbacks_by_date(self):
+        """ Postbacks that couldn't be linked to a program are listed on each
+        program starting within 2 months of them, or else the next one. """
+        (a, b, c) = ('A', 'B', 'C')
+        starts = [(a, datetime(2026, 3, 1)), (b, datetime(2026, 4, 15)), (c, datetime(2026, 11, 14))]
+        self.assertEqual(payment_issues.programs_for_unlinked(datetime(2026, 3, 20), starts), ([a, b], True))
+        self.assertEqual(payment_issues.programs_for_unlinked(datetime(2026, 6, 15), starts), ([b], True))
+        self.assertEqual(payment_issues.programs_for_unlinked(datetime(2026, 7, 1), starts), ([c], False))
+        self.assertEqual(payment_issues.programs_for_unlinked(datetime(2026, 12, 31), starts), ([c], True))
+        self.assertEqual(payment_issues.programs_for_unlinked(datetime(2027, 3, 1), starts), ([], False))
+        self.assertEqual(payment_issues._add_months(datetime(2026, 12, 31), 2), datetime(2027, 2, 28))
+
+        unlinked = self._postback(None, 'failed', program=False)
+        CybersourcePostback.objects.filter(id=unlinked.id).update(timestamp=datetime(2026, 11, 1))
+        with mock.patch('esp.accounting.payment_issues._program_starts',
+                        return_value=[(self.program, datetime(2026, 11, 14))]):
+            (issues, rows) = self._issues()
+        self.assertEqual([card['id'] for card in issues['orphans']], [unlinked.id])
+        self.assertIn('within 2 months', issues['orphans'][0]['match_note'])
+        self.assertFalse(issues['orphans'][0]['can_record'])
+
+    def test_payment_issues_record_payment(self):
+        """ A payment recorded by hand marks the student's items paid when the
+        amount matches them, still counts when it doesn't, can't be recorded
+        twice, and resolves the postback it was recorded from. """
+        iac = self._setup_shirt_program()
+        admin = self.admins[0]
+        iac.set_preference('Shirt', 1)
+
+        with self.assertRaises(payment_issues.PaymentIssueError):
+            payment_issues.record_payment(self.program, iac.user, Decimal('70.00'), 'txn-a', admin, ' ')
+        (payment, linked) = payment_issues.record_payment(self.program, iac.user, Decimal('70.00'), 'txn-a', admin,
+                                                          'Paid by phone.')
+        self.assertTrue(linked)
+        resolution = PaymentIssueResolution.objects.get(transfer=payment)
+        self.assertEqual((resolution.kind, resolution.note, resolution.resolved_by, resolution.amount),
+                         ('manual_payment', 'Paid by phone.', admin, Decimal('70.00')))
+        self.assertEqual(list(Transfer.objects.filter(user=iac.user, paid_in=payment).values_list('line_item__text', flat=True)),
+                         ['Program admission'])
+        with self.assertRaises(payment_issues.PaymentIssueError):
+            payment_issues.record_payment(self.program, iac.user, Decimal('10.00'), 'txn-a', admin, 'Again.')
+        with self.assertRaises(payment_issues.PaymentIssueError):
+            payment_issues.record_payment(self.program, iac.user, Decimal('10.00'), '  ', admin, 'No ID.')
+
+        (payment, linked) = payment_issues.record_payment(self.program, iac.user, Decimal('4.00'), 'txn-b', admin,
+                                                          'Partial payment.')
+        self.assertFalse(linked)
+        self.assertEqual(iac.amount_due(), Decimal('6.00'))
+        self.assertFalse(Transfer.objects.filter(paid_in=payment).exists())
+
+        postback = self._postback(iac.user, 'failed', amount='6.00', transaction_id='txn-c')
+        (payment, linked) = payment_issues.record_payment(self.program, iac.user, Decimal('6.00'), 'txn-c', admin,
+                                                          'Charge confirmed in CyberSource.', postback_id=postback.id)
+        postback.refresh_from_db()
+        self.assertEqual((postback.transfer, postback.status), (payment, 'processed'))
+        self.assertIn('recorded by hand', postback.status_detail)
+        (issues, rows) = self._issues()
+        self.assertEqual(issues['postbacks'], [])
+        self.assertEqual(PaymentIssueResolution.objects.get(postback=postback).transfer, payment)
+        self.assertEqual(sorted(r['summary'] for r in issues['resolved']),
+                         ['Payment recorded ($6.00)', 'Payment recorded by hand ($4.00, transaction txn-b)',
+                          'Payment recorded by hand ($70.00, transaction txn-a)'])
+        self.assertEqual(sorted(r['note'] for r in issues['resolved']),
+                         ['Charge confirmed in CyberSource.', 'Paid by phone.', 'Partial payment.'])
+        #   The payments say they were recorded by hand, with the note
+        row = [row for row in rows if row['student'] == iac.user][0]
+        self.assertIn('Paid by phone.', [t for t in row['transfers'] if t.transaction_id == 'txn-a'][0].recorded_by_hand)
+
+    def test_link_paid_transfers_exact_cents(self):
+        """ Prices that floats can't represent exactly still match. """
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(70, [('Shirt', Decimal('10.10'), 1)], [])
+        iac = IndividualAccountingController(self.program, random.choice(self.students))
+        iac.set_preference('Shirt', 1)
+        payment = iac.submit_payment(Decimal('80.10'), 'txn-cents')
+        self.assertEqual(Transfer.objects.filter(paid_in=payment).count(), 2)
+
+    def test_viewpay_payment_issue_forms(self):
+        """ The payment issues box's forms change things only for admins, and
+        say what happened. """
+        iac = self._setup_shirt_program()
+        postback = self._postback(iac.user, 'failed', amount='70.00', transaction_id='txn-v')
+        url = '/manage/%s/viewpay' % self.program.getUrlBase()
+
+        student = [s for s in self.students if s != iac.user][0]
+        self.assertTrue(self.client.login(username=student.username, password='password'))
+        self.client.post(url, {'postback': postback.id, 'note': 'x', 'resolve': 'Mark resolved'})
+        self.assertFalse(PaymentIssueResolution.objects.exists())
+
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'))
+        response = self.client.get(url)
+        self.assertContains(response, 'Payment not recorded')
+        self.assertContains(response, 'raw postback #%d' % postback.id)
+
+        response = self.client.post(url, {'postback': postback.id, 'note': ' ', 'resolve': 'Mark resolved'}, follow=True)
+        self.assertContains(response, 'Please say what you did about it. Nothing was changed.')
+        self.assertFalse(PaymentIssueResolution.objects.exists())
+
+        response = self.client.post(url, {'postback': postback.id, 'payment_user': iac.user.id, 'amount': '70.00',
+                                          'transaction_id': 'txn-v', 'note': 'Found in CyberSource.',
+                                          'add_payment': 'Record payment'}, follow=True)
+        self.assertContains(response, 'Recorded a payment of $70.00 (transaction txn-v)')
+        self.assertEqual(iac.amount_due(), 0)
+        self.assertTrue(PaymentIssueResolution.objects.filter(postback=postback).exists())
+

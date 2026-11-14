@@ -20,6 +20,104 @@
 	color: blue;
 }
 
+    /* Payment issues box: stacked cards, since the page's content column is narrow */
+    #payment-issues {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 12px 16px;
+      margin: 12px 0 20px;
+    }
+    #payment-issues h2.first { margin-top: 0; }
+    #payment-issues h3 { margin: 18px 0 4px; }
+    #payment-issues .section-help { color: #555; margin: 0 0 8px; }
+    #payment-issues p.nothing { color: #3c763d; margin: 0; }
+    #payment-issues .saved-notice, #payment-issues .warning-notice {
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+    }
+    #payment-issues .saved-notice { background: #dff0d8; border: 1px solid #b2d5a5; }
+    #payment-issues .warning-notice { background: #fcf8e3; border: 1px solid #e6c36a; }
+    #payment-issues .issue {
+      border-top: 1px solid #ddd;
+      padding: 10px 0;
+    }
+    #payment-issues .issue-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 4px 10px;
+      margin-bottom: 4px;
+    }
+    #payment-issues .issue-head .who { font-weight: bold; }
+    #payment-issues .issue-head .money { font-weight: bold; }
+    #payment-issues .issue-head .when { color: #666; font-size: 0.9em; margin-left: auto; }
+    #payment-issues .status {
+      border-radius: 3px;
+      padding: 1px 7px;
+      font-weight: bold;
+      font-size: 0.85em;
+      white-space: nowrap;
+    }
+    #payment-issues .status-failed { background: #f2dede; color: #8a1f1c; }
+    #payment-issues .status-review_hold { background: #fcefd4; color: #7a4b00; }
+    #payment-issues .status-needs_review { background: #dbe9f6; color: #1d4f7c; }
+    #payment-issues .overpaid-amount { font-weight: bold; color: #8a1f1c; }
+    #payment-issues .todo { margin-bottom: 2px; }
+    #payment-issues .refs { margin-top: 2px; }
+    #payment-issues .steps {
+      background: #f7f7f7;
+      border-left: 3px solid #ccc;
+      padding: 4px 10px;
+      margin: 4px 0;
+      font-size: 0.95em;
+    }
+    #payment-issues .steps ol { margin: 2px 0 0 1.4em; padding: 0; }
+    #payment-issues .steps li { margin: 1px 0; }
+    #payment-issues .history-label { font-weight: bold; font-size: 0.95em; }
+    #payment-issues ul.history { margin: 0 0 2px 1.2em; padding: 0; }
+    #payment-issues details.inline { display: inline; }
+    #payment-issues details pre { font-size: 11px; overflow-x: auto; margin: 4px 0 0; }
+    #payment-issues .issue-actions { margin-top: 6px; }
+    #payment-issues .issue-actions details { margin-top: 2px; }
+    #payment-issues details.resolve textarea {
+      width: 100%;
+      box-sizing: border-box;
+      height: 3.4em;
+      margin: 6px 0 4px;
+    }
+    #payment-issues details.resolved { margin-top: 14px; }
+    #payment-issues details.resolved > summary { cursor: pointer; font-weight: bold; }
+    #payment-issues form.reopen { display: inline; margin: 0; }
+    .link-button {
+      background: none; border: 0; padding: 0;
+      color: #0066cc; text-decoration: underline; cursor: pointer; font-size: inherit;
+    }
+    details.add-payment > summary, details.resolve > summary { cursor: pointer; color: #0066cc; }
+    details.add-payment form { margin: 6px 0 0; }
+    details.add-payment label { display: block; margin: 0 0 6px; }
+    details.add-payment input[type=number] { width: 8em; margin: 0; }
+    details.add-payment input[type=text] { width: 16em; max-width: 100%; margin: 0; }
+    details.add-payment textarea { display: block; width: 100%; box-sizing: border-box; height: 3.4em; margin: 2px 0 0; }
+    .link-warning { color: #8a6d3b; font-size: 0.9em; margin: 0 0 6px; }
+    .sub { color: #666; font-size: 0.9em; }
+    /* Main table: one block per student, actions in their own full-width row */
+    tr.has-issue td { background: #fdf3f3; }
+    .row-issue {
+      display: inline-block;
+      margin: 3px 6px 0 0;
+      padding: 1px 7px;
+      border-radius: 3px;
+      background: #f2dede;
+      color: #8a1f1c;
+      font-weight: bold;
+      font-size: 0.85em;
+      text-decoration: none;
+    }
+    .issues-divider td { background: #eee; font-weight: bold; padding: 4px; }
+    tr.student-actions td { padding: 0 4px 8px; }
+    tr.student-actions .admin-links, tr.student-actions details { display: inline-block; vertical-align: top; margin-right: 14px; }
+
 </style>
 {% endblock %}
 
@@ -28,6 +126,13 @@
 
 {% block content %}
 <h1>Credit Card Payments</h1>
+
+{% include "program/modules/creditcardviewer/payment_issues.html" %}
+
+<div class="sub">Admin panel for {{ program.niceName }}:
+  <a href="{% url 'admin:accounting_lineitemtype_changelist' %}?program__id__exact={{ program.id }}">line item types</a> |
+  <a href="{% url 'admin:accounting_transfer_changelist' %}?line_item__program__id__exact={{ program.id }}">all line items &amp; payments</a> |
+  <a href="{% url 'admin:accounting_cybersourcepostback_changelist' %}?program__id__exact={{ program.id }}">all postbacks</a></div>
 
 <ul>
 <li>Total number of students: {{ num_students }}</li>
@@ -47,20 +152,40 @@ Payments:
 </th>
 </tr>
 {% for payment in payment_table %}
-<tr{% if not forloop.last %} style="border-bottom: 1px dashed #699;"{% endif %}>
+{% if forloop.first and num_with_issues %}<tr class="issues-divider"><td colspan="2">Students with open payment issues ({{ num_with_issues }})</td></tr>{% endif %}
+{% if num_with_issues and forloop.counter0 == num_with_issues %}<tr class="issues-divider"><td colspan="2">All other students</td></tr>{% endif %}
+<tr id="student-{{ payment.student.id }}"{% if payment.issues %} class="has-issue"{% endif %}>
 <td>
-<b><a href="/manage/userview?username={{ payment.0.username}}&program={{ program.id }}">{{ payment.0.get_full_name }}</a></b> (ID: {{ payment.0.id }}) <br />
-${{ payment.2|floatformat:2 }} billed; ${{ payment.3|floatformat:2 }} owed
+<b><a href="/manage/userview?username={{ payment.student.username}}&program={{ program.id }}">{{ payment.student.get_full_name }}</a></b> (ID: {{ payment.student.id }}) <br />
+${{ payment.amount_requested|floatformat:2 }} billed; ${{ payment.amount_due|floatformat:2 }} owed
+{% if payment.issues %}<br />{% for issue in payment.issues %}<a class="row-issue" href="#{{ issue.anchor }}">&uarr; {{ issue.label }}</a>{% endfor %}{% endif %}
 </td>
 <td>
 <ul style="margin: 0px;">
-{% for transfer in payment.1 %}
-<li>${{ transfer.amount|floatformat:2 }} - {{ transfer.line_item.text }}{% if transfer.transaction_id %} (CC Transaction ID: {{ transfer.transaction_id }}){% endif %}
+{% for transfer in payment.transfers %}
+<li>{% if transfer.line_item.for_payments %}-{% endif %}${{ transfer.amount|floatformat:2 }} - {{ transfer.line_item.text }}{% if transfer.transaction_id %} (CC Transaction ID: {{ transfer.transaction_id }}){% endif %}{% if transfer.recorded_by_hand %} <span class="sub">({{ transfer.recorded_by_hand }})</span>{% endif %}
 </div></li> <!-- div.( doc.getDoctypeStr ) -->
 {% endfor %}
-{% if payment.4 %}<li>-${{ payment.5|floatformat:2 }} - Financial aid ({{ payment.4.terms }} grant)</li>
-{% endif %}{% if payment.6 %}<li>-${{ payment.6|floatformat:2 }} - Sibling discount</li>
+{% if payment.grant %}<li>-${{ payment.amount_finaid|floatformat:2 }} - Financial aid ({{ payment.grant.terms }} grant)</li>
+{% endif %}{% if payment.amount_siblingdiscount %}<li>-${{ payment.amount_siblingdiscount|floatformat:2 }} - Sibling discount</li>
 {% endif %}</ul>
+</td>
+</tr>
+<tr class="student-actions{% if payment.issues %} has-issue{% endif %}"{% if not forloop.last %} style="border-bottom: 1px dashed #699;"{% endif %}>
+<td colspan="2">
+{% include "program/modules/creditcardviewer/admin_links.html" with uid=payment.student.id %}
+<details class="add-payment">
+  <summary>Add a payment</summary>
+  <form method="post" action="" data-link-amounts="{{ payment.link_amounts }}">{% csrf_token %}
+    <input type="hidden" name="payment_user" value="{{ payment.student.id }}" />
+    <label>Amount $ <input type="number" name="amount" min="0.01" step="0.01" required /></label>
+    <label>CyberSource transaction ID <input type="text" name="transaction_id" required /></label>
+    <label>Note <textarea name="note" required placeholder="What is this payment? e.g. charge found in CyberSource whose postback failed"></textarea></label>
+    <div class="link-warning" hidden></div>
+    <input type="submit" name="add_payment" value="Record payment" class="btn btn-small" />
+    <div class="sub">Adds the payment to the student's account and marks what it covers as paid. It doesn't charge their card.</div>
+  </form>
+</details>
 </td>
 </tr>
 {% endfor %}
@@ -68,5 +193,35 @@ ${{ payment.2|floatformat:2 }} billed; ${{ payment.3|floatformat:2 }} owed
 </div>
 
 {% include "program/modules/admincore/returnlink.html" %}
+<script type="text/javascript">
+//  Add-payment forms: warn, before submitting, when the amount won't let the
+//  website mark any of the student's items paid by it (data-link-amounts lists
+//  the amounts that would; see _linkable_payment_amounts in creditcardviewer.py)
+(function () {
+  var forms = document.querySelectorAll('details.add-payment form[data-link-amounts]');
+  for (var i = 0; i < forms.length; i++) {
+    (function (form) {
+      var linkable = form.getAttribute('data-link-amounts').split(' ').filter(Boolean);
+      var input = form.querySelector('input[name=amount]');
+      var warning = form.querySelector('.link-warning');
+      function update() {
+        var value = parseFloat(input.value);
+        if (isNaN(value) || value <= 0) { warning.hidden = true; return; }
+        var ok = linkable.some(function (a) { return Math.abs(parseFloat(a) - value) < 0.005; });
+        warning.hidden = ok;
+        if (!ok) {
+          warning.textContent = (linkable.length ?
+            "This amount doesn't add up to a set of this student's unpaid items, so none will be marked paid by it " +
+            "(amounts that would: $" + linkable.join(', $') + ")." :
+            "This student has no unpaid items, so none will be marked paid by it.") +
+            " It will still count toward their balance.";
+        }
+      }
+      input.addEventListener('input', update);
+      update();
+    })(forms[i]);
+  }
+})();
+</script>
 {% endblock %}
 

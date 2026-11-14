@@ -1,0 +1,92 @@
+<div id="payment-issues">
+  {% for msg in messages %}
+  <div class="{% if msg.level_tag == 'success' %}saved-notice{% else %}warning-notice{% endif %}">{{ msg }}</div>
+  {% endfor %}
+  {% if num_open %}
+  <h2 class="first">{{ num_open }} open payment issue{{ num_open|pluralize }}</h2>
+  <p class="section-help">Work through each one, then mark it resolved with a note saying what you did.</p>
+  {% else %}
+  <p class="nothing"><b>No open payment issues.</b></p>
+  {% endif %}
+
+  {% if postbacks %}
+  <h3>Payments needing action ({{ postbacks|length }})</h3>
+  {% for pb in postbacks %}
+  {% include "program/modules/creditcardviewer/issue_postback.html" %}
+  {% endfor %}
+  {% endif %}
+
+  {% if overpaid %}
+  <h3>Overpaid students ({{ overpaid|length }})</h3>
+  <p class="section-help">Students who have paid more than they now owe, for example because financial aid
+    was approved after they paid. They may be due a refund.</p>
+  {% for op in overpaid %}
+  <div class="issue" id="{{ op.anchor }}">
+    <div class="issue-head">
+      <a class="who" href="/manage/userview?username={{ op.user.username|urlencode }}&program={{ program.id }}">{{ op.user.name }}</a>
+      <span class="overpaid-amount">overpaid by ${{ op.overpaid|floatformat:2 }}</span>
+      <span class="when">paid ${{ op.amount_paid|floatformat:2 }}, owes ${{ op.amount_owed|floatformat:2 }} in total</span>
+    </div>
+    <div class="history-label">What happened:</div>
+    <ul class="history">
+      {% for event in op.history %}
+      <li><span class="sub">{{ event.when|date:"M j" }}</span> {{ event.text }}</li>
+      {% endfor %}
+    </ul>
+    {% include "program/modules/creditcardviewer/issue_steps.html" with steps=op.steps %}
+    {% if op.previous %}
+    <div class="sub">{% if op.previous.reopened_at %}Reopened by {{ op.previous.reopened_by }} on {{ op.previous.reopened_at|date:"M j" }}. It had been resolved{% else %}Reopened: resolved{% endif %} for ${{ op.previous.amount|floatformat:2 }} on {{ op.previous.resolved_at|date:"M j" }} by {{ op.previous.resolved_by }}{% if not op.previous.reopened_at %}, but the amount has changed since{% endif %}. Their note: "{{ op.previous.note }}"</div>
+    {% endif %}
+    <div class="sub refs">
+      <a href="#student-{{ op.user.id }}">their row in the table</a> &middot; {{ op.user.username }} (ID {{ op.user.id }}) &middot;
+      <a href="{% url 'admin:accounting_transfer_changelist' %}?user__id__exact={{ op.user.id }}&amp;line_item__program__id__exact={{ program.id }}">their line items &amp; payments</a> &middot;
+      <a href="{% url 'admin:accounting_cybersourcepostback_changelist' %}?user__id__exact={{ op.user.id }}&amp;program__id__exact={{ program.id }}">their postbacks</a>
+    </div>
+    <div class="issue-actions">
+      <details class="resolve">
+        <summary>Mark resolved</summary>
+        <form method="post" action="">{% csrf_token %}
+          <input type="hidden" name="overpaid_user" value="{{ op.user.id }}" />
+          <input type="hidden" name="overpaid_amount" value="{{ op.overpaid }}" />
+          <textarea name="note" required placeholder="e.g. refunded ${{ op.overpaid|floatformat:2 }} in CyberSource" aria-label="Resolution note for {{ op.user.name }}'s overpayment"></textarea>
+          <input type="submit" name="resolve" value="Mark resolved" class="btn btn-primary btn-small" />
+        </form>
+      </details>
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {% if orphans %}
+  <h3>Payments not linked to a student ({{ orphans|length }})</h3>
+  <p class="section-help">The website couldn't tell who these were for, so they're listed by date: on each program
+    starting within 2 months of the payment, or else on the next program after it.</p>
+  {% for pb in orphans %}
+  {% include "program/modules/creditcardviewer/issue_postback.html" %}
+  {% endfor %}
+  {% endif %}
+
+  {% if resolved %}
+  <details class="resolved">
+  <summary>Resolved issues and payments recorded by hand ({{ resolved|length }})</summary>
+  {% for res in resolved %}
+  <div class="issue resolved-issue">
+    <div class="issue-head">
+      {% if res.user %}<a class="who" href="/manage/userview?username={{ res.user.username|urlencode }}&program={{ program.id }}">{{ res.user.name }}</a>{% endif %}
+      <span>{{ res.summary }}</span>
+      <span class="when">resolved {{ res.resolved_at|date:"M j, Y" }} by {{ res.resolved_by }}</span>
+    </div>
+    <div>{{ res.note }}</div>
+    <div class="sub refs">{% if res.admin_url %}<a href="{{ res.admin_url }}">raw postback #{{ res.postback_id }}</a> &middot; {% endif %}
+{% if res.kind != 'manual_payment' %}
+      <form class="reopen" method="post" action="">{% csrf_token %}
+        <input type="hidden" name="{% if res.kind == 'postback' %}postback{% else %}overpaid_user{% endif %}" value="{{ res.id }}" />
+        <input type="submit" name="reopen" value="Reopen" class="link-button" />
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+  </details>
+  {% endif %}
+</div>

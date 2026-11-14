@@ -1,0 +1,3 @@
+<div class="sub admin-links">Admin panel:
+  <a href="{% url 'admin:accounting_transfer_changelist' %}?user__id__exact={{ uid }}&amp;line_item__program__id__exact={{ program.id }}">line items &amp; payments</a> |
+  <a href="{% url 'admin:accounting_cybersourcepostback_changelist' %}?user__id__exact={{ uid }}&amp;program__id__exact={{ program.id }}">postbacks</a></div>

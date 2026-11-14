@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, \
-    LineItemType, LineItemOptions, CybersourcePostback
+    LineItemType, LineItemOptions, CybersourcePostback, PaymentIssueResolution
 from esp.utils.admin_user_search import default_user_search
 
 class LIOInline(admin.TabularInline):
@@ -93,3 +93,11 @@ class CybersourcePostbackAdmin(admin.ModelAdmin):
     list_select_related = ['user', 'program', 'transfer']
     raw_id_fields = ['transfer', 'user']
 admin_site.register(CybersourcePostback, CybersourcePostbackAdmin)
+
+class PaymentIssueResolutionAdmin(admin.ModelAdmin):
+    list_display = ['resolved_at', 'kind', 'resolved_by', 'program', 'user', 'postback', 'transfer', 'amount', 'reopened_at']
+    list_filter = ['kind', 'program', 'resolved_at']
+    search_fields = ['note', '=user__id', '=user__username', '=postback__id']
+    list_select_related = ['resolved_by', 'program', 'user', 'postback', 'transfer']
+    raw_id_fields = ['postback', 'transfer', 'user', 'resolved_by', 'reopened_by']
+admin_site.register(PaymentIssueResolution, PaymentIssueResolutionAdmin)

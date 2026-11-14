@@ -1,0 +1,6 @@
+{% comment %} How to resolve a payment issue: numbered steps. {% endcomment %}
+{% if steps %}
+<div class="steps"><b>How to resolve:</b>
+  <ol>{% for step in steps %}<li>{{ step }}</li>{% endfor %}</ol>
+</div>
+{% endif %}

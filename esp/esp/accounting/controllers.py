@@ -257,6 +257,92 @@ class ProgramAccountingController(BaseAccountingController):
         payments = Transfer.objects.filter(line_item=payment_li_type)
         return (payments.count(), payments.aggregate(total=Sum('amount_dec'))['total'])
 
+    @staticmethod
+    def compute_finaid(amount_requested, amount_siblingdiscount, grant):
+        """ The financial aid a grant gives on amount_requested (the cost of
+        the user's items that financial aid covers). """
+        aid_amount = Decimal('0')
+        if grant is not None:
+            if grant.amount_max_dec is not None:
+                if amount_requested - amount_siblingdiscount > grant.amount_max_dec:
+                    aid_amount = grant.amount_max_dec
+                else:
+                    aid_amount = amount_requested - amount_siblingdiscount
+
+            if grant.percent is not None:
+                discount_aid_amount = (Decimal('0.01') * grant.percent) * (amount_requested - amount_siblingdiscount - aid_amount)
+                aid_amount += discount_aid_amount
+
+        # A percentage grant can produce fractions of a cent; round to cents
+        # here so that every amount derived from this (amount_due, payment
+        # forms, printables) is already exact. Half-up favors the student.
+        return aid_amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    def student_payment_rows(self, students):
+        """ What each of these students has been billed, granted and paid for
+        the program, as a list of dicts in the order given. The amounts are
+        the same as IndividualAccountingController's (amount_requested(),
+        amount_finaid(), amount_paid(), amount_due(), ...), but computed with
+        a fixed number of queries instead of dozens per student. """
+        students = list(students)
+        zero = Decimal('0')
+
+        #   As amount_requested() does, make sure everyone has their required
+        #   items first. Almost everyone already does, so only look closer at
+        #   the students who are missing one or have one at an old price.
+        required_amounts = {item.id: item.amount_dec for item in self.get_lineitemtypes(required_only=True)}
+        if required_amounts:
+            items_held = {}
+            out_of_date = set()
+            for user_id, item_id, amount, paid_in_id in Transfer.objects.filter(
+                    line_item__in=list(required_amounts)).values_list('user_id', 'line_item_id', 'amount_dec', 'paid_in_id'):
+                items_held.setdefault(user_id, set()).add(item_id)
+                if paid_in_id is None and amount != required_amounts[item_id]:
+                    out_of_date.add(user_id)
+            for student in students:
+                if student.id in out_of_date or items_held.get(student.id, set()) != set(required_amounts):
+                    IndividualAccountingController(self.program, student).ensure_required_transfers()
+
+        def sum_by_user(transfers):
+            return dict(transfers.order_by().values_list('user_id').annotate(Sum('amount_dec')))
+
+        to_program = Transfer.objects.filter(destination=self.default_program_account())
+        requested = sum_by_user(to_program)
+        requested_for_finaid = sum_by_user(to_program.filter(line_item__for_finaid=True))
+        paid = sum_by_user(Transfer.objects.filter(line_item=self.default_payments_lineitemtype(), source__isnull=True))
+
+        transfers = {}
+        for transfer in Transfer.objects.filter(line_item__in=list(self.get_lineitemtypes())).select_related('line_item').order_by('id'):
+            transfers.setdefault(transfer.user_id, []).append(transfer)
+
+        grants = {grant.request.user_id: grant for grant in FinancialAidGrant.objects.filter(
+            request__program=self.program).select_related('request').order_by('id')}
+
+        sibling_discount = self.program.sibling_discount or zero
+        siblings = set()
+        if sibling_discount:
+            siblings = set(SplashInfo.objects.filter(
+                program=self.program, siblingdiscount=True).values_list('student_id', flat=True))
+
+        rows = []
+        for student in students:
+            grant = grants.get(student.id)
+            amount_requested = requested.get(student.id) or zero
+            amount_siblingdiscount = sibling_discount if student.id in siblings else zero
+            amount_finaid = self.compute_finaid(requested_for_finaid.get(student.id) or zero, amount_siblingdiscount, grant)
+            amount_paid = paid.get(student.id) or zero
+            rows.append({
+                'student': student,
+                'transfers': transfers.get(student.id, []),
+                'amount_requested': amount_requested,
+                'grant': grant,
+                'amount_finaid': amount_finaid,
+                'amount_siblingdiscount': amount_siblingdiscount,
+                'amount_paid': amount_paid,
+                'amount_due': amount_requested - amount_finaid - amount_siblingdiscount - amount_paid,
+            })
+        return rows
+
     def classify_transfer(self, transfer):
         """Give a short human-readable description of a transfer.
 
@@ -631,26 +717,7 @@ class IndividualAccountingController(ProgramAccountingController):
         amount_requested = self.amount_requested(for_finaid_only=True)
         if amount_siblingdiscount is None:
             amount_siblingdiscount = self.amount_siblingdiscount()
-
-        aid_amount = Decimal('0')
-        latest_grant = self.latest_finaid_grant()
-        if latest_grant is not None:
-            if latest_grant.amount_max_dec is not None:
-                if amount_requested - amount_siblingdiscount > latest_grant.amount_max_dec:
-                    aid_amount = latest_grant.amount_max_dec
-                else:
-                    aid_amount = amount_requested - amount_siblingdiscount
-
-            if latest_grant.percent is not None:
-                discount_aid_amount = (Decimal('0.01') * latest_grant.percent) * (amount_requested - amount_siblingdiscount - aid_amount)
-                aid_amount += discount_aid_amount
-
-        # A percentage grant can produce fractions of a cent; round to cents
-        # here so that every amount derived from this (amount_due, payment
-        # forms, printables) is already exact. Half-up favors the student.
-        aid_amount = aid_amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-        return aid_amount
+        return self.compute_finaid(amount_requested, amount_siblingdiscount, self.latest_finaid_grant())
 
     def finaid_email_context(self, grant):
         """ Plain-language facts about a financial aid grant and how it applies
@@ -765,7 +832,7 @@ class IndividualAccountingController(ProgramAccountingController):
         ).exclude(line_item__text__in=self.finaid_items
         ).order_by('id')
 
-        total = 0
+        total = Decimal('0')
         # Calculate the target including all of the user's payments, discount, and all granted fin aid
         # I believe the user's payments include the current payment based on order of operations here
         target_full = self.amount_paid() + self.amount_siblingdiscount() + self.amount_finaid()
@@ -773,7 +840,9 @@ class IndividualAccountingController(ProgramAccountingController):
         # Check that all payments and financial aid together sum to all transfers together
         # Add the paid_in to the outstanding transfers
         for transfer in all_transfers:
-            total += transfer.get_amount()
+            # Exact decimals: summing floats could miss the target by a
+            # fraction of a cent for prices like $10.10
+            total += transfer.amount_dec
             # If the transfer is outstanding, mark it paid by the current payment
             if transfer.paid_in is None:
                 transfer.paid_in = payment

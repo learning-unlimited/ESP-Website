@@ -1,0 +1,44 @@
+{% comment %} One problem postback as a card in the payment issues box. Takes pb (and program). {% endcomment %}
+<div class="issue" id="{{ pb.anchor }}">
+  <div class="issue-head">
+    <span class="status status-{{ pb.status }}">{{ pb.status_label }}</span>
+    {% if pb.user %}<a class="who" href="/manage/userview?username={{ pb.user.username|urlencode }}&program={{ program.id }}">{{ pb.user.name }}</a>{% endif %}
+    <span class="money">{% if pb.amount %}${{ pb.amount|floatformat:2 }}{% else %}amount unknown{% endif %}</span>
+    <span class="when">{{ pb.timestamp|date:"M j, Y, g:i A" }} ET</span>
+  </div>
+  <div class="todo">{{ pb.todo }}</div>
+  {% include "program/modules/creditcardviewer/issue_steps.html" with steps=pb.steps %}
+  {% if pb.match_note %}<div class="sub"><i>{{ pb.match_note }}</i></div>{% endif %}
+  <div class="sub">{{ pb.detail }}{% if pb.detail_long %}
+    <details class="inline"><summary>Technical details</summary><pre>{{ pb.detail_long }}</pre></details>{% endif %}</div>
+  <div class="sub refs">
+    {% if pb.user %}{% if pb.in_table %}<a href="#student-{{ pb.user.id }}">their row in the table</a> &middot; {% endif %}{{ pb.user.username }} (ID {{ pb.user.id }}) &middot; {% endif %}{% if pb.transaction_id %}Transaction {{ pb.transaction_id }} &middot; {% endif %}<a href="{{ pb.admin_url }}">raw postback #{{ pb.id }}</a>{% if pb.user %} &middot;
+    <a href="{% url 'admin:accounting_transfer_changelist' %}?user__id__exact={{ pb.user.id }}&amp;line_item__program__id__exact={{ program.id }}">their line items &amp; payments</a> &middot;
+    <a href="{% url 'admin:accounting_cybersourcepostback_changelist' %}?user__id__exact={{ pb.user.id }}&amp;program__id__exact={{ program.id }}">their postbacks</a>{% endif %}
+  </div>
+  <div class="issue-actions">
+    {% if pb.can_record %}
+    <details class="add-payment">
+      <summary>Record this payment</summary>
+      <form method="post" action=""{% if pb.link_amounts is not None %} data-link-amounts="{{ pb.link_amounts }}"{% endif %}>{% csrf_token %}
+        <input type="hidden" name="postback" value="{{ pb.id }}" />
+        <input type="hidden" name="payment_user" value="{{ pb.user.id }}" />
+        <label>Amount $ <input type="number" name="amount" min="0.01" step="0.01" value="{{ pb.amount }}" required /></label>
+        <label>CyberSource transaction ID <input type="text" name="transaction_id" value="{{ pb.transaction_id }}" required /></label>
+        <label>Note <textarea name="note" required placeholder="What is this payment? e.g. charge found in CyberSource whose postback failed"></textarea></label>
+        <div class="link-warning" hidden></div>
+        <input type="submit" name="add_payment" value="Record payment" class="btn btn-small" />
+        <div class="sub">Adds the payment to the student's account and marks what it covers as paid. It doesn't charge their card.</div>
+      </form>
+    </details>
+    {% endif %}
+    <details class="resolve">
+      <summary>Mark resolved</summary>
+      <form method="post" action="">{% csrf_token %}
+        <input type="hidden" name="postback" value="{{ pb.id }}" />
+        <textarea name="note" required placeholder="What did you do about it?" aria-label="Resolution note for postback {{ pb.id }}"></textarea>
+        <input type="submit" name="resolve" value="Mark resolved" class="btn btn-primary btn-small" />
+      </form>
+    </details>
+  </div>
+</div>
