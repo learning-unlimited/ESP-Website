@@ -643,15 +643,16 @@ def submit_transaction(request):
         if log_record.transfer_id:
             # The payment itself was recorded before the error
             _set_postback_status(log_record, 'needs_review', traceback.format_exc())
-            recorded = 'A payment WAS recorded for it (see the postback), but it'
+            recorded = ('A payment WAS recorded for it, but it could not be matched to the items '
+                        'it was for.')
         else:
             _set_postback_status(log_record, 'failed', traceback.format_exc())
-            recorded = 'No payment was recorded for it, and it'
+            recorded = ('No payment was recorded for it, though the card may have been charged.')
         _email_treasury(request, log_record,
                         '[ESP CC] Failed to process Cybersource postback',
-                        'The following Cybersource postback could not be processed. '
-                        '%s needs to be reconciled by hand.\n\n%s' % (
-                            recorded, traceback.format_exc()))
+                        'The website hit an error while processing the following Cybersource '
+                        'postback. %s It is listed on %s, with steps to resolve it.\n\n%s' % (
+                            recorded, _issues_page_phrase(log_record), traceback.format_exc()))
         if request.POST.get('decision') == 'ACCEPT':
             raise ESPError('Your payment went through, but we could not record it '
                            'automatically. Please do not pay again; we have been '
@@ -696,10 +697,11 @@ def _submit_transaction(request, log_record):
                              'the card may have been authorized.' % reason_code)
         _email_treasury(request, log_record,
                         '[ESP CC] Payment held for review by Cybersource',
-                        'Cybersource returned decision REVIEW with reason code %s for the '
-                        'following postback. The card may have been authorized, but no '
-                        'payment was recorded. Please check the transaction with the '
-                        'payment processor and record or void it by hand.' % reason_code)
+                        'Cybersource is holding the following payment for review (decision '
+                        'REVIEW, reason code %s). The card may have been charged, but no payment '
+                        'was recorded on the website. Accept or reject it in CyberSource; if you '
+                        'accept it, record it with "Record this payment" on %s, then mark it '
+                        'resolved there.' % (reason_code, _issues_page_phrase(log_record)))
         return _redirect_from_identifier(identifier, 'under_review')
 
     if decision == 'ERROR':
@@ -718,8 +720,8 @@ def _submit_transaction(request, log_record):
     _email_treasury(request, log_record,
                     '[ESP CC] Unknown Cybersource decision',
                     'Cybersource returned an unrecognized decision (%r) for the '
-                    'following postback. No payment was recorded. Please check it '
-                    'by hand.' % decision)
+                    'following postback, so no payment was recorded. Check it in CyberSource; '
+                    'it is listed on %s, with steps to resolve it.' % (decision, _issues_page_phrase(log_record)))
     return _redirect_from_identifier(identifier, 'error')
 
 def _record_accepted_payment(request, log_record, identifier):
@@ -764,11 +766,12 @@ def _record_accepted_payment(request, log_record, identifier):
                         '%s (%s, user ID %d) paid $%.2f for %s (transaction ID %s). '
                         'The payment was recorded, but could not be matched to the '
                         'items it was for:\n\n    %s: %s\n\nTheir balance is now '
-                        '%s (negative means they have overpaid). Please mark the '
-                        'right items as paid, or refund, by hand.' % (
+                        '%s (negative means they have overpaid), counting this payment. If '
+                        'they paid for something they no longer have, ask them whether they '
+                        'want it added back or refunded, then do that. Mark it resolved on %s.' % (
                             iac.user.name(), iac.user.username, iac.user.id,
                             amount_paid, iac.program.niceName(), transaction_id,
-                            type(e).__name__, e, balance))
+                            type(e).__name__, e, balance, _issues_page_phrase(log_record)))
         return _redirect_from_identifier(identifier, 'received_review')
 
     _set_postback_status(log_record, 'processed')
@@ -783,12 +786,32 @@ def _set_postback_status(log_record, status, detail=''):
     except Exception:
         logger.exception('Failed to save status of Cybersource postback %d', log_record.id)
 
+def _issues_page_phrase(log_record):
+    """ Where a postback's issue is listed, for treasury emails (the link
+    itself is added by _email_treasury). Never raises: it is used while
+    handling other errors. """
+    try:
+        if log_record.program_id:
+            return 'the payment issues page for %s (link below)' % log_record.program.niceName()
+    except Exception:
+        return 'the payment issues page for its program'
+    return ('the payment issues page (View Credit Card Transactions) of the program(s) '
+            'it most likely belongs to by date')
+
 def _email_treasury(request, log_record, subject, message):
     """ Emails treasury about a postback, with a link to it. Never raises. """
     try:
         log_uri = request.build_absolute_uri(
             reverse('admin:accounting_cybersourcepostback_change', args=(log_record.id,)))
-        send_mail(subject, '%s\n\nPostback: %s\n' % (message, log_uri),
+        links = 'Postback: %s\n' % log_uri
+        if log_record.program_id:
+            # The program's payment issues list (CreditCardViewer), where this
+            # can be resolved
+            links = 'Payment issues for %s: %s\n%s' % (
+                log_record.program.niceName(),
+                request.build_absolute_uri('/manage/%s/viewpay' % log_record.program.getUrlBase()),
+                links)
+        send_mail(subject, '%s\n\n%s' % (message, links),
                   settings.SERVER_EMAIL, [settings.DEFAULT_EMAIL_ADDRESSES['treasury']])
     except Exception:
         logger.exception('Failed to email treasury about Cybersource postback %d', log_record.id)
@@ -797,7 +820,8 @@ def _notify_treasury_if_overpaid(request, identifier, log_record, transaction_id
     """ The amount charged is fixed when the payment form is loaded, so if the
     user's balance dropped while they were paying (e.g. financial aid was
     granted), they will have paid more than they owe. The payment is still
-    recorded correctly; ask treasury to refund the difference. """
+    recorded correctly; let treasury know, since the student may ask for a
+    refund. """
     # Never let a problem here affect the payment that was just recorded
     try:
         iac = IndividualAccountingController.parse_identifier(identifier)[0]
@@ -805,13 +829,14 @@ def _notify_treasury_if_overpaid(request, identifier, log_record, transaction_id
         if amount_due >= 0:
             return
         _email_treasury(request, log_record,
-                        '[ESP CC] Overpayment: refund $%.2f to %s' % (-amount_due, iac.user.name()),
+                        '[ESP CC] Overpayment: %s overpaid by $%.2f' % (iac.user.name(), -amount_due),
                         '%s (%s, user ID %d) has paid $%.2f more than they owe for %s, '
                         'probably because their costs or financial aid changed while '
-                        'they were paying. The payment was recorded; please refund the '
-                        'difference.\n\n    Transaction ID: %s' % (
+                        'they were paying. The payment was recorded. You may want to contact the student, and/or refund the difference in '
+                        'CyberSource; once it is settled, mark it '
+                        'resolved on %s.\n\n    Transaction ID: %s' % (
                             iac.user.name(), iac.user.username, iac.user.id, -amount_due,
-                            iac.program.niceName(), transaction_id))
+                            iac.program.niceName(), _issues_page_phrase(log_record), transaction_id))
     except Exception:
         logger.exception('Failed to check for overpayment')
 

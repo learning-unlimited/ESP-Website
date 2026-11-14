@@ -442,8 +442,8 @@ class StudentRegTest(ProgramFrameworkTest):
 
     def test_cybersource_overpayment_notifies_treasury(self):
         """ If aid is granted while the student is on the payment page, the
-        payment is still recorded and treasury is asked to refund the
-        difference. """
+        payment is still recorded and treasury is told, with a link to the
+        payment issues page. """
 
         pac = ProgramAccountingController(self.program)
         pac.clear_all_data()
@@ -468,6 +468,8 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertIn('$70.00', treasury[0].subject)
         self.assertEqual(treasury[0].to, [settings.DEFAULT_EMAIL_ADDRESSES['treasury']])
         self.assertIn('txn-over', treasury[0].body)
+        self.assertIn('only if they ask for a refund', treasury[0].body)
+        self.assertIn('/manage/%s/viewpay' % self.program.getUrlBase(), treasury[0].body)
 
     def test_cybersource_exact_payment_no_notification(self):
         """ A normal payment (here, the full-aid + extra case) sends no
