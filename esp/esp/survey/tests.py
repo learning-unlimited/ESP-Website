@@ -906,3 +906,42 @@ class SurveyViewsContextIsolationTest(ProgramFrameworkTest):
 
         self.assertIsNot(first_context, second_context)
         self.assertNotIn('leaked_from_first_request', second_context)
+
+
+class GetSurveyInfoTeacherIdTest(ProgramFrameworkTest):
+    """get_survey_info must ignore a non-numeric teacher_id instead of
+    raising ValueError (issue #6290)."""
+
+    def setUp(self):
+        super().setUp(num_students=0)
+        self.survey = Survey.objects.create(
+            name='Learn Survey', program=self.program, category='learn')
+        Survey.objects.create(
+            name='Teach Survey', program=self.program, category='teach')
+        self.factory = RequestFactory()
+        self.admin = self.admins[0]
+        self.one, self.two = self.program.url.split('/')
+
+    def call(self, method, data):
+        from esp.survey.views import get_survey_info
+        request = getattr(self.factory, method)('/manage/survey', data)
+        request.user = self.admin
+        return get_survey_info(request, 'manage', self.one, self.two)
+
+    def test_non_numeric_get_teacher_id_is_ignored(self):
+        for value in ['abc', '', '1.5']:
+            user, prog, surveys = self.call('get', {'teacher_id': value})
+            self.assertEqual(user, self.admin)
+            self.assertEqual(prog, self.program)
+            self.assertEqual(surveys.count(), 2)
+
+    def test_non_numeric_post_teacher_id_is_ignored(self):
+        user, prog, surveys = self.call('post', {'teacher_id': 'abc'})
+        self.assertEqual(user, self.admin)
+        self.assertEqual(surveys.count(), 2)
+
+    def test_valid_teacher_id_still_selects_teacher(self):
+        teacher = self.teachers[0]
+        user, prog, surveys = self.call('get', {'teacher_id': str(teacher.id)})
+        self.assertEqual(user, teacher)
+        self.assertEqual(list(surveys), [self.survey])
