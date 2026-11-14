@@ -1034,6 +1034,10 @@ class QSDEditNavCategoryTest(TestCase):
     """Tests for nav_category validation and fallback in qsd edit POST (#6273)."""
 
     def setUp(self):
+        super().setUp()
+        if hasattr(NavBarCategory, '_default'):
+            del NavBarCategory._default
+
         self.admin, _ = ESPUser.objects.get_or_create(username='qsd_nav_admin')
         self.admin.set_password('password')
         self.admin.save()
@@ -1055,6 +1059,11 @@ class QSDEditNavCategoryTest(TestCase):
             description='',
             keywords='',
         )
+
+    def tearDown(self):
+        if hasattr(NavBarCategory, '_default'):
+            del NavBarCategory._default
+        super().tearDown()
 
     def test_edit_non_numeric_nav_category_returns_404(self):
         """A non-numeric nav_category returns 404 without modifying the QSD."""
@@ -1131,3 +1140,37 @@ class QSDEditNavCategoryTest(TestCase):
         self.qsd_rec.refresh_from_db()
         self.assertEqual(self.qsd_rec.content, 'Updated content')
         self.assertEqual(self.qsd_rec.nav_category, self.other_cat)
+
+    def test_edit_empty_nav_category_no_categories_exist_returns_404(self):
+        """When no navbar category exists, an empty nav_category returns 404 instead of 500."""
+        self.qsd_rec.delete()
+        NavBarCategory.objects.all().delete()
+        if hasattr(NavBarCategory, '_default'):
+            del NavBarCategory._default
+
+        response = self.client.post('/learn/no_cat_page.edit.html', {
+            'post_edit': '1',
+            'nav_category': '',
+            'content': 'Content',
+            'title': 'Title',
+            'description': '',
+            'keywords': '',
+        })
+        self.assertEqual(response.status_code, 404)
+
+    def test_edit_empty_nav_category_no_default_category_returns_404(self):
+        """When categories exist but none is named 'default', an empty nav_category returns 404."""
+        self.qsd_rec.delete()
+        NavBarCategory.objects.filter(name='default').delete()
+        if hasattr(NavBarCategory, '_default'):
+            del NavBarCategory._default
+
+        response = self.client.post('/learn/no_default_cat_page.edit.html', {
+            'post_edit': '1',
+            'nav_category': '',
+            'content': 'Content',
+            'title': 'Title',
+            'description': '',
+            'keywords': '',
+        })
+        self.assertEqual(response.status_code, 404)

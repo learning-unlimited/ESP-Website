@@ -87,7 +87,7 @@ def default_navbarcategory():
             # We shouldn't need this before we've had a chance to run install()
             # But Django was trying to call it anyway
             return None
-        NavBarCategory._default = NavBarCategory.objects.filter(name='default')[0]
+        NavBarCategory._default = NavBarCategory.objects.filter(name='default').first()
     return NavBarCategory._default
 
 class NavBarEntry(models.Model):

@@ -174,9 +174,13 @@ def qsd(request, url):
 
         if have_edit:
             if action in ('edit', 'create',):
+                try:
+                    def_cat = default_navbarcategory()
+                except (IndexError, NavBarCategory.DoesNotExist):
+                    def_cat = None
                 qsd_rec = QuasiStaticData()
                 qsd_rec.url = base_url
-                qsd_rec.nav_category = default_navbarcategory()
+                qsd_rec.nav_category = def_cat
                 qsd_rec.create_date = datetime.now()
                 qsd_rec.keywords = ''
                 qsd_rec.description = ''
@@ -238,7 +242,17 @@ def qsd(request, url):
         if nav_category_id:
             nav_category_target = get_by_id_or_404(NavBarCategory, nav_category_id)
         else:
-            nav_category_target = qsd_rec.nav_category or default_navbarcategory()
+            nav_category_target = None
+            if getattr(qsd_rec, 'nav_category_id', None):
+                try:
+                    nav_category_target = qsd_rec.nav_category
+                except NavBarCategory.DoesNotExist:
+                    nav_category_target = None
+            if nav_category_target is None:
+                try:
+                    nav_category_target = default_navbarcategory()
+                except (IndexError, NavBarCategory.DoesNotExist):
+                    nav_category_target = None
             if nav_category_target is None:
                 raise Http404('Navigation category not found.')
 

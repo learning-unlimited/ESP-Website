@@ -159,6 +159,14 @@ class DefaultNavBarCategoryTest(TestCase):
         result = default_navbarcategory()
         self.assertIsNone(result)
 
+    def test_returns_none_when_no_category_named_default_exists(self):
+        NavBarCategory.objects.filter(name='default').delete()
+        _make_category('other_category')
+        if hasattr(NavBarCategory, '_default'):
+            del NavBarCategory._default
+        result = default_navbarcategory()
+        self.assertIsNone(result)
+
     def test_caches_result(self):
         r1 = default_navbarcategory()
         r2 = default_navbarcategory()
