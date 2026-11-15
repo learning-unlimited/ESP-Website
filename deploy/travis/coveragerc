@@ -1,0 +1,7 @@
+# Coverage settings for CI, which runs the tests with --parallel: measure
+# the worker processes too, each writing its own data file, which
+# deploy/travis/script combines before writing the report.
+[run]
+source = .
+concurrency = multiprocessing
+parallel = True

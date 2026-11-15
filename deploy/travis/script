@@ -4,7 +4,9 @@ set -euf -o pipefail
 if [ "$TRAVIS_JOB" = "test" ]; then
     cd esp
     ./manage.py collectstatic --noinput -v 0
-    coverage run --source=. ./manage.py test
+    export COVERAGE_RCFILE=`pwd`/../deploy/travis/coveragerc
+    coverage run ./manage.py test --parallel
+    coverage combine
     coverage xml
 elif [ "$TRAVIS_JOB" = "lint" ]; then
     deploy/lint
