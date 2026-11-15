@@ -1274,8 +1274,7 @@ def update_email_delete(**kwargs):
     return update_email(**kwargs)
 
 
-@enable_with_setting(settings.USE_MAILMAN)
-def update_email(**kwargs):
+def _update_email(**kwargs):
     """Update a user if they changed their email.
 
     With the exception of separate mailman-only subscriptions, we want the
@@ -1294,6 +1293,14 @@ def update_email(**kwargs):
       here without confirming their email, it should be okay.  In any case, it
       can be reverted by a site admin (or even by the user themself, by doing a
       new confirmation email).
+
+    A blank email address counts as no address: it is never added to or
+    removed from a list, and accounts that share it are not deactivated.
+    Blanking an active account's address is treated as an email change, so
+    the old address stays on its lists.
+
+    This is the undecorated function, for tests; the signal receivers call
+    update_email, which does nothing unless USE_MAILMAN is set.
     """
     from esp import mailman
     deleted = kwargs['deleted']
@@ -1302,7 +1309,8 @@ def update_email(**kwargs):
         # remove them from lists anyway just in case.  So we ignore is_active
         # here.
         old_user = kwargs['instance']
-        old_email = old_user.email
+        new_user = None
+        old_email = old_user.email or None
         new_email = None
     else:
         new_user = kwargs['instance']
@@ -1310,12 +1318,20 @@ def update_email(**kwargs):
             # It's a newly created user, don't do anything.
             return
         old_user = ESPUser.objects.get(id=new_user.id)
-        old_email = old_user.email if old_user.is_active else None
-        new_email = new_user.get_email_sendto_address() if new_user.is_active else None
+        old_email = (old_user.email or None) if old_user.is_active else None
+        new_email = new_user.get_email_sendto_address() if new_user.is_active and new_user.email else None
         if (old_user.email == new_user.email) and (old_user.is_active == new_user.is_active):
             # They didn't change their email and didn't activate/deactivate,
             # don't do anything.
             return
+        if new_user.is_active and not new_user.email:
+            # They blanked their address; keep the old one, as for any email
+            # change, rather than treating it as a deactivation.
+            return
+
+    if old_email is None and new_email is None:
+        # No address on either side (e.g. a blank email), so nothing to do.
+        return
 
 
     # Now we have set old_email and new_email; if either is not None, the
@@ -1397,6 +1413,8 @@ def update_email(**kwargs):
         if not other_users.exists():
             for l in lists:
                 mailman.remove_list_member(l, old_email)
+
+update_email = enable_with_setting(settings.USE_MAILMAN)(_update_email)
 
 
 class ESPUserData(models.Model):

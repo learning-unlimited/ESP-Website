@@ -727,3 +727,83 @@ class PermissionTestCase(TestCase):
         implications = ['Teacher/Classes/Create/OpenClass']
         self.create_user_perm_for_program(name)
         self.assertTrue(all(map(self.user_has_perm_for_program, implications)))
+
+
+class UpdateEmailTest(TestCase):
+    """ update_email keeps mailman lists in step with account emails.
+
+    Tests call the undecorated _update_email (update_email itself does
+    nothing unless USE_MAILMAN is set) with esp.mailman's functions
+    replaced by mocks, so no mailman commands run.
+    """
+    def setUp(self):
+        from unittest import mock
+        user_role_setup()
+        patcher = mock.patch.multiple('esp.mailman', add_list_member=mock.DEFAULT,
+                                      remove_list_member=mock.DEFAULT, lists_containing=mock.DEFAULT)
+        self.mailman = patcher.start()
+        self.addCleanup(patcher.stop)
+        self.mailman['lists_containing'].return_value = []
+
+    def make_user(self, username, email, role='Student', is_active=True):
+        user = ESPUser.objects.create_user(username=username, email=email, password='password')
+        user.is_active = is_active
+        user.save()
+        user.makeRole(role)
+        return user
+
+    def update(self, user, deleted=False):
+        from esp.users.models import _update_email
+        _update_email(instance=user, deleted=deleted)
+
+    def assertNoMailmanCalls(self):
+        for name, fake in self.mailman.items():
+            self.assertFalse(fake.called, name)
+
+    def test_delete_removes_address_and_deactivates_same_email_students(self):
+        student = self.make_user('deleted_student', 'family@example.com')
+        sibling = self.make_user('sibling_student', 'family@example.com')
+        teacher = self.make_user('family_teacher', 'family@example.com', role='Teacher')
+        self.update(student, deleted=True)
+        removed = set(call[0] for call in self.mailman['remove_list_member'].call_args_list)
+        self.assertEqual(removed, {('announcements', 'family@example.com'), ('teachers', 'family@example.com')})
+        self.assertFalse(ESPUser.objects.get(id=sibling.id).is_active)
+        # Only student-like accounts are deactivated along with a student.
+        self.assertTrue(ESPUser.objects.get(id=teacher.id).is_active)
+
+    def test_delete_with_blank_email_does_nothing(self):
+        student = self.make_user('blank_deleted', '')
+        other = self.make_user('blank_other', '')
+        self.update(student, deleted=True)
+        self.assertNoMailmanCalls()
+        self.assertTrue(ESPUser.objects.get(id=other.id).is_active)
+
+    def test_deactivating_blank_email_leaves_other_blank_accounts(self):
+        student = self.make_user('blank_deactivated', '')
+        other = self.make_user('blank_bystander', '')
+        student.is_active = False
+        self.update(student)
+        self.assertNoMailmanCalls()
+        self.assertTrue(ESPUser.objects.get(id=other.id).is_active)
+
+    def test_activating_blank_email_adds_nothing(self):
+        student = self.make_user('blank_activated', '', is_active=False)
+        student.is_active = True
+        self.update(student)
+        self.assertNoMailmanCalls()
+
+    def test_blanking_email_keeps_old_address(self):
+        student = self.make_user('blanker', 'family@example.com')
+        sibling = self.make_user('blanker_sibling', 'family@example.com')
+        student.email = ''
+        self.update(student)
+        self.assertNoMailmanCalls()
+        self.assertTrue(ESPUser.objects.get(id=sibling.id).is_active)
+
+    def test_email_change_moves_lists(self):
+        student = self.make_user('mover', 'old@example.com')
+        self.mailman['lists_containing'].return_value = ['announcements']
+        student.email = 'new@example.com'
+        self.update(student)
+        self.mailman['add_list_member'].assert_called_once_with('announcements', student.get_email_sendto_address())
+        self.mailman['remove_list_member'].assert_called_once_with('announcements', 'old@example.com')
