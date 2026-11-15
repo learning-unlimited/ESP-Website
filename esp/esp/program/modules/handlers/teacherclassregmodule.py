@@ -54,6 +54,7 @@ from esp.users.models            import ESPUser, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
+from django.contrib.contenttypes.models import ContentType
 from django.http                 import Http404, HttpResponse, HttpResponseRedirect
 from esp.middleware.esperrormiddleware import Http403
 from django.db                   import models
@@ -644,12 +645,20 @@ class TeacherClassRegModule(ProgramModuleObj):
         target_class = classes[0]
         context_form = FileUploadForm()
         context_rename_form = FileRenameForm()
+        classsubject_ct = ContentType.objects.get_for_model(ClassSubject)
 
         if request.method == "POST":
             if request.POST["command"] == "delete":
                 docid = request.POST["docid"]
-                media = Media.objects.get(id=docid)
-                media.delete()
+                try:
+                    media = Media.objects.get(
+                        id=docid,
+                        owner_type=classsubject_ct,
+                        owner_id=target_class.id,
+                    )
+                    media.delete()
+                except Media.DoesNotExist:
+                    pass
             elif request.POST["command"] == "add":
                 form = FileUploadForm(request.POST, request.FILES)
 
@@ -671,9 +680,16 @@ class TeacherClassRegModule(ProgramModuleObj):
                 form = FileRenameForm(request.POST, request.FILES)
                 if form.is_valid():
                     docid = request.POST['docid']
-                    media = Media.objects.get(id = docid)
-                    media.rename(form.cleaned_data['title'])
-                    media.save()
+                    try:
+                        media = Media.objects.get(
+                            id=docid,
+                            owner_type=classsubject_ct,
+                            owner_id=target_class.id,
+                        )
+                        media.rename(form.cleaned_data['title'])
+                        media.save()
+                    except Media.DoesNotExist:
+                        pass
                 else:
                     context_rename_form = form
 

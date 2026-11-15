@@ -118,8 +118,14 @@ class Media(models.Model):
     def delete(self, *args, **kwargs):
         """ Delete entry; provide hack to fix old absolute-path-storing. """
         import os
-        if os.path.isfile(self.get_uploaded_filename()):
-            os.remove(self.get_uploaded_filename())
+        # If no file is associated, FileField.url can raise ValueError.
+        try:
+            uploaded = self.get_uploaded_filename()
+        except Exception:
+            uploaded = None
+
+        if uploaded and os.path.isfile(uploaded):
+            os.remove(uploaded)
 
         super(Media, self).delete(*args, **kwargs)
 
