@@ -247,9 +247,10 @@ class StudentRegPhaseZeroManageTest(ProgramFrameworkTest):
             'student_selected3': str(student2.id),
         })
         request.user = self.admins[0]
+        request.session = {}
         response = self.moduleobj.phasezero(request, 'manage', 'one', 'two', None, None, self.program)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('has been moved to a different lottery group.', response.context['success'])
+        self.assertIn('has been moved to a different lottery group.', response.context_data['success'])
 
     def test_add_to_existing_group_adds_new_student_message(self):
         student1 = self.students[0]
@@ -263,6 +264,7 @@ class StudentRegPhaseZeroManageTest(ProgramFrameworkTest):
             'student_selected3': str(student2.id),
         })
         request.user = self.admins[0]
+        request.session = {}
         response = self.moduleobj.phasezero(request, 'manage', 'one', 'two', None, None, self.program)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('has been added to the lottery group.', response.context['success'])
+        self.assertIn('has been added to the lottery group.', response.context_data['success'])
