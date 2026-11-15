@@ -87,6 +87,23 @@ class ReadOnlyModelAdmin(ModelAdmin):
         return super(ReadOnlyModelAdmin, self).change_view(request, object_id, form_url, extra_context)
 
 
+class NoDeleteAdminMixin(object):
+    """ Mix into a ModelAdmin to stop the admin panel deleting its rows.
+
+    Hides the delete button and refuses the delete page, and drops the
+    "Delete selected" action, which Django 1.11 lists even without delete
+    permission.  Deleting a row of another model can still cascade into
+    these rows; this only covers the model's own admin pages.
+    """
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_actions(self, request):
+        actions = super(NoDeleteAdminMixin, self).get_actions(request)
+        actions.pop('delete_selected', None)
+        return actions
+
+
 def register_remaining_models(site, excluded, read_only=()):
     """ Give every concrete model in ESP's own apps a default admin page,
     unless an admin.py already registered it or it's listed in excluded.

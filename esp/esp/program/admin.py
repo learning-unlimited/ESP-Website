@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from django.contrib import admin
 
-from esp.admin import admin_site
+from esp.admin import admin_site, NoDeleteAdminMixin
 
 from esp.program.models import ProgramModule, ArchiveClass, Program
 from esp.program.models import RegistrationProfile
@@ -70,7 +70,7 @@ class ArchiveClassAdmin(admin.ModelAdmin):
     pass
 admin_site.register(ArchiveClass, ArchiveClassAdmin)
 
-class ProgramAdmin(admin.ModelAdmin):
+class ProgramAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     class Media:
         css = { 'all': ( '/media/styles/admin.css', ) }
         js = ( '/media/scripts/admin_chosen_filter.js', )
@@ -223,7 +223,7 @@ admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
 
 ## class_.py
 
-class Admin_RegistrationType(admin.ModelAdmin):
+class Admin_RegistrationType(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = ('name', 'category', 'displayName', 'description', )
 admin_site.register(RegistrationType, Admin_RegistrationType)
 
@@ -237,7 +237,7 @@ def renew_student_registrations(modeladmin, request, queryset):
         reg.unexpire()
     modeladmin.message_user(request, "%s registration(s) successfully renewed" % len(queryset))
 
-class StudentRegistrationAdmin(admin.ModelAdmin):
+class StudentRegistrationAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)
     actions = [ expire_student_registrations, renew_student_registrations ]
     search_fields = default_user_search() + ['id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
@@ -245,7 +245,7 @@ class StudentRegistrationAdmin(admin.ModelAdmin):
     date_hierarchy = 'start_date'
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
-class StudentSubjectInterestAdmin(admin.ModelAdmin):
+class StudentSubjectInterestAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
     search_fields = default_user_search() + ['id', 'subject__id', 'subject__title']
@@ -257,7 +257,7 @@ def sec_classrooms(obj):
     return "; ".join(list({x.name +': ' +  str(x.num_students) + " students" for x in obj.classrooms()}))
 def sec_teacher_optimal_capacity(obj):
     return (obj.parent_class.class_size_max if obj.parent_class.class_size_max else obj.parent_class.class_size_optimal)
-class SectionAdmin(admin.ModelAdmin):
+class SectionAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = ('emailcode', 'title', 'friendly_times', 'status', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
     list_display_links = ('title',)
     list_filter = ['status', 'parent_class__parent_program']
@@ -270,7 +270,7 @@ class SectionInline(admin.TabularInline):
     readonly_fields = ('meeting_times', 'prettyrooms')
     can_delete = False
 
-class SubjectAdmin(admin.ModelAdmin):
+class SubjectAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = ('category', 'id', 'title', 'parent_program',
                     'pretty_teachers')
     list_display_links = ('title',)
@@ -302,11 +302,11 @@ class SubjectAdmin(admin.ModelAdmin):
     )
 admin_site.register(ClassSubject, SubjectAdmin)
 
-class Admin_ClassCategories(admin.ModelAdmin):
+class Admin_ClassCategories(NoDeleteAdminMixin, admin.ModelAdmin):
      list_display = ('category', 'symbol', 'seq', )
 admin_site.register(ClassCategories, Admin_ClassCategories)
 
-class Admin_ClassSizeRange(admin.ModelAdmin):
+class Admin_ClassSizeRange(NoDeleteAdminMixin, admin.ModelAdmin):
      list_display = ('program', 'range_min', 'range_max', )
      list_filter = ('program',)
 admin_site.register(ClassSizeRange, Admin_ClassSizeRange)

@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
-from esp.admin import admin_site
+from esp.admin import admin_site, NoDeleteAdminMixin
 from django import forms
 from django.db import models
 from esp.users.models.forwarder import UserForwarder
@@ -38,7 +38,7 @@ class UserAvailabilityAdmin(admin.ModelAdmin):
     ordering = ['-event__program', 'user__username', 'event__start']
 admin_site.register(UserAvailability, UserAvailabilityAdmin)
 
-class ESPUserAdmin(UserAdmin):
+class ESPUserAdmin(NoDeleteAdminMixin, UserAdmin):
     #remove the user_permissions from adminpage
     #(since we don't use it)
     #See https://github.com/django/django/blob/stable/1.3.x/django/contrib/auth/admin.py

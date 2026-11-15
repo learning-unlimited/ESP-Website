@@ -502,6 +502,35 @@ class RegisterRemainingModelsTest(DjangoTestCase):
                    and not admin_site.is_registered(model)]
         self.assertEqual(missing, [])
 
+    def test_core_models_cannot_be_deleted_from_admin(self):
+        import esp.urls  # noqa: registration happens when the URLconf loads
+        from django.test import RequestFactory
+        from esp.admin import admin_site
+        from esp.program.models import (ClassCategories, ClassSection, ClassSizeRange, ClassSubject, Program,
+                                        RegistrationType, StudentRegistration, StudentSubjectInterest)
+        from esp.users.models import ESPUser
+
+        request = RequestFactory().get('/')
+        request.user = ESPUser(is_superuser=True, is_staff=True)
+        # The last three because deleting one would cascade into the others' rows.
+        for model in (ESPUser, ClassSubject, ClassSection, Program, StudentRegistration, StudentSubjectInterest,
+                      ClassCategories, RegistrationType, ClassSizeRange):
+            model_admin = admin_site._registry[model]
+            self.assertFalse(model_admin.has_delete_permission(request), model.__name__)
+            self.assertNotIn('delete_selected', model_admin.get_actions(request), model.__name__)
+
+        # The delete page itself refuses, even for a superuser.  (Called
+        # directly: rendering the 403 page needs theme settings this test
+        # doesn't set up.)
+        from django.core.exceptions import PermissionDenied
+        victim = ESPUser.objects.create_user(username='nodeletevictim', password='password')
+        post = RequestFactory().post('/', {'post': 'yes'})
+        post.user = request.user
+        post._dont_enforce_csrf_checks = True  # as the test client does
+        with self.assertRaises(PermissionDenied):
+            admin_site._registry[ESPUser].delete_view(post, str(victim.id))
+        self.assertTrue(ESPUser.objects.filter(id=victim.id).exists())
+
 
 class TexEscapeTest(unittest.TestCase):
     def test_keeps_printable_accents_and_falls_back_for_the_rest(self):
