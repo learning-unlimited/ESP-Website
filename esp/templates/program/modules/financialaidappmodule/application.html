@@ -97,7 +97,8 @@
 {% endif %}
 <tr style="border: 1px solid #CCCCCC">
  <th colspan="2" style="text-align: center;">
-    <input type="submit" class="button" name="submitform" value="Complete" />
+    {# A <button> rather than <input type="submit">: browser page translation rewrites an input's value (its visible label), which the view then can't recognize. #}
+    <button type="submit" class="button" name="submitform" value="Complete">Complete</button>
  </th>
 </tr>
 </table>
