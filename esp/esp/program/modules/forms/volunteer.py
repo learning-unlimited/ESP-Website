@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from django import forms
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
-from django.db.models import Count
 from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
 from esp.utils.widgets import DateTimeWidget, DateWidget
@@ -253,7 +252,7 @@ class VolunteerImportForm(forms.Form):
     def __init__(self, *args, **kwargs):
         cur_prog = kwargs.pop('cur_prog', None)
         super().__init__(*args, **kwargs)
-        qs = Program.objects.annotate(vr_count = Count('volunteerrequest')).filter(vr_count__gt=0)
+        qs = Program.objects.all()
         if cur_prog is not None:
             qs = qs.exclude(id=cur_prog.id)
         self.fields['program'].queryset = qs
