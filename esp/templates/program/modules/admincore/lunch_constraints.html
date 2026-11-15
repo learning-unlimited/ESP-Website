@@ -34,6 +34,12 @@
             Settings successfully saved.
         </div>
     {% endif %}
+    {% for sec in undeleted_sections %}
+        <div role="alert" class="alert alert-warning">
+            <span class="bi bi-exclamation-triangle" aria-hidden="true"></span>
+            Could not remove the {% for ts in sec.meeting_times.all %}{{ ts.short_description }}{% if not forloop.last %}, {% endif %}{% empty %}{{ sec.emailcode }}{% endfor %} lunch section: {{ sec.num_students }} student{{ sec.num_students|pluralize }} {{ sec.num_students|pluralize:"is,are" }} registered for it. Clear those registrations before removing this lunch block.
+        </div>
+    {% endfor %}
     {% if POST and not saved %}
         <div role="alert" class="alert alert-danger">
             <span class="bi bi-info-circle" aria-hidden="true"></span>

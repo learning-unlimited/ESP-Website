@@ -2,6 +2,7 @@ from django import forms
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import DateTimeWidget
 from esp.users.models import K12School, ESPUser
+from esp.tagdict.models import Tag
 import datetime
 
 class OnSiteRegForm(forms.Form):
@@ -21,6 +22,8 @@ class OnSiteRegForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields['grade'].choices = (
             [('', '')] + [(x, x) for x in ESPUser.grade_options()])
+        if not Tag.getBooleanTag('onsite_show_paid_field'):
+            del self.fields['paid']
 
 class OnsiteBarcodeCheckinForm(forms.Form):
     uids = forms.CharField(label = 'User IDs', widget=forms.Textarea(attrs={'rows': 10}))

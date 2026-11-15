@@ -17,13 +17,16 @@
     {% include "customforms/single_form_fragment.html" %}
     
     <br/>
-    {% if wizard.steps.prev %}
-        {% if wizard.steps.first != wizard.steps.prev %}
-            <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.first }}">First Step</button>
-        {% endif %}
-        <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.prev }}">Prev Step</button>
-    {% endif %}
+    {# Next comes first so Enter submits it; the CSS shows it last. #}
+    <div class="wizard-nav">
     <input type="submit" class="btn primary"{% if wizard.steps.next %} value="Next Step"{% endif %}>
+    {% if wizard.steps.prev %}
+        <button class="btn primary" name="wizard_goto_step" formnovalidate value="{{ wizard.steps.prev }}">Prev Step</button>
+        {% if wizard.steps.first != wizard.steps.prev %}
+            <button class="btn primary" name="wizard_goto_step" formnovalidate value="{{ wizard.steps.first }}">First Step</button>
+        {% endif %}
+    {% endif %}
+    </div>
     </form>
 {% endblock %}
 

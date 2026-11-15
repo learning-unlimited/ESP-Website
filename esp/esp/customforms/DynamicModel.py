@@ -23,11 +23,11 @@ logger = logging.getLogger(__name__)
 
 def get_file_upload_path(instance, filename):
     """
-    Returns the upload path for the file that is to be saved.
+    Returns the upload path for the file that is to be saved, relative to
+    MEDIA_ROOT (Django rejects absolute paths from upload_to).
     Files are saved in the directory MEDIA_ROOT/uploaded/Response_[form_id]
     """
     save_dir = f'uploaded/{instance.__class__.__name__}'
-    save_dir = os.path.join(settings.MEDIA_ROOT, save_dir)
     save_path = os.path.join(save_dir, filename)
     return save_path
 
@@ -351,7 +351,7 @@ class DynamicModelHandler:
                     # Add in the FK-column for this model
                     model = self.createDynModel()
                     new_field = self._getLinkModelField(link_model_cls)
-                    new_field.column = f'link_{link_model_cls.__name__}'
+                    new_field.column = f'link_{link_model_cls.__name__}_id'
                     schema_editor.add_field(model, new_field)
                     self.link_models_list.append(link_model_cls.__name__)
 

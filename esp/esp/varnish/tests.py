@@ -2,13 +2,15 @@
 Tests for esp.varnish.varnish
 Source: esp/esp/varnish/varnish.py
 
-Tests Varnish cache purge utilities: get_varnish_host, purge_page, purge_all.
+Tests Varnish cache purge utilities: get_varnish_host, purge_page, purge_all,
+and the varnish_purge view.
 """
 from unittest.mock import patch, MagicMock
 
 from django.test import override_settings
 
 from esp.varnish.varnish import get_varnish_host, purge_all, purge_page
+from esp.tests.factories import make_user
 from esp.tests.util import CacheFlushTestCase as TestCase
 
 
@@ -76,3 +78,29 @@ class PurgeAllTest(TestCase):
         args = mock_conn.request.call_args[0]
         self.assertEqual(args[0], 'BAN')
         self.assertEqual(args[1], '/')
+
+
+class VarnishPurgeViewTest(TestCase):
+    def setUp(self):
+        make_user('Administrator', username='purgeadmin')
+        self.client.login(username='purgeadmin', password='password')
+
+    def test_get_not_allowed(self):
+        response = self.client.get('/varnish/purge_page')
+        self.assertEqual(response.status_code, 405)
+
+    def test_missing_page_returns_400(self):
+        response = self.client.post('/varnish/purge_page', {})
+        self.assertEqual(response.status_code, 400)
+
+    @patch('esp.varnish.views.purge_page')
+    def test_purges_page(self, mock_purge_page):
+        response = self.client.post('/varnish/purge_page', {'page': '/index.html'})
+        self.assertEqual(response.status_code, 200)
+        mock_purge_page.assert_called_once_with('/index.html')
+
+    def test_non_admin_forbidden(self):
+        make_user('Student', username='purgestudent')
+        self.client.login(username='purgestudent', password='password')
+        response = self.client.post('/varnish/purge_page', {'page': '/index.html'})
+        self.assertEqual(response.status_code, 403)

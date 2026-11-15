@@ -50,6 +50,7 @@ from esp.users.models            import ESPUser, Record, RecordType, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
+from django.contrib              import messages
 from django.http                 import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.db                   import models
 from django.forms.utils          import ErrorDict
@@ -58,6 +59,8 @@ from esp.program.modules.admin_search import AdminSearchEntry
 import json
 import re
 import datetime
+from esp.utils.ids import filter_by_id
+
 class TeacherClassRegModule(ProgramModuleObj):
     doc = """Allows teachers to register and manage classes and view their enrolled students."""
     permission_types = ('Teacher/Classes/All',)
@@ -104,8 +107,10 @@ class TeacherClassRegModule(ProgramModuleObj):
     def crmi(self):
         return self.program.classregmoduleinfo
 
-    def prepare(self, context={}):
+    def prepare(self, context=None):
         """ prepare returns the context for the main teacherreg page. """
+        if context is None:
+            context = {}
         user = self._resolve_user(None)
 
         context['can_edit'] = self.deadline_met('/Classes/Edit')
@@ -270,7 +275,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             secid = request.GET['secid']
         else:
             secid = extra
-        sections = ClassSection.objects.filter(id = secid)
+        sections = filter_by_id(ClassSection.objects, secid)
         if len(sections) == 1:
             if not request.user.canEdit(sections[0].parent_class) and not request.user.canMod(sections[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
@@ -435,7 +440,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             secid = request.POST['secid']
         else:
             secid = extra
-        sections = ClassSection.objects.filter(id = secid)
+        sections = filter_by_id(ClassSection.objects, secid)
         if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         section = sections[0]
@@ -451,7 +456,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             clsid = request.POST['clsid']
         else:
             clsid = extra
-        classes = ClassSubject.objects.filter(id = clsid)
+        classes = filter_by_id(ClassSubject.objects, clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
@@ -499,8 +504,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             clsid = request.POST['clsid']
         else:
             clsid = extra
-
-        classes = ClassSubject.objects.filter(id = clsid)
+        classes = filter_by_id(ClassSubject.objects, clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
@@ -524,8 +528,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             clsid = request.POST['clsid']
         else:
             clsid = extra
-
-        classes = ClassSubject.objects.filter(id = clsid)
+        classes = filter_by_id(ClassSubject.objects, clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
@@ -584,7 +587,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                     source_media = Media.objects.get(id=docid)
                     # Verify the teacher owns the source document's class
                     taught_ids = request.user.getTaughtClasses().values_list('id', flat=True)
-                    if source_media.owner_id in taught_ids:
+                    if source_media.owner_type_id == classsubject_ct.id and source_media.owner_id in taught_ids:
                         source_path = source_media.get_uploaded_filename()
                         if os.path.isfile(source_path):
                             with open(source_path, 'rb') as f:
@@ -838,9 +841,9 @@ class TeacherClassRegModule(ProgramModuleObj):
     @meets_deadline('/Classes/Coteachers')
     def coteachers(self, request, tl, one, two, module, extra, prog):
         if 'clsid' in request.GET:
-            classes = ClassSubject.objects.filter(id = request.GET['clsid'])
+            classes = filter_by_id(ClassSubject.objects, request.GET['clsid'])
         elif 'clsid' in request.POST:
-            classes = ClassSubject.objects.filter(id = request.POST['clsid'])
+            classes = filter_by_id(ClassSubject.objects, request.POST['clsid'])
         else:
             return self.goToCore(tl) # just fails.
 
@@ -1019,6 +1022,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                         newclass = ccc.editclass(request.user, request.POST, extra)
                     elif action == 'editopenclass':
                         newclass = ccc.editclass(request.user, request.POST, extra, form_class=TeacherOpenClassRegForm)
+
+                    for sec in ccc.undeleted_sections:
+                        num_students = sec.num_students()
+                        messages.warning(request, f"Could not remove section {sec.emailcode()}: {num_students} student{'s are' if num_students != 1 else ' is'} enrolled in it.")
 
                     do_question = bool(ProgramModule.objects.filter(handler="TeacherReviewApps", program=self.program))
 
