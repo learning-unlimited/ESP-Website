@@ -40,6 +40,7 @@ setuptools==57.5.0 # For building packages from source; stripe and a few others 
 selenium==2.44.0 # Runs selenium tests which probably don't work anymore
 shortuuid==0.4.2 # django-extensions dependency
 stripe==2.60.0 # Required for credit card processing
+tblib==1.7.0 # Lets manage.py test --parallel report failures from worker processes
 twilio==6.63.2 # Required for text messaging support
 wheel==0.38.4  # For building modern packages
 werkzeug # Required for runserver_plus (alternative to runserver provided by django-extensions)

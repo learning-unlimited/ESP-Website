@@ -241,6 +241,9 @@ CACHES = {
     }
 }
 
+# Gives each test run (and each --parallel worker) its own cache prefix.
+TEST_RUNNER = 'esp.tests.runner.ESPTestRunner'
+
 MIDDLEWARE_CLASSES = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)])
 
 # set tempdir so that we don't have to worry about collision
