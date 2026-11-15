@@ -290,6 +290,11 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' #which is persiste
 
 ATOMIC_REQUESTS = True
 
+# Django's default (1000) is too low for bulk staff forms that post one field
+# per checked row: the finaid approval page sends one `user` field per
+# student, and Splash has 1000+ finaid requests.
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
 # Dotted path to callable to be used as view when a request is
 # rejected by the CSRF middleware.
 CSRF_FAILURE_VIEW = 'esp.web.views.csrf.csrf_failure'

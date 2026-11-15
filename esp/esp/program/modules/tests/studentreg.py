@@ -973,6 +973,27 @@ class StudentRegTest(ProgramFrameworkTest):
         with self.assertRaises(ESPError_NoLog):
             request.preview_approval_email()
 
+    def test_finaid_approval_page_many_students(self):
+        """ Checking every student (1000+ at Splash) posts one `user` field
+        each; both the preview and the approval itself must accept that
+        many fields. """
+        iac = self._setup_shirt_program()
+        request = FinancialAidRequest.objects.create(user=iac.user, program=self.program,
+                                                     extra_explaination='Please')
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'))
+        #   The real student plus padding ids with no request, which are ignored
+        users = [str(iac.user.id)] + [str(10 ** 9 + i) for i in range(1500)]
+        data = {'user': users, 'amount_max_dec': '0', 'percent': '100'}
+
+        response = self.client.post('/manage/%s/finaidapprovepreview' % self.program.getUrlBase(), data)
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+        self.assertEqual([s['id'] for s in result['to_approve']], [iac.user.id])
+
+        response = self.client.post('/manage/%s/finaidapprove' % self.program.getUrlBase(), data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(FinancialAidGrant.objects.filter(request=request).exists())
+
     def test_finaid_approval_page_preview(self):
         """ The approval page's preview endpoint reports who would be approved
         or skipped, and picks whose email to show by criteria or by choice. """
