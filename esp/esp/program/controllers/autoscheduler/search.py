@@ -24,6 +24,7 @@ class SearchOptimizer:
 
         best_score = self.manipulator.scorer.score_schedule()
         best_actions = []
+        failed = False
         # Explore all possible roomslots to move to.
         for roomslot in self.roomslots:
             # First, figure out what slots we need.
@@ -37,6 +38,7 @@ class SearchOptimizer:
                     roomslot, section.duration)
             other_sections = []
             proposed_actions = []
+            # Reset this for each candidate roomslot.
             failed = False
             # Kick everyone else out of those slots.
             for needed_slot in needed_slots:
