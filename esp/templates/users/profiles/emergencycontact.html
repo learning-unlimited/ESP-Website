@@ -7,26 +7,33 @@
 <p>In the unlikely event of an emergency, we need to know who we should contact first, to let
 them know that you're safe (or that you need help). Often, this is just your parents.  However, if your parents will be out of town or unavailable,
 this might be a family friend or nearby relative.</p>
+{% if form.guard_first_name or form.guard_last_name or form.guard_e_mail or form.guard_phone_day or form.guard_phone_cell %}
 <p>Please either click below to copy your home address and your
 parents' contact information into this form, or give contact information for someone else that you know and trust.</p>
 <button type="button" class="btn profile-copy-btn" onclick="copy_parent_info();">Use my parents as my emergency contact</button>
+{% else %}
+<p>Please give contact information for someone that you know and trust.</p>
+{% endif %}
 </div>
 
 <script type="text/javascript">
-if (document.getElementById("id_phone_cell") && document.getElementById("id_guard_phone_cell")) {
-  document.getElementById("id_copy_parent_info").style.display = '';
-}
 function copy_parent_info() {
-  $j("#id_emerg_first_name").val($j("#id_guard_first_name").val()).change();
-  $j("#id_emerg_last_name").val($j("#id_guard_last_name").val()).change();
-  $j("#id_emerg_e_mail").val($j("#id_guard_e_mail").val()).change();
-  $j("#id_emerg_phone_cell").val($j("#id_guard_phone_cell").val()).change();
-  $j("#id_emerg_address_street").val($j("#id_address_street").val()).change();
-  $j("#id_emerg_address_city").val($j("#id_address_city").val()).change();
-  $j("#id_emerg_address_state").val($j("#id_address_state").val()).change();
-  $j("#id_emerg_address_zip").val($j("#id_address_zip").val()).change();
-  $j("#id_emerg_address_country").val($j("#id_address_country").val()).change();
-  $j("#id_emerg_phone_day").val($j("#id_guard_phone_day").val()).change();
+  // Skip fields that aren't on the page, so hidden fields don't blank their emergency copies
+  function copy_field(target, source) {
+    if ($j(source).length) {
+      $j(target).val($j(source).val()).change();
+    }
+  }
+  copy_field("#id_emerg_first_name", "#id_guard_first_name");
+  copy_field("#id_emerg_last_name", "#id_guard_last_name");
+  copy_field("#id_emerg_e_mail", "#id_guard_e_mail");
+  copy_field("#id_emerg_phone_cell", "#id_guard_phone_cell");
+  copy_field("#id_emerg_address_street", "#id_address_street");
+  copy_field("#id_emerg_address_city", "#id_address_city");
+  copy_field("#id_emerg_address_state", "#id_address_state");
+  copy_field("#id_emerg_address_zip", "#id_address_zip");
+  copy_field("#id_emerg_address_country", "#id_address_country");
+  copy_field("#id_emerg_phone_day", "#id_guard_phone_day");
 }
 </script>
 
