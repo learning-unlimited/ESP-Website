@@ -43,7 +43,6 @@ import os
 class Command(BaseCommand):
     """Update the site.
 
-    - Clean out old .pyc files.
     - Perform database migrations.
     - Install initial data (happens automatically after running migrations).
     - Collect static files.
@@ -73,7 +72,11 @@ class Command(BaseCommand):
                 raise Exception("Looks like you tried to run this with sudo but without '-u www-data'. Please try again!")
             elif not os.access(file, os.W_OK):
                 raise Exception("www-data doesn't have write access for esp.wsgi. Please fix this with chown, then try again!")
-        call_command('clean_pyc', **options)
+        # No clean_pyc: Python 3 never loads __pycache__ bytecode whose source
+        # is gone, and never writes .pyc files next to the source (the Python
+        # 2 problem it solved). ESP's version also deleted all bytecode under
+        # the parent of BASE_DIR, virtualenvs included, one shell per file
+        # (~45s per deploy on esp-web).
         call_command('migrate', **options)
         call_command('collectstatic', **options)
         call_command('recompile_theme', **options)
