@@ -5,8 +5,17 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Standard non-retryable programmer/code errors that should not be retried by default:
+NON_RETRYABLE_EXCEPTIONS = (
+    TypeError,
+    NameError,
+    AttributeError,
+    SyntaxError,
+    ImportError,
+)
 
-def try_multi(n_tries, exceptions=Exception):
+
+def try_multi(n_tries, exceptions=None):
     """
     Try the specified procedure up to N times.
     If it fails with a retryable exception, keep trying.
@@ -14,19 +23,23 @@ def try_multi(n_tries, exceptions=Exception):
 
     Args:
         n_tries (int): Maximum number of attempts (must be >= 1).
-        exceptions (type or tuple): Exception class or tuple of exception
+        exceptions (type or tuple, optional): Exception class or tuple of exception
             classes that are safe to retry. Must inherit from Exception
             (BaseException subclasses like KeyboardInterrupt and SystemExit
-            cannot be caught or retried). Defaults to Exception.
+            cannot be caught or retried). When omitted or None, defaults to
+            Exception excluding common programmer errors (TypeError, NameError,
+            AttributeError, SyntaxError, ImportError), which raise immediately
+            unless explicitly listed in exceptions.
     """
     if callable(n_tries):
         fn = n_tries
-        return try_multi(3, exceptions=Exception)(fn)
+        return try_multi(3, exceptions=exceptions)(fn)
 
     if n_tries < 1:
         raise ValueError(f"n_tries must be at least 1, got {n_tries}")
 
-    if exceptions is None:
+    is_default_filter = exceptions is None
+    if is_default_filter:
         retryable_exceptions = (Exception,)
     elif isinstance(exceptions, (list, set)):
         retryable_exceptions = tuple(exceptions)
@@ -53,6 +66,8 @@ def try_multi(n_tries, exceptions=Exception):
                 try:
                     return fn(*args, **kwargs)
                 except retryable_exceptions as e:
+                    if is_default_filter and isinstance(e, NON_RETRYABLE_EXCEPTIONS):
+                        raise
                     logger.warning(
                         "Attempt %d/%d for %s failed with %s: %s. Retrying...",
                         attempt,
@@ -64,6 +79,8 @@ def try_multi(n_tries, exceptions=Exception):
             try:
                 return fn(*args, **kwargs)
             except retryable_exceptions as e:
+                if is_default_filter and isinstance(e, NON_RETRYABLE_EXCEPTIONS):
+                    raise
                 logger.error(
                     "All %d attempts for %s failed with %s: %s.",
                     n_tries,

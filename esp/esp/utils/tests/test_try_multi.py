@@ -57,6 +57,51 @@ class TryMultiTestCase(unittest.TestCase):
         self.assertIn("ERROR", cm.output[2])
         self.assertIn("All 3 attempts for always_fails failed with RuntimeError", cm.output[2])
 
+    def test_default_type_error_raises_immediately_with_no_retry(self):
+        """Programmer errors like TypeError fail fast by default (issue #4350 reproduction)."""
+        calls = {"n": 0}
+
+        @try_multi(3)
+        def flaky_bug():
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise TypeError("real bug that should not be retried")
+            return "ok"
+
+        with self.assertRaises(TypeError):
+            flaky_bug()
+        # Must fail immediately on attempt 1 without retry
+        self.assertEqual(calls["n"], 1)
+
+    def test_default_attribute_error_raises_immediately_with_no_retry(self):
+        calls = {"n": 0}
+
+        @try_multi(3)
+        def attribute_bug():
+            calls["n"] += 1
+            raise AttributeError("missing attribute")
+
+        with self.assertRaises(AttributeError):
+            attribute_bug()
+        self.assertEqual(calls["n"], 1)
+
+    def test_explicit_type_error_is_retried(self):
+        """When explicitly listed in exceptions, TypeError is retried."""
+        calls = {"n": 0}
+
+        @try_multi(3, exceptions=(TypeError,))
+        def explicit_retry():
+            calls["n"] += 1
+            if calls["n"] < 2:
+                raise TypeError("explicitly allowed")
+            return "recovered"
+
+        with self.assertLogs(logger.name, level="WARNING") as cm:
+            result = explicit_retry()
+        self.assertEqual(result, "recovered")
+        self.assertEqual(calls["n"], 2)
+        self.assertEqual(len(cm.output), 1)
+
     def test_unexpected_exception_raises_immediately_when_specified(self):
         calls = {"n": 0}
 
@@ -170,3 +215,18 @@ class TryMultiTestCase(unittest.TestCase):
         self.assertEqual(calls["n"], 2)
         self.assertEqual(len(cm.output), 1)
         self.assertIn("Attempt 1/3 for bare_decorated failed with ValueError", cm.output[0])
+
+    def test_direct_decoration_preserves_exceptions_filter(self):
+        """Direct decoration preserves caller's exception filter and validates it."""
+        calls = {"n": 0}
+
+        def worker():
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise TypeError("should not be retried with ValueError filter")
+            return "done"
+
+        decorated = try_multi(worker, exceptions=ValueError)
+        with self.assertRaises(TypeError):
+            decorated()
+        self.assertEqual(calls["n"], 1)
