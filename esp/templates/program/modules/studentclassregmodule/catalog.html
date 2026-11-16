@@ -28,7 +28,7 @@ a.disabled {
 <script type="text/javascript">
 {% include "program/modules/studentclassregmodule/common-js.html.js" %}
 // set some variables for catalog.js
-const INJECTED_DIFFICULTIES = "{{ "teacherreg_difficulty_choices"|getTag|escapejs }}";
+const INJECTED_DIFFICULTIES = "{{ "teacherreg_difficulty_choices"|getProgramTag:program|escapejs }}";
 const register_from_catalog = {{ register_from_catalog|yesno:"true,false" }};
 const hide_empty_cats = {{ "hide_empty_categories"|getBooleanTag|yesno:"true,false" }};
 </script>

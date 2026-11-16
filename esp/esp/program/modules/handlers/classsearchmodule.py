@@ -188,8 +188,8 @@ class ClassSearchModule(ProgramModuleObj):
         )
 
         hardness_choices = TeacherClassRegForm.hardness_choices
-        if Tag.getTag('teacherreg_difficulty_choices'):
-            hardness_choices = json.loads(Tag.getTag('teacherreg_difficulty_choices'))
+        if Tag.getProgramTag('teacherreg_difficulty_choices', self.program):
+            hardness_choices = json.loads(Tag.getProgramTag('teacherreg_difficulty_choices', self.program))
         hardness_filter = SearchFilter(
             name='hardness_rating', title='the hardness rating',
             inputs=[SelectInput(field_name='hardness_rating',
@@ -222,8 +222,8 @@ class ClassSearchModule(ProgramModuleObj):
                 inputs=capacity_inputs)
             filters.append(capacity_filter)
 
-        if Tag.getTag('class_style_choices'):
-            style_choices = json.loads(Tag.getTag('class_style_choices'))
+        if Tag.getProgramTag('class_style_choices', self.program):
+            style_choices = json.loads(Tag.getProgramTag('class_style_choices', self.program))
             style_filter = SearchFilter(
                 name='class_style', title='the class style',
                 inputs=[SelectInput(field_name='class_style',

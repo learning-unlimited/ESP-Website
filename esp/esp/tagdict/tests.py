@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from unittest import mock
 from django.test import TestCase
 from django.contrib.auth.models import User
 from esp.tagdict import all_global_tags, all_program_tags
@@ -309,3 +310,30 @@ class ProgramTagTest(ProgramFrameworkTest):
             for b in [True, False]:
                 self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), False)
                 self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), False)
+
+
+class TagWarningTest(ProgramFrameworkTest):
+    """ Tag reads that are used correctly shouldn't log warnings (they all
+    end up in Bugsink). """
+
+    def _warnings(self, fn):
+        Tag._getTag.delete_all()
+        with mock.patch('esp.tagdict.models.logger') as logger:
+            result = fn()
+        return result, [call[0][0] % call[0][1:] for call in logger.warning.call_args_list]
+
+    def testPerProgramChoiceTags(self):
+        """ class_style_choices and teacherreg_difficulty_choices are program
+        tags (MIT sets them per program), read with getProgramTag. """
+        Tag.setTag('class_style_choices', value='[["A", "Global"]]')
+        Tag.setTag('class_style_choices', target=self.program, value='[["B", "Program"]]')
+        for key in ['class_style_choices', 'teacherreg_difficulty_choices']:
+            self.assertIn(key, all_program_tags)
+            self.assertNotIn(key, all_global_tags)
+        result, warnings = self._warnings(lambda: Tag.getProgramTag('class_style_choices', self.program))
+        self.assertEqual(result, '[["B", "Program"]]')
+        self.assertEqual(warnings, [])
+        #   Programs without their own value fall back to the global one
+        result, warnings = self._warnings(lambda: Tag.getProgramTag('class_style_choices', None))
+        self.assertEqual(result, '[["A", "Global"]]')
+        self.assertEqual(warnings, [])
