@@ -62,18 +62,44 @@ from django.utils.html import strip_tags
 from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.utils.deconstruct import deconstructible
 
 # LU uses: [settings.SITE_INFO[1].replace('.', r'\.'), r'(\w+\.)?learningu\.org']
 # MIT overrides this via ALLOWED_SENDER_EMAIL_DOMAINS in django_settings.py / local_settings.py
 _EMAIL_DOMAINS = settings.ALLOWED_SENDER_EMAIL_DOMAINS
-_BARE_PARTS   = ['(^.+@{0}$)'.format(d)     for d in _EMAIL_DOMAINS]
+
+def _bare_parts(domains):
+    return ['(^.+@{0}$)'.format(d) for d in domains]
+
+_BARE_PARTS   = _bare_parts(_EMAIL_DOMAINS)
 _NAMED_PARTS  = ['(^.+<.+@{0}>$)'.format(d) for d in _EMAIL_DOMAINS]
 
 # BARE_EMAIL_PATTERN: plain address only, e.g. splash@mit.edu
 # BARE_OR_NAMED_EMAIL_PATTERN: also allows "Name <addr>" format
 BARE_EMAIL_PATTERN          = '|'.join(_BARE_PARTS)
 BARE_OR_NAMED_EMAIL_PATTERN = '|'.join(p for pair in zip(_BARE_PARTS, _NAMED_PARTS) for p in pair)
+
+
+@deconstructible
+class AllowedSenderDomainValidator(object):
+    """ Model field validator: the address must be at one of this site's
+    ALLOWED_SENDER_EMAIL_DOMAINS (a plain address, as BARE_EMAIL_PATTERN).
+
+    The domains are read from settings when validating rather than built into
+    the field, so a migration records only this class, the same on every site,
+    instead of the domain list of whichever site generated it. (An inline
+    RegexValidator made prod's `migrate` report unmigrated model changes,
+    because the migration held esp-dev's domain list.) Keep this import path:
+    migrations refer to it. """
+
+    def __call__(self, value):
+        domains = settings.ALLOWED_SENDER_EMAIL_DOMAINS
+        if not re.match('|'.join(_bare_parts(domains)), value or ''):
+            raise ValidationError('Domain must match one of: ' + ', '.join(domains), code='invalid')
+
+    def __eq__(self, other):
+        return isinstance(other, AllowedSenderDomainValidator)
 
 # `user` is required for marketing and subscribed messages to add unsubscribe headers
 # this includes all comm panel emails

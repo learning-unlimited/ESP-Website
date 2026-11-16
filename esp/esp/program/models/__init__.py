@@ -66,7 +66,7 @@ from argcache import cache_function, cache_function_for, wildcard
 from esp.cal.models import Event, EventType
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
-from esp.dbmail.models import send_mail, BARE_EMAIL_PATTERN, _EMAIL_DOMAINS
+from esp.dbmail.models import send_mail, AllowedSenderDomainValidator
 from esp.middleware import ESPError, AjaxError
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
@@ -266,8 +266,7 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField(max_length=75,
-                                       validators=[validators.RegexValidator(BARE_EMAIL_PATTERN,
-                                           message='Domain must match one of: ' + ', '.join(_EMAIL_DOMAINS))],
+                                       validators=[AllowedSenderDomainValidator()],
                                        help_text=mark_safe('The "director email" should be the public-facing email address for the program (e.g. splash@mit.edu). It should usually <i>not</i> be a directors-only email address.'))
     director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text=mark_safe('If set, automated outgoing mail (except class cancellations) will be sent to this address <i>instead of</i> the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.')) # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
     director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address <i>instead of</i> the director email.')
