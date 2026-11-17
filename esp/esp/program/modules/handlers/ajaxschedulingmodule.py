@@ -236,8 +236,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 return self.makeret(prog, ret=False, msg="Class section not found in this program.")
             room_id = asmt.get('room_id')
             if room_id is None:
-                raw_timeslots = asmt.get('timeslots', [])
-                if raw_timeslots:
+                raw_timeslots = asmt.get('timeslots')
+                if not isinstance(raw_timeslots, list) or len(raw_timeslots) != 0:
                     return self.makeret(prog, ret=False, msg="Invalid assignment entry.")
                 validated.append((cls, None, []))
             else:

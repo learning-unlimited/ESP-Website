@@ -508,6 +508,12 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
             json.dumps([{'section': own_sec.id, 'timeslots': [times[0].id], 'room_id': 'bad'}]),
             json.dumps([{'section': own_sec.id, 'timeslots': [], 'room_id': False}]),
             json.dumps([{'section': own_sec.id, 'timeslots': [times[0].id], 'room_id': None}]),
+            json.dumps([{'section': own_sec.id, 'timeslots': False, 'room_id': None}]),
+            json.dumps([{'section': own_sec.id, 'timeslots': 0, 'room_id': None}]),
+            json.dumps([{'section': own_sec.id, 'timeslots': '', 'room_id': None}]),
+            json.dumps([{'section': own_sec.id, 'timeslots': {}, 'room_id': None}]),
+            json.dumps([{'section': own_sec.id, 'timeslots': None, 'room_id': None}]),
+            json.dumps([{'section': own_sec.id, 'room_id': None}]),
         ):
             payload = {'action': 'swap'}
             if bad_swap is not None:
@@ -533,6 +539,29 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.assertEqual(set(own_sec.get_meeting_times()), set(times[2:4]))
         self.assertTrue(own_sec.classrooms().exists())
         self.assertEqual(self.changelog.entries.count(), changelog_before)
+
+        # Explicitly confirm non-list or missing timeslots with room_id: None return an error and preserve schedule
+        for bad_ts_payload in (
+            {'section': own_sec.id, 'room_id': None, 'timeslots': False},
+            {'section': own_sec.id, 'room_id': None, 'timeslots': 0},
+            {'section': own_sec.id, 'room_id': None, 'timeslots': ''},
+            {'section': own_sec.id, 'room_id': None, 'timeslots': {}},
+            {'section': own_sec.id, 'room_id': None, 'timeslots': None},
+            {'section': own_sec.id, 'room_id': None},
+        ):
+            r_bad_ts = self.client.post(
+                self.schedule_class_url,
+                {
+                    'action': 'swap',
+                    'assignments': json.dumps([bad_ts_payload]),
+                    'override': 'false',
+                },
+            )
+            self.assertEqual(r_bad_ts.status_code, 200)
+            self.assertFalse(json.loads(r_bad_ts.content)['ret'])
+            self.assertEqual(set(own_sec.get_meeting_times()), set(times[2:4]))
+            self.assertTrue(own_sec.classrooms().exists())
+            self.assertEqual(self.changelog.entries.count(), changelog_before)
 
         # Moderator endpoint invalid/missing inputs
         mod_url = self.ajax_url_base + 'ajax_assign_moderator'
