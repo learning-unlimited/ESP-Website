@@ -506,6 +506,8 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
             json.dumps([{'section': 'abc'}]),
             json.dumps([{'section': own_sec.id, 'timeslots': ['abc'], 'room_id': room0.identical_id()}]),
             json.dumps([{'section': own_sec.id, 'timeslots': [times[0].id], 'room_id': 'bad'}]),
+            json.dumps([{'section': own_sec.id, 'timeslots': [], 'room_id': False}]),
+            json.dumps([{'section': own_sec.id, 'timeslots': [times[0].id], 'room_id': None}]),
         ):
             payload = {'action': 'swap'}
             if bad_swap is not None:
@@ -513,6 +515,24 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
             r = self.client.post(self.schedule_class_url, payload)
             self.assertEqual(r.status_code, 200)
             self.assertFalse(json.loads(r.content)['ret'])
+
+        # Explicitly confirm room_id: false returns an error and preserves schedule and changelog
+        changelog_before = self.changelog.entries.count()
+        r_false_room = self.client.post(
+            self.schedule_class_url,
+            {
+                'action': 'swap',
+                'assignments': json.dumps([
+                    {'section': own_sec.id, 'timeslots': [], 'room_id': False},
+                ]),
+                'override': 'false',
+            },
+        )
+        self.assertEqual(r_false_room.status_code, 200)
+        self.assertFalse(json.loads(r_false_room.content)['ret'])
+        self.assertEqual(set(own_sec.get_meeting_times()), set(times[2:4]))
+        self.assertTrue(own_sec.classrooms().exists())
+        self.assertEqual(self.changelog.entries.count(), changelog_before)
 
         # Moderator endpoint invalid/missing inputs
         mod_url = self.ajax_url_base + 'ajax_assign_moderator'

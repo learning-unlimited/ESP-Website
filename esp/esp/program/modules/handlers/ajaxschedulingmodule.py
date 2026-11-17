@@ -235,7 +235,12 @@ class AJAXSchedulingModule(ProgramModuleObj):
             if cls is None:
                 return self.makeret(prog, ret=False, msg="Class section not found in this program.")
             room_id = asmt.get('room_id')
-            if room_id:
+            if room_id is None:
+                raw_timeslots = asmt.get('timeslots', [])
+                if raw_timeslots:
+                    return self.makeret(prog, ret=False, msg="Invalid assignment entry.")
+                validated.append((cls, None, []))
+            else:
                 parsed_room = _parse_pos_int32(room_id)
                 raw_timeslots = asmt.get('timeslots')
                 if parsed_room is None or not isinstance(raw_timeslots, list) or not raw_timeslots:
@@ -249,8 +254,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
                     return self.makeret(prog, ret=False, msg="Specified Classrooms not found in the database")
                 requested_timeslot_ids.update(parsed_timeslots)
                 validated.append((cls, parsed_room, parsed_timeslots))
-            else:
-                validated.append((cls, None, []))
 
         if requested_timeslot_ids:
             program_event_count = Event.objects.filter(id__in=requested_timeslot_ids, program=prog).count()
