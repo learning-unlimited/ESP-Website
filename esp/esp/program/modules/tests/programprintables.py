@@ -120,6 +120,71 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         print((response['Content-Type']))
         self.assertTrue(response['Content-Type'].startswith('application/pdf'))
 
+    def post_schedules(self, extra=''):
+        """ Request PDF (or other) schedules for all enrolled students, and
+        return the response whatever its status. """
+        self._login_admin()
+        url = '/manage/%s/studentschedules%s' % (self.program.getUrlBase(), extra)
+        return self.client.post(url, {'recipient_type': 'students', 'base_list': 'enrolled', 'use_checklist': 0})
+
+    def test_schedule_rows(self):
+        """ Each class row shows the section's times, rooms, code and teachers. """
+        from esp.program.models import StudentRegistration
+        tex = self.post_schedules('/tex').content.decode('utf8')
+        srs = StudentRegistration.valid_objects().filter(
+            relationship__name='Enrolled', section__parent_class__parent_program=self.program)
+        self.assertTrue(srs.exists())
+        for section in set(sr.section for sr in srs):
+            if not section.meeting_times.exists():
+                continue
+            self.assertIn(section.emailcode(), tex)
+            for time in section.friendly_times():
+                self.assertIn(time, tex)
+            for room in section.initial_rooms():
+                self.assertIn(room.name, tex)
+            for name in section.parent_class.getTeacherNamesWithPronouns():
+                self.assertIn(name, tex)
+
+    def test_schedule_page_overflow(self):
+        """ Schedules whose content runs past its page are refused, naming
+        the students, rather than printed wrong. """
+        from esp.tagdict.models import Tag
+        too_long = '\n\n'.join('Line %d of a very long note.' % i for i in range(80))
+        for barcode in (True, False):
+            fields = ['username', 'codes'] + (['barcode'] if barcode else [])
+            Tag.setTag('student_schedule_format', target=self.program, value=json.dumps(fields))
+            #   Fine as it is
+            Tag.setTag('student_schedule_pretext', target=self.program, value='Short.')
+            Tag.setTag('student_schedule_posttext', target=self.program, value='Short.')
+            response = self.post_schedules()
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response['Content-Type'].startswith('application/pdf'))
+            #   Too much text above or below the schedule
+            for tag in ('student_schedule_pretext', 'student_schedule_posttext'):
+                Tag.setTag(tag, target=self.program, value=too_long)
+                response = self.post_schedules()
+                self.assertEqual(response.status_code, 500)
+                self.assertContains(response, 'student schedules run past', status_code=500)
+                self.assertContains(response, self.students[0].username, status_code=500)
+                #   One student's schedule (e.g. printed onsite) comes out anyway
+                request = self.factory.get('/')
+                request.session = {}
+                response = ProgramPrintables.get_student_schedules(request, [self.students[0]], self.program, 'pdf')
+                self.assertTrue(response['Content-Type'].startswith('application/pdf'))
+                Tag.setTag(tag, target=self.program, value='Short.')
+
+    def test_check_schedule_pages(self):
+        students = self.students[:2]
+        good = 'ESPSCHEDMARK 0:0:1\nESPSCHEDMARK 0:1:2\nESPSCHEDMARK 1:0:3\nESPSCHEDMARK 1:1:4\n'
+        check_schedule_pages(good, students, pages_per_student=2)
+        #   The second student's cover ran onto the next page
+        bad = 'ESPSCHEDMARK 0:0:1\nESPSCHEDMARK 0:1:2\nESPSCHEDMARK 1:0:3\nESPSCHEDMARK 1:0:4\nESPSCHEDMARK 1:1:5\n'
+        with self.assertRaises(SchedulePageOverflow) as cm:
+            check_schedule_pages(bad, students, pages_per_student=2)
+        self.assertIn('1 of 2', str(cm.exception))
+        self.assertIn(students[1].username, str(cm.exception))
+        self.assertNotIn(students[0].username, str(cm.exception))
+
     def test_latex_printables_keep_accented_names(self):
         for student in self.students:
             student.first_name = u'Jos\u00e9'

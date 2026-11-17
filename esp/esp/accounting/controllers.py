@@ -311,7 +311,7 @@ class ProgramAccountingController(BaseAccountingController):
         paid = sum_by_user(Transfer.objects.filter(line_item=self.default_payments_lineitemtype(), source__isnull=True))
 
         transfers = {}
-        for transfer in Transfer.objects.filter(line_item__in=list(self.get_lineitemtypes())).select_related('line_item').order_by('id'):
+        for transfer in Transfer.objects.filter(line_item__in=list(self.get_lineitemtypes())).select_related('line_item', 'option').order_by('id'):
             transfers.setdefault(transfer.user_id, []).append(transfer)
 
         grants = {grant.request.user_id: grant for grant in FinancialAidGrant.objects.filter(

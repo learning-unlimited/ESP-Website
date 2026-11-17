@@ -148,11 +148,13 @@ def texsafe(value, replacement='?'):
     return ''.join(_TEX_SPECIALS.get(char, char) for char in text), altered
 
 
-def render_to_latex(filepath, context_dict=None, file_type='pdf'):
+def render_to_latex(filepath, context_dict=None, file_type='pdf', log_check=None):
     """Render some tex source to latex.
 
     This will run the latex interpreter and generate the necessary file type,
-    which must be one of those from FILE_MIME_TYPES.
+    which must be one of those from FILE_MIME_TYPES.  If given, log_check is
+    called with the LaTeX log after a successful compile, and can raise to
+    reject the output (see gen_latex).
     """
     if file_type not in FILE_MIME_TYPES:
         raise ESPError('Invalid type received for latex generation: %s should '
@@ -173,11 +175,11 @@ def render_to_latex(filepath, context_dict=None, file_type='pdf'):
 
     rendered_source = t.render(context_dict)
 
-    contents = gen_latex(rendered_source, file_type)
+    contents = gen_latex(rendered_source, file_type, log_check=log_check)
     return HttpResponse(contents, content_type=FILE_MIME_TYPES[file_type])
 
 
-def gen_latex(texcode, file_type='pdf', stdout=_devnull_sentinel, stderr=subprocess.STDOUT, timeout=None, cleanup=False):
+def gen_latex(texcode, file_type='pdf', stdout=_devnull_sentinel, stderr=subprocess.STDOUT, timeout=None, cleanup=False, log_check=None):
     """Generate the latex code.
 
     :param texcode:
@@ -212,6 +214,13 @@ def gen_latex(texcode, file_type='pdf', stdout=_devnull_sentinel, stderr=subproc
         Whether to delete the temporary files afterward.
     :type cleanup:
         `bool`
+    :param log_check:
+        A function called with the LaTeX log once the source has compiled,
+        before any conversion, for checks of the output that only the log can
+        show (e.g. which page something landed on).  It raises to reject the
+        output.  Not called when file_type is 'log' or 'tex'.
+    :type log_check:
+        callable or `None`
     :return:
         The generated file contents.
     :rtype:
@@ -225,24 +234,24 @@ def gen_latex(texcode, file_type='pdf', stdout=_devnull_sentinel, stderr=subproc
         # parameter for `stderr`.
         stdout, stderr = [devnull_file if f is _devnull_sentinel else f for f in [stdout, stderr]]
 
-        return _gen_latex(texcode, stdout=stdout, stderr=stderr, file_type=file_type, timeout=timeout, cleanup=cleanup)
+        return _gen_latex(texcode, stdout=stdout, stderr=stderr, file_type=file_type, timeout=timeout, cleanup=cleanup, log_check=log_check)
 
 
-def _gen_latex(texcode, stdout, stderr, file_type='pdf', timeout=None, cleanup=False):
+def _gen_latex(texcode, stdout, stderr, file_type='pdf', timeout=None, cleanup=False, log_check=None):
     file_base = os.path.join(TEX_TEMP, get_rand_file_base())
 
     if file_type == 'tex':
         return texcode
 
     try:
-        return _compile_latex(texcode, file_base, stdout, stderr, file_type, timeout)
+        return _compile_latex(texcode, file_base, stdout, stderr, file_type, timeout, log_check)
     finally:
         if cleanup:
             for path in glob.glob(file_base + '*'):
                 os.remove(path)
 
 
-def _compile_latex(texcode, file_base, stdout, stderr, file_type, timeout):
+def _compile_latex(texcode, file_base, stdout, stderr, file_type, timeout, log_check=None):
     # write to the LaTeX file
     with open(file_base+TEX_EXT, 'w', encoding='utf-8') as texfile:
         texfile.write(texcode)
@@ -289,6 +298,9 @@ def _compile_latex(texcode, file_base, stdout, stderr, file_type, timeout):
         # right here in that case.
         raise ESPError('LaTeX generated no output.  Are you sure you selected '
                        'any users?')
+
+    if log_check is not None:
+        log_check(tex_log)
 
     if file_type == 'svg':
         retcode = call(['inkscape', '%s.pdf' % file_base, '-l',

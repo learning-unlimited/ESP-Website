@@ -25,6 +25,12 @@
 \renewcommand{\footrulewidth}{0pt}
 \fancyfoot{}
 
+% \espschedmark <student index>:<page index>. writes the page it lands on to
+% the log; get_student_schedules() checks each page's content stayed on it.
+\makeatletter
+\def\espschedmark#1:#2.{\par\write-1{ESPSCHEDMARK #1:#2:\the\c@page}}
+\makeatother
+
 \newcommand{\nameblock}{}
 \newcommand{\costsblock}{}
 \newcommand{\barcodeblock}{}
@@ -63,6 +69,7 @@ User ID: {{ student.id }} \\{% endif %}
 \barcode{% templatetag openbrace %}{{ student.id }}{% templatetag closebrace %}
 }
 
+\espschedmark {{ forloop.counter0 }}:0.
 \setlength{\multicolsep}{0pt}
 \begin{multicols}{3}
 \nameblock
@@ -84,24 +91,29 @@ Student Schedule for \\
 \vspace*{0.4cm}
 
 {{ pretext }}
+\espschedmark {{ forloop.counter0 }}:0.
 \newpage
+
+\espschedmark {{ forloop.counter0 }}:1.
 
 \def\arraystretch{1.2}
 \begin{tabularx}{18cm}{|>{\raggedright}p{1.6in}|>{\raggedright}p{1in}|X|}
 \multicolumn{1}{l}{\textbf{Time}} & \multicolumn{1}{l}{\textbf{Room}} & \multicolumn{1}{l}{\textbf{Class and Teacher}} \\
 {% for cls in student.classes %}\hline
-{% if cls.friendly_times|length_is:"0" %}N/A{% endif %}{{ cls.friendly_times|join:",\\newline " }} &
-{% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} &
-{% if cls.event_type.description == "Compulsory" %}{{ cls.description }}{% elif cls.title|length_is:"0" %}N/A{% else %}{{ cls.title|truncatewords_char:45|texescape }}{% if schedule_format.codes and cls.parent_class.category.category != 'Lunch' %} \footnotesize{ (\texttt{% templatetag openbrace %}{{ cls.emailcode }}{% templatetag closebrace %}) }{% endif %}{% endif %} \newline
-{% if schedule_format.teacher_pronouns %}\footnotesize{ {{ cls.parent_class.getTeacherNamesWithPronouns|join:", "|truncatewords_char:50|texescape }} }{% else %}\footnotesize{ {{ cls.parent_class.getTeacherNames|join:", "|truncatewords_char:50|texescape }} }{% endif %} \\
+{% if not cls.schedule_times %}N/A{% endif %}{{ cls.schedule_times|join:",\\newline " }} &
+{% if not cls.schedule_rooms %}N/A{% else %}{{ cls.schedule_rooms|join:", "|texescape }}{% endif %} &
+{% if cls.event_type.description == "Compulsory" %}{{ cls.description }}{% elif cls.title|length_is:"0" %}N/A{% else %}{{ cls.title|truncatewords_char:45|texescape }}{% if schedule_format.codes and cls.parent_class.category.category != 'Lunch' %} \footnotesize{ (\texttt{% templatetag openbrace %}{{ cls.schedule_code }}{% templatetag closebrace %}) }{% endif %}{% endif %} \newline
+\footnotesize{ {{ cls.schedule_teachers|join:", "|truncatewords_char:50|texescape }} } \\
 {% endfor %}\hline
 \end{tabularx}
 
 \vspace{0.4cm}
 {{ posttext }}
+\espschedmark {{ forloop.counter0 }}:1.
 
 {% if schedule_format.barcode %}
 \newpage
+\espschedmark {{ forloop.counter0 }}:2.
 \begin{center}
 \barcodeblock \hspace*{\fill} \barcodeblock
 
@@ -115,9 +127,11 @@ Student Schedule for \\
 
 \vspace{1in}
 \end{center}
+\espschedmark {{ forloop.counter0 }}:2.
 \newpage
 \thispagestyle{empty}
 \vspace*{\fill}
+\espschedmark {{ forloop.counter0 }}:3.
 \newpage
 {% else %}
 {% if not forloop.last %}\pagebreak{% endif %}

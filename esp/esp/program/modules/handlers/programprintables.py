@@ -66,13 +66,54 @@ from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
 
 from datetime import timedelta
-from functools import cmp_to_key
+from functools import cmp_to_key, partial
 import collections
 import copy
 import csv
 import json
+import re
 
 from numpy import array_split
+
+
+class SchedulePageOverflow(ESPError_NoLog):
+    """ Some student schedules don't fit on the pages they're meant to. """
+    pass
+
+
+#   studentschedule.tex writes "ESPSCHEDMARK <student index>:<page index>:<page>"
+#   to the LaTeX log at the start and end of each page of each student's
+#   schedule.  \write records the page the text actually landed on, so these
+#   show content that spilled onto another page.
+SCHEDULE_MARK_RE = re.compile(r'ESPSCHEDMARK (\d+):(\d+):(\d+)')
+SCHEDULE_PAGE_NAMES = ['first page (name, costs and pretext)',
+                       'schedule page (class table and posttext)',
+                       'barcode page', 'blank back page']
+
+
+def check_schedule_pages(tex_log, students, pages_per_student):
+    """ Raise SchedulePageOverflow if any student's schedule ran off the page
+    it's meant to fit on, from studentschedule.tex's page marks in the LaTeX
+    log, so we never hand out a misprinted batch. """
+    overflowed = collections.OrderedDict()
+    for index, page_index, page in SCHEDULE_MARK_RE.findall(tex_log):
+        index, page_index, page = int(index), int(page_index), int(page)
+        if page != index * pages_per_student + page_index + 1:
+            overflowed.setdefault(index, page_index)
+    if not overflowed:
+        return
+    #   One paragraph, since the error page doesn't keep line breaks
+    examples = ['%s (%s): %s' % (students[index].name(), students[index].username,
+                                 SCHEDULE_PAGE_NAMES[page_index])
+                for index, page_index in list(overflowed.items())[:20]]
+    if len(overflowed) > 20:
+        examples.append('and %d more' % (len(overflowed) - 20))
+    raise SchedulePageOverflow(
+        '%d of %d student schedules run past the page they should fit on, so '
+        'they would print wrong.  Shorten the schedule pretext or posttext, or '
+        'turn off some schedule fields, and try again.  Pages that overflow: '
+        '%s.' % (len(overflowed), len(students), '; '.join(examples)))
+
 
 class ProgramPrintables(ProgramModuleObj):
     doc = """A wide variety of printable documents that are useful for a program."""
@@ -1357,9 +1398,30 @@ class ProgramPrintables(ProgramModuleObj):
             parent_class__parent_program=prog,
             status=ClassStatus.ACCEPTED,
             meeting_times__isnull=False).distinct()
-        all_classes = all_classes.select_related('parent_class')
+        all_classes = all_classes.select_related('parent_class', 'parent_class__category')
         all_classes = all_classes.prefetch_related('meeting_times')
         classes_by_id = {cls.id: cls for cls in all_classes}
+
+        if Tag.getProgramTag("student_schedule_format", prog):
+            schedule_format = {x: True for x in json.loads(Tag.getProgramTag("student_schedule_format", prog))}
+        else:
+            schedule_format = {choice[0]: True for choice in StudentScheduleFormatForm(program = prog).fields['schedule_fields'].choices}
+
+        #   Work out each section's row of the schedule once, rather than once
+        #   for every student enrolled in it; for a whole program, repeating
+        #   these lookups per student took minutes.
+        teachers_by_subject = {}
+        for cls in classes_by_id.values():
+            subject = cls.parent_class
+            if subject.id not in teachers_by_subject:
+                if schedule_format.get('teacher_pronouns'):
+                    teachers_by_subject[subject.id] = subject.getTeacherNamesWithPronouns()
+                else:
+                    teachers_by_subject[subject.id] = subject.getTeacherNames()
+            cls.schedule_times = cls.friendly_times()
+            cls.schedule_rooms = [room.name for room in cls.initial_rooms()]
+            cls.schedule_code = cls.emailcode()
+            cls.schedule_teachers = teachers_by_subject[subject.id]
 
         sr_pairs = all_classes.values_list('id', 'studentregistration__user')
         classes_by_student = collections.defaultdict(list)
@@ -1376,9 +1438,20 @@ class ProgramPrintables(ProgramModuleObj):
         for t in times_compulsory:
             t.friendly_times = [t.pretty_time()]
             t.initial_rooms = []
+            t.schedule_times = t.friendly_times
 
         show_empty_blocks = Tag.getBooleanTag('studentschedule_show_empty_blocks', prog)
         timeslots = list(prog.getTimeSlots())
+
+        #   Everyone's payment information at once (this also creates any
+        #   missing required transfers, as amount_due() would)
+        pac = ProgramAccountingController(prog)
+        payment_rows = {row['student'].id: row for row in pac.student_payment_rows(students)}
+        admission_lineitemtype = pac.default_admission_lineitemtype()
+        optional_lineitemtype_ids = set(pac.get_lineitemtypes(optional_only=True).values_list('id', flat=True))
+        required_lineitemtype_ids = set(pac.get_lineitemtypes(required_only=True).values_list('id', flat=True))
+        if admission_lineitemtype is not None:
+            required_lineitemtype_ids.discard(admission_lineitemtype.id)
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
@@ -1396,7 +1469,9 @@ class ProgramPrintables(ProgramModuleObj):
 
             for day, day_classes in days.items():
                 last_classes.append(day_classes[-1])
-            last_classes.sort()
+            #   Sort with a key: ClassSection's own comparison runs queries
+            #   for every comparison (seconds, for a whole program).
+            last_classes.sort(key=lambda cls: (cls.start_time_prefetchable(), cls.title()))
 
             if show_empty_blocks:
                 #   If you want to show empty blocks, start with a list of blocks instead
@@ -1428,19 +1503,18 @@ class ProgramPrintables(ProgramModuleObj):
                     classes.append(t)
                 min_index = i
 
-            # get payment information
-            iac = IndividualAccountingController(prog, student)
-
             # attach payment information to student
-            student.invoice_id = iac.get_id()
-            student.itemizedcosts = iac.get_transfers()
-            student.meals = iac.get_transfers(optional_only=True)  # catch everything that's not admission to the program.
-            student.required = iac.get_transfers(required_only=True).exclude(line_item=iac.default_admission_lineitemtype())
-            student.admission = iac.get_transfers(line_items = [iac.default_admission_lineitemtype()])  # Program admission
-            student.paid_online = iac.has_paid()
-            student.amount_finaid = iac.amount_finaid()
-            student.amount_siblingdiscount = iac.amount_siblingdiscount()
-            student.itemizedcosttotal = iac.amount_due()
+            payment_row = payment_rows[student.id]
+            transfers = payment_row['transfers']
+            student.invoice_id = IndividualAccountingController(prog, student).get_id()
+            student.itemizedcosts = transfers
+            student.meals = [t for t in transfers if t.line_item_id in optional_lineitemtype_ids]  # catch everything that's not admission to the program.
+            student.required = [t for t in transfers if t.line_item_id in required_lineitemtype_ids]
+            student.admission = [t for t in transfers if admission_lineitemtype is not None and t.line_item_id == admission_lineitemtype.id]  # Program admission
+            student.paid_online = payment_row['amount_paid'] > 0
+            student.amount_finaid = payment_row['amount_finaid']
+            student.amount_siblingdiscount = payment_row['amount_siblingdiscount']
+            student.itemizedcosttotal = payment_row['amount_due']
 
             student.has_paid = ( student.itemizedcosttotal == 0 )
             student.payment_info = True
@@ -1455,23 +1529,23 @@ class ProgramPrintables(ProgramModuleObj):
         context['MEDIA_ROOT'] = settings.MEDIA_ROOT.rstrip('/') + '/'
 
         basedir = 'program/modules/programprintables/'
-        if Tag.getProgramTag("student_schedule_format", prog):
-            context["schedule_format"] = {x: True for x in json.loads(Tag.getProgramTag("student_schedule_format", prog))}
-        else:
-            context["schedule_format"] = {choice[0]: True for choice in StudentScheduleFormatForm(program = prog).fields['schedule_fields'].choices}
+        context["schedule_format"] = schedule_format
         context["pretext"] = Tag.getProgramTag("student_schedule_pretext", prog)
         context["posttext"] = Tag.getProgramTag("student_schedule_posttext", prog)
         if file_type == 'html':
             return render_to_response(basedir+'studentschedule.html', request, context)
-        elif file_type == 'pdf':
-            if len(students) > 1:
-                response = render_to_latex(basedir+'studentschedule.tex', context, 'pdf')
-                response['Content-Disposition'] = 'attachment; filename="studentschedules.pdf"'
-                return response
-            else:
-                return render_to_latex(basedir+'studentschedule.tex', context, 'pdf')
-        else:
-            return render_to_latex(basedir+'studentschedule.tex', context, file_type)
+
+        #   Refuse a batch where someone's schedule ran off its pages, so it
+        #   isn't printed wrong; one student's schedule (onsite printing, the
+        #   format preview) is printed as it comes out.
+        log_check = None
+        if len(students) > 1:
+            pages_per_student = 4 if schedule_format.get('barcode') else 2
+            log_check = partial(check_schedule_pages, students=students, pages_per_student=pages_per_student)
+        response = render_to_latex(basedir+'studentschedule.tex', context, file_type, log_check=log_check)
+        if file_type == 'pdf' and len(students) > 1:
+            response['Content-Disposition'] = 'attachment; filename="studentschedules.pdf"'
+        return response
 
     @aux_call
     @needs_admin
