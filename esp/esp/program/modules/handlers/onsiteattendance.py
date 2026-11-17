@@ -77,8 +77,12 @@ class OnSiteAttendance(ProgramModuleObj):
                 when_get = request.GET.get("when", "")
                 if when_get != "":
                     # if a date is specified, use that date and the end time of the timeblock
-                    date = datetime.datetime.strptime(when_get, "%Y-%m-%d").date()
-                    when = datetime.datetime.combine(date, timeslot.end.time())
+                    try:
+                        date = datetime.datetime.strptime(when_get, "%Y-%m-%d").date()
+                        when = datetime.datetime.combine(date, timeslot.end.time())
+                    except (ValueError, TypeError):
+                        when = timeslot.end
+                        date = when.date()
                 else:
                     # otherwise, just use the end time (and date) of the timeblock
                     when = timeslot.end
