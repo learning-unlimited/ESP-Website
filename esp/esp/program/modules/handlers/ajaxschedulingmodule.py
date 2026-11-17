@@ -40,7 +40,6 @@ from esp.utils.web               import render_to_response
 from django.http                 import HttpResponse
 from esp.cal.models              import Event
 from esp.users.models            import ESPUser
-from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceAssignment
 from esp.tagdict.models          import Tag
 from argcache                    import cache_function
@@ -228,6 +227,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             return self.makeret(prog, ret=False, msg="Assignments must be a list.")
 
         validated = []
+        requested_timeslot_ids = set()
         for asmt in assignments:
             if not isinstance(asmt, dict):
                 return self.makeret(prog, ret=False, msg="Invalid assignment entry.")
@@ -243,9 +243,19 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 parsed_timeslots = [_parse_pos_int32(ts) for ts in raw_timeslots]
                 if any(ts is None for ts in parsed_timeslots):
                     return self.makeret(prog, ret=False, msg="Invalid assignment entry.")
+                if len(parsed_timeslots) != len(set(parsed_timeslots)):
+                    return self.makeret(prog, ret=False, msg="Specified Events not found in the database")
+                if not Resource.objects.filter(id=parsed_room, res_type__name="Classroom").exists():
+                    return self.makeret(prog, ret=False, msg="Specified Classrooms not found in the database")
+                requested_timeslot_ids.update(parsed_timeslots)
                 validated.append((cls, parsed_room, parsed_timeslots))
             else:
                 validated.append((cls, None, []))
+
+        if requested_timeslot_ids:
+            program_event_count = Event.objects.filter(id__in=requested_timeslot_ids, program=prog).count()
+            if program_event_count != len(requested_timeslot_ids):
+                return self.makeret(prog, ret=False, msg="Specified Events not found in the database")
 
         # Unschedule all of the section(s)
         for cls, _, _ in validated:
@@ -322,8 +332,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_schedule_class(self, request, tl, one, two, module, extra, prog):
         # DON'T CACHE this function!
         # It's supposed to have side effects, that's the whole point!
-        if not 'action' in request.POST:
-            raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
+        if 'action' not in request.POST:
+            return self.makeret(prog, ret=False, msg="Missing 'action' parameter.")
 
         # Pull relevant data out of the JSON structure
         action = request.POST['action']
@@ -376,7 +386,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         # DON'T CACHE this function!
         # It's supposed to have side effects, that's the whole point!
         if 'action' not in request.POST:
-            raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
+            return self.makeret(prog, ret=False, msg="Missing 'action' parameter.")
 
         action = request.POST['action']
         if action not in ('removemod', 'assignmod'):
@@ -412,7 +422,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @needs_admin
     def ajax_set_comment(self, request, tl, one, two, module, extra, prog):
         if 'comment' not in request.POST:
-            raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
+            return self.makeret(prog, ret=False, msg="Missing 'comment' parameter.")
 
         # Pull relevant data out of the JSON structure
         cls = _get_program_section(prog, request.POST.get('cls'))

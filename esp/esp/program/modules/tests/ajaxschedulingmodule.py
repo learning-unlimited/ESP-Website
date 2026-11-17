@@ -357,6 +357,38 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.assertEqual(set(own_sec.get_meeting_times()), set(own_times))
         self.assertEqual(set(other_sec.get_meeting_times()), set(other_times))
 
+        # 4b. swap requesting foreign-program timeslot rejects before mutating own_sec
+        r_swap_foreign_ts = self.client.post(
+            self.schedule_class_url,
+            {
+                'action': 'swap',
+                'assignments': json.dumps([
+                    {'section': own_sec.id, 'timeslots': [other_times[0].id], 'room_id': own_room.identical_id()},
+                ]),
+                'override': 'true',
+            },
+        )
+        self.assertEqual(r_swap_foreign_ts.status_code, 200)
+        self.assertFalse(json.loads(r_swap_foreign_ts.content)['ret'])
+        self.assertEqual(set(own_sec.get_meeting_times()), set(own_times))
+        self.assertTrue(own_sec.classrooms().exists())
+
+        # 4c. swap requesting nonexistent room rejects before mutating own_sec
+        r_swap_bad_room = self.client.post(
+            self.schedule_class_url,
+            {
+                'action': 'swap',
+                'assignments': json.dumps([
+                    {'section': own_sec.id, 'timeslots': [own_times[0].id], 'room_id': 999999},
+                ]),
+                'override': 'true',
+            },
+        )
+        self.assertEqual(r_swap_bad_room.status_code, 200)
+        self.assertFalse(json.loads(r_swap_bad_room.content)['ret'])
+        self.assertEqual(set(own_sec.get_meeting_times()), set(own_times))
+        self.assertTrue(own_sec.classrooms().exists())
+
         # 5. ajax_assign_moderator assignmod / removemod against foreign section is rejected
         mod_url = self.ajax_url_base + 'ajax_assign_moderator'
         mod_user = self.teachers[1]
@@ -433,6 +465,12 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.assertEqual(r_swap_ok.status_code, 200)
         self.assertTrue(json.loads(r_swap_ok.content)['ret'])
 
+        # Missing action / comment parameters return structured JSON error rather than 500
+        r_no_action = self.client.post(self.schedule_class_url, {})
+        self.assertEqual(r_no_action.status_code, 200)
+        self.assertFalse(json.loads(r_no_action.content)['ret'])
+        self.assertEqual(json.loads(r_no_action.content)['msg'], "Missing 'action' parameter.")
+
         bad_ids = [None, '', 'abc', '0', '-1', '999999', '99999999999999999999', '9' * 5000]
         for bad in bad_ids:
             payload_del = {'action': 'deletereg'}
@@ -497,6 +535,11 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.assertEqual(r_bad_act.status_code, 200)
         self.assertFalse(json.loads(r_bad_act.content)['ret'])
 
+        r_mod_no_action = self.client.post(mod_url, {})
+        self.assertEqual(r_mod_no_action.status_code, 200)
+        self.assertFalse(json.loads(r_mod_no_action.content)['ret'])
+        self.assertEqual(json.loads(r_mod_no_action.content)['msg'], "Missing 'action' parameter.")
+
         # Valid assignmod and removemod
         mod_user = self.teachers[2]
         r_mod_ok = self.client.post(
@@ -517,6 +560,11 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
 
         # Comment endpoint invalid/missing inputs and valid update
         comment_url = self.ajax_url_base + 'ajax_set_comment'
+        r_no_comment = self.client.post(comment_url, {'cls': own_sec.id})
+        self.assertEqual(r_no_comment.status_code, 200)
+        self.assertFalse(json.loads(r_no_comment.content)['ret'])
+        self.assertEqual(json.loads(r_no_comment.content)['msg'], "Missing 'comment' parameter.")
+
         for bad in bad_ids:
             payload = {'comment': 'hello'}
             if bad is not None:
