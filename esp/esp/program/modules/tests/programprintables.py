@@ -174,16 +174,27 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
                 Tag.setTag(tag, target=self.program, value='Short.')
 
     def test_check_schedule_pages(self):
-        students = self.students[:2]
-        good = 'ESPSCHEDMARK 0:0:1\nESPSCHEDMARK 0:1:2\nESPSCHEDMARK 1:0:3\nESPSCHEDMARK 1:1:4\n'
-        check_schedule_pages(good, students, pages_per_student=2)
-        #   The second student's cover ran onto the next page
-        bad = 'ESPSCHEDMARK 0:0:1\nESPSCHEDMARK 0:1:2\nESPSCHEDMARK 1:0:3\nESPSCHEDMARK 1:0:4\nESPSCHEDMARK 1:1:5\n'
+        students = self.students[:3]
+
+        def log(starts, total):
+            #   starts: the page each student's page starts landed on
+            return ''.join('ESPSCHEDMARK %d:%d:%d\n' % (i, k, page)
+                           for i, pages in enumerate(starts) for k, page in enumerate(pages)
+                           ) + 'ESPSCHEDPAGES %d\n' % total
+
+        check_schedule_pages(log([(1, 2), (3, 4), (5, 6)], 6), students, pages_per_student=2)
+        #   The second student's first page spilled, pushing everything after
+        #   it back a page; only that student is blamed
         with self.assertRaises(SchedulePageOverflow) as cm:
-            check_schedule_pages(bad, students, pages_per_student=2)
-        self.assertIn('1 of 2', str(cm.exception))
-        self.assertIn(students[1].username, str(cm.exception))
+            check_schedule_pages(log([(1, 2), (3, 5), (6, 7)], 7), students, pages_per_student=2)
+        self.assertIn('1 of 3', str(cm.exception))
+        self.assertIn('%s): first page' % students[1].username, str(cm.exception))
         self.assertNotIn(students[0].username, str(cm.exception))
+        self.assertNotIn(students[2].username, str(cm.exception))
+        #   The last student's schedule page spilled: only the total shows it
+        with self.assertRaises(SchedulePageOverflow) as cm:
+            check_schedule_pages(log([(1, 2), (3, 4), (5, 6)], 7), students, pages_per_student=2)
+        self.assertIn('%s): schedule page' % students[2].username, str(cm.exception))
 
     def test_latex_printables_keep_accented_names(self):
         for student in self.students:

@@ -82,10 +82,14 @@ class SchedulePageOverflow(ESPError_NoLog):
 
 
 #   studentschedule.tex writes "ESPSCHEDMARK <student index>:<page index>:<page>"
-#   to the LaTeX log at the start and end of each page of each student's
-#   schedule.  \write records the page the text actually landed on, so these
-#   show content that spilled onto another page.
+#   to the LaTeX log at the start of each page of each student's schedule
+#   (\write records the page the text actually landed on), and
+#   "ESPSCHEDPAGES <total pages>" at the end.  Content that spills off its
+#   page pushes every later page back, so the page before the first mark that
+#   moved (or the last page, if only the total is off) is the one that
+#   overflowed.
 SCHEDULE_MARK_RE = re.compile(r'ESPSCHEDMARK (\d+):(\d+):(\d+)')
+SCHEDULE_PAGES_RE = re.compile(r'ESPSCHEDPAGES (\d+)')
 SCHEDULE_PAGE_NAMES = ['first page (name, costs and pretext)',
                        'schedule page (class table and posttext)',
                        'barcode page', 'blank back page']
@@ -94,12 +98,21 @@ SCHEDULE_PAGE_NAMES = ['first page (name, costs and pretext)',
 def check_schedule_pages(tex_log, students, pages_per_student):
     """ Raise SchedulePageOverflow if any student's schedule ran off the page
     it's meant to fit on, from studentschedule.tex's page marks in the LaTeX
-    log, so we never hand out a misprinted batch. """
+    log, so we never hand out a misprinted batch.  Content that only runs
+    into the bottom margin isn't caught: nothing moves to another page. """
     overflowed = collections.OrderedDict()
+    shift = 0
+    previous = None
     for index, page_index, page in SCHEDULE_MARK_RE.findall(tex_log):
         index, page_index, page = int(index), int(page_index), int(page)
-        if page != index * pages_per_student + page_index + 1:
-            overflowed.setdefault(index, page_index)
+        new_shift = page - (index * pages_per_student + page_index + 1)
+        if new_shift > shift and previous is not None:
+            overflowed.setdefault(*previous)
+        shift = new_shift
+        previous = (index, page_index)
+    total = SCHEDULE_PAGES_RE.search(tex_log)
+    if total and previous is not None and int(total.group(1)) - len(students) * pages_per_student > shift:
+        overflowed.setdefault(*previous)
     if not overflowed:
         return
     #   One paragraph, since the error page doesn't keep line breaks
