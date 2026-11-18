@@ -59,7 +59,7 @@ from esp.program.models import VolunteerOffer, Program
 from django import forms
 from django.conf import settings
 from django.http import HttpResponse
-from django.db.models import IntegerField, Case, When, Count, Q
+from django.db.models import IntegerField, Case, When, Count, Q, Prefetch
 from django.template import loader
 from django.template.loader import render_to_string, get_template
 from django.utils.encoding import smart_str
@@ -632,6 +632,9 @@ class ProgramPrintables(ProgramModuleObj):
                       template_file = 'teacherlist.html', extra_func = lambda x: {},
                       teaching = True, moderating = False, display_name = 'Teacher List'):
         from esp.users.models import ContactInfo
+        from esp.program.models import RegistrationProfile
+        from esp.resources.models import ResourceRequest
+        from datetime import datetime
 
         if sort_exp is None:
             sort_exp = lambda x, y: self.cmpsortname(x, y)
@@ -656,54 +659,98 @@ class ProgramPrintables(ProgramModuleObj):
             allclasses = prog.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED, meeting_times__isnull=False)
             first_timeblock_dict = allclasses.aggregate(Min('meeting_times__start'))
 
-        scheditems = []
-        resource_types = prog.getResourceTypes().values_list('name', flat=True)
+        resource_types = list(prog.getResourceTypes().values_list('name', flat=True))
 
         records = []
         tag_data = Tag.getProgramTag('teacher_reg_records', prog)
         if tag_data:
             records = [x.strip().lower() for x in tag_data.split(',') if RecordType.objects.filter(name = x.strip().lower()).exists()]
 
+        # Everything below is fetched in bulk for all teachers at once; the
+        # old per-teacher queries (and sorting sections with
+        # ClassSection.__cmp__, which queries on every comparison) took hours
+        # on a full program.
+        teacher_ids = [t.id for t in teachers]
+
+        # Accepted sections that meet at all, with meeting times in start
+        # order (so cmpsorttime and friendly_times don't query either).
+        sections = {
+            sec.id: sec for sec in
+            ClassSection.objects.filter(parent_class__parent_program=prog, status__gt=0)
+            .select_related('parent_class', 'parent_class__category')
+            .prefetch_related(Prefetch('meeting_times', queryset=Event.objects.order_by('start', 'id')))
+        }
+        for sec in list(sections.values()):
+            sec._events = list(sec.meeting_times.all())
+            if not sec._events:
+                del sections[sec.id]
+
+        # Which of those sections each teacher teaches and/or moderates (as
+        # getTaughtSections/getModeratingSectionsFromProgram define them:
+        # taught sections exclude rejected classes, moderated ones don't).
+        sections_by_teacher = collections.defaultdict(set)
+        if teaching:
+            taught = ClassSubject.teachers.through.objects.filter(
+                espuser_id__in=teacher_ids, classsubject__parent_program=prog,
+            ).exclude(classsubject__status=ClassStatus.REJECTED).values_list('espuser_id', 'classsubject_id')
+            teachers_by_subject = collections.defaultdict(set)
+            for user_id, subj_id in taught:
+                teachers_by_subject[subj_id].add(user_id)
+            for sec in sections.values():
+                for user_id in teachers_by_subject.get(sec.parent_class_id, ()):
+                    sections_by_teacher[user_id].add(sec.id)
+        if moderating:
+            moderated = ClassSection.moderators.through.objects.filter(
+                espuser_id__in=teacher_ids, classsection_id__in=list(sections),
+            ).values_list('espuser_id', 'classsection_id')
+            for user_id, sec_id in moderated:
+                sections_by_teacher[user_id].add(sec_id)
+
+        def first_class_key(sec):
+            # ClassSection.__cmp__ order: first meeting time, then title.
+            return (sec._events[0].start, sec.parent_class.title, sec.id)
+
+        # Cell/day phone: a contact info with a cell number that some
+        # registration profile uses; the most recent one if several.
+        phones = {}
+        profile_contacts = RegistrationProfile.objects.filter(
+            user_id__in=teacher_ids, contact_user__isnull=False).values('contact_user_id')
+        for ci in ContactInfo.objects.filter(user_id__in=teacher_ids, id__in=profile_contacts, phone_cell__isnull=False).exclude(phone_cell='').order_by('-id'):
+            phones.setdefault(ci.user_id, (ci.phone_day, ci.phone_cell))
+
+        completed = set(Record.objects.filter(
+            user_id__in=teacher_ids, event__name__in=records, program=prog,
+            time__lte=datetime.now(),
+        ).values_list('user_id', 'event__name'))
+
+        scheditems = []
         for teacher in teachers:
-            # get list of valid classes
-            if teaching and moderating:
-                class_objects = teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
-            elif teaching:
-                class_objects = teacher.getTaughtSections(self.program)
-            else:
-                class_objects = teacher.getModeratingSectionsFromProgram(self.program)
-            classes = sorted([ cls for cls in class_objects
-                    if cls.isAccepted() and cls.meeting_times.count() > 0 ])
-            # now we sort them by time/title
+            classes = sorted((sections[sid] for sid in sections_by_teacher.get(teacher.id, ())), key=first_class_key)
 
             if  extra and 'secondday' in extra:
-                new_classes = []
                 first_timeblock = first_timeblock_dict['meeting_times__start__min']
-
-                for cls in classes:
-                    starttime = cls.meeting_times.all().order_by('start')[0]
-                    if (starttime.start.month, starttime.start.day) != \
-                       (first_timeblock.month, first_timeblock.day):
-                        new_classes.append(cls)
-
-                classes = new_classes
-
-            ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False, as_user__isnull=False).exclude(phone_cell='').distinct('user')
-            if ci.count() > 0:
-                phone_day = ci[0].phone_day
-                phone_cell = ci[0].phone_cell
-            else:
-                phone_day = 'N/A'
-                phone_cell = 'N/A'
+                classes = [cls for cls in classes
+                           if (cls._events[0].start.month, cls._events[0].start.day) !=
+                              (first_timeblock.month, first_timeblock.day)]
 
             if len(classes) > 0:
+                phone_day, phone_cell = phones.get(teacher.id, ('N/A', 'N/A'))
                 scheditems.append({'name': teacher.name(),
                                'user': teacher,
                                'phone_day': phone_day,
                                'phone_cell': phone_cell,
-                               'recs': [Record.user_completed(teacher, rec, self.program) for rec in records],
-                               'cls' : classes[0],
-                               'res_values': [classes[0].resourcerequest_set.filter(res_type__name=x).values_list('desired_value', flat=True) for x in resource_types]})
+                               'recs': [(teacher.id, rec) in completed for rec in records],
+                               'cls' : classes[0]})
+
+        # Resource requests of each teacher's first class
+        res_values = collections.defaultdict(list)
+        requests = ResourceRequest.objects.filter(
+            target__in=[item['cls'] for item in scheditems], res_type__name__in=resource_types,
+        ).order_by('id').values_list('target_id', 'res_type__name', 'desired_value')
+        for target_id, res_name, value in requests:
+            res_values[(target_id, res_name)].append(value)
+        for item in scheditems:
+            item['res_values'] = [res_values[(item['cls'].id, x)] for x in resource_types]
 
         scheditems = list(filter(filt_exp, scheditems))
         scheditems.sort(key=cmp_to_key(sort_exp))

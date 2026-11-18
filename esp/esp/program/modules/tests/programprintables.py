@@ -91,9 +91,9 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         student_views = ['studentsbyname', 'emergencycontacts', 'flatstudentschedules', 'studentchecklist', 'student_tickets']
         result = []
         for v in teacher_views:
-            result.append((v, 'teachers', 'class_approved'))
+            result.append((v, 'Teacher', 'class_approved'))
         for v in student_views:
-            result.append((v, 'students', 'enrolled'))
+            result.append((v, 'Student', 'enrolled'))
         return result
 
     def testAllViewsWithUserList(self):
@@ -107,14 +107,14 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
 
     def testClassRosters(self):
         #   Check that all classes show up on the rosters.
-        response = self.get_response('classrosters', 'teachers', 'class_approved')
+        response = self.get_response('classrosters', 'Teacher', 'class_approved')
         self.assertContains(response, '<div class="classtitle">', count=len(self.program.classes()))
 
     def testSchedules(self):
-        response = self.get_response('studentschedules/log', 'students', 'enrolled')
+        response = self.get_response('studentschedules/log', 'Student', 'enrolled')
         print(response)
         #   Check that our Latex->PDF schedule generation code runs without error
-        response = self.get_response('studentschedules', 'students', 'enrolled')
+        response = self.get_response('studentschedules', 'Student', 'enrolled')
 
         #   Check that the output is an actual PDF file
         print((response['Content-Type']))
@@ -125,7 +125,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         return the response whatever its status. """
         self._login_admin()
         url = '/manage/%s/studentschedules%s' % (self.program.getUrlBase(), extra)
-        return self.client.post(url, {'recipient_type': 'students', 'base_list': 'enrolled', 'use_checklist': 0})
+        return self.client.post(url, {'recipient_type': 'Student', 'base_list': 'enrolled', 'use_checklist': 0})
 
     def test_schedule_rows(self):
         """ Each class row shows the section's times, rooms, code and teachers. """
@@ -196,6 +196,89 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
             check_schedule_pages(log([(1, 2), (3, 4), (5, 6)], 7), students, pages_per_student=2)
         self.assertIn('%s): schedule page' % students[2].username, str(cm.exception))
 
+    def test_teacher_lists(self):
+        """ Each teacher/moderator list row shows the person's earliest
+        accepted, scheduled section (taught and/or moderated as the view
+        asks), their phone numbers, records and the section's resource
+        requests. """
+        from esp.resources.models import ResourceRequest, ResourceType
+        from esp.tagdict.models import Tag
+        from esp.users.models import ContactInfo, Record, RecordType
+
+        sections = list(self.program.sections().order_by('id'))
+        for sec in sections:
+            sec.status = ClassStatus.ACCEPTED
+            sec.save()
+        teachers = self.teachers
+        #   An unscheduled section and a rejected class are never listed,
+        #   even when they would otherwise come first
+        def earliest(teacher):
+            return min((sec for sec in teacher.getTaughtSections(self.program) if sec.meeting_times.exists()),
+                       key=lambda sec: (sec.meeting_times.order_by('start')[0].start, sec.id))
+        earliest(teachers[0]).clear_meeting_times()
+        rejected = earliest(teachers[1]).parent_class
+        rejected.status = ClassStatus.REJECTED
+        rejected.save()
+        #   teachers[2] also moderates someone else's section; teachers[3]
+        #   has no phone; teachers[4] has a record and a resource request
+        moderated = teachers[3].getTaughtSections(self.program)[0]
+        moderated.moderators.add(teachers[2])
+        ContactInfo.objects.filter(user=teachers[3]).update(phone_cell='')
+        RecordType.objects.get_or_create(name='teacher_training', defaults={'description': 'Teacher training'})
+        Tag.setTag('teacher_reg_records', target=self.program, value='teacher_training')
+        Record.objects.create(user=teachers[4], event=RecordType.objects.get(name='teacher_training'), program=self.program)
+
+        def expected(teacher, teaching, moderating):
+            current = [ClassSection.objects.get(id=sec.id) for sec in sections]
+            secs = set()
+            if teaching:
+                secs.update(sec for sec in current
+                            if teacher in sec.parent_class.get_teachers()
+                            and sec.parent_class.status != ClassStatus.REJECTED)
+            if moderating:
+                secs.update(sec for sec in current if teacher in sec.moderators.all())
+            secs = [sec for sec in secs if sec.status > 0 and sec.meeting_times.exists()]
+            if not secs:
+                return None
+            return min(secs, key=lambda sec: (sec.meeting_times.order_by('start')[0].start, sec.title(), sec.id))
+
+        first = {t: expected(t, True, False) for t in teachers}
+        ResourceRequest.objects.create(target=first[teachers[4]], res_type=ResourceType.get_or_create('Projector', program=self.program), desired_value='Yes')
+
+        for view, teaching, moderating in [('teacherlist', True, False),
+                                           ('teachermoderatorlist', True, True),
+                                           ('moderatorlist', False, True),
+                                           ('teachersbytime', True, False)]:
+            context = self.get_response(view, 'Teacher', 'class_approved').context
+            rows = {item['user']: item for item in context['scheditems']}
+            self.assertIn('Projector', context['res_types'])
+            for teacher in teachers:
+                cls = expected(teacher, teaching, moderating)
+                if cls is None:
+                    self.assertNotIn(teacher, rows, view)
+                    continue
+                row = rows[teacher]
+                def desc(sec):
+                    sec = ClassSection.objects.get(id=sec.id)
+                    return (sec.id, sec.status, sec.parent_class.status, sec.title(),
+                            [e.start for e in sec.meeting_times.order_by('start')],
+                            [t.username for t in sec.parent_class.get_teachers()],
+                            [m.username for m in sec.moderators.all()])
+                self.assertEqual(row['cls'].id, cls.id, '%s %s: got %s, expected %s' % (
+                    view, teacher.username, desc(row['cls']), desc(cls)))
+                phone = '' if teacher == teachers[3] else (u'%d' % (teacher.id % 10)) * 10
+                self.assertEqual((row['phone_day'], row['phone_cell']),
+                                 ('N/A', 'N/A') if teacher == teachers[3] else (phone, phone), view)
+                self.assertEqual(row['recs'], [teacher == teachers[4]], view)
+                values = dict(zip(context['res_types'], row['res_values']))
+                if cls.id == first[teachers[4]].id:
+                    self.assertEqual(list(values['Projector']), ['Yes'], view)
+            if moderating and not teaching:
+                self.assertEqual(set(rows), {teachers[2]}, view)
+            if view == 'teachersbytime':
+                starts = [item['cls'].meeting_times.order_by('start')[0].start for item in context['scheditems']]
+                self.assertEqual(starts, sorted(starts))
+
     def test_latex_printables_keep_accented_names(self):
         for student in self.students:
             student.first_name = u'Jos\u00e9'
@@ -205,9 +288,9 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
             cls.title = u'Caf\u00e9 \u00c9conomie \u0141\u00f3d\u017a \u201cquoted\u201d'
             cls.save()
 
-        tex = self.get_response('studentschedules/tex', 'students', 'enrolled').content.decode('utf8')
+        tex = self.get_response('studentschedules/tex', 'Student', 'enrolled').content.decode('utf8')
         self.assertIn(u'Jos\u00e9 W\u00f3jcik-Nguyen ?', tex)
-        response = self.get_response('studentschedules', 'students', 'enrolled')
+        response = self.get_response('studentschedules', 'Student', 'enrolled')
         self.assertTrue(response['Content-Type'].startswith('application/pdf'))
 
         for query in ('', '?sort_name_list=timeblock'):
