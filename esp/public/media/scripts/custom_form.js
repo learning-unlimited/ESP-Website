@@ -717,12 +717,12 @@ var addSpecificOptions=function(elem, options) {
         var limit_min, limit_max;
         if(elem=='textField'){
             frag+='min="0" max="30"';
-            limit_min = Math.min(30, limits[0]);
-            limit_max = Math.min(30, limits[1]);
+            limit_min = limits[0] === '' ? 0 : Math.min(30, limits[0]);
+            limit_max = limits[1] === '' ? 30 : Math.min(30, limits[1]);
         } else if(elem=='longTextField'){
             frag+='min="0" max="60"';
-            limit_min = Math.min(60, limits[0]);
-            limit_max = Math.min(60, limits[1]);
+            limit_min = limits[0] === '' ? 0 : Math.min(60, limits[0]);
+            limit_max = limits[1] === '' ? 60 : Math.min(60, limits[1]);
         } else {
             limit_min = limits[0];
             limit_max = limits[1];
