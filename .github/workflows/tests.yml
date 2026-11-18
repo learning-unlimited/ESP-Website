@@ -37,6 +37,31 @@ jobs:
       uses: deadsnakes/action@v3.2.0
       with:
         python-version: ${{ matrix.python-version }}
+    # Keep downloaded .debs in GitHub's cache so a slow Ubuntu mirror doesn't
+    # stall the ~320 MB texlive download. The key gets a new run_id suffix
+    # each run so newly downloaded package versions are saved too; restore-keys
+    # picks up the most recent cache for the same package lists.
+    - name: Restore apt package cache
+      if: ${{ matrix.travis_job == 'test' }}
+      uses: actions/cache@v4
+      with:
+        # Only the .debs: apt's lock file and partial/ dir aren't readable by
+        # the runner user, so caching the whole directory would fail to save.
+        path: ~/apt-cache/*.deb
+        key: apt-${{ hashFiles('esp/packages_base.txt', 'esp/packages_base_manual_install.sh', 'deploy/travis/install', 'deploy/travis/before_install') }}-${{ github.run_id }}
+        restore-keys: apt-${{ hashFiles('esp/packages_base.txt', 'esp/packages_base_manual_install.sh', 'deploy/travis/install', 'deploy/travis/before_install') }}-
+    - name: Point apt at the package cache
+      if: ${{ matrix.travis_job == 'test' }}
+      run: |
+        mkdir -p ~/apt-cache/partial
+        ls ~/apt-cache/*.deb 2>/dev/null | wc -l | xargs echo "cached .debs:"
+        # Applies to every apt/apt-get call in later steps. The `apt` frontend
+        # deletes downloads after installing unless Keep-Downloaded-Packages is set.
+        printf '%s\n' \
+          "Dir::Cache::Archives \"$HOME/apt-cache/\";" \
+          'APT::Keep-Downloaded-Packages "true";' \
+          'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
+          | sudo tee /etc/apt/apt.conf.d/99ci-package-cache
     - name: Prepare for Installing Dependencies
       run: deploy/travis/before_install
       env:
