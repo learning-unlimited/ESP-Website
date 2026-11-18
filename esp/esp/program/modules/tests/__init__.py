@@ -112,3 +112,4 @@ from esp.program.modules.tests.test_donationmodule import DonationFormTest, Dona
 from esp.program.modules.tests.test_draft_creation import MakeAClassDraftTest
 from esp.program.modules.tests.test_customform_assets import CustomFormAssetsTest
 from esp.program.modules.tests.test_customform_reopen import CustomFormReopenTest
+from esp.program.modules.tests.test_admissionsdashboard import AdmissionsDashboardTest
