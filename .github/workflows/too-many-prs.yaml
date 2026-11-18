@@ -17,6 +17,7 @@ permissions:
 jobs:
   label-high-volume-prs:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Add or remove labels based on open PR count
         uses: actions/github-script@v9
