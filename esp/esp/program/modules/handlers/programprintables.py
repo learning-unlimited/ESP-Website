@@ -1884,20 +1884,45 @@ class ProgramPrintables(ProgramModuleObj):
 
         students= sorted([ user for user in self.program.students()['confirmed']])
 
+        #   Which classes each student is enrolled in, all in one query
+        #   (as getEnrolledClasses() defines it), rather than per class per
+        #   student.
+        enrolled = collections.defaultdict(set)
+        for user_id, class_id in StudentRegistration.objects.filter(
+                StudentRegistration.is_valid_qobject(),
+                relationship__name='Enrolled',
+                section__parent_class__parent_program=prog,
+                user__in=[s.id for s in students],
+        ).values_list('user_id', 'section__parent_class_id'):
+            enrolled[user_id].add(class_id)
+
+        #   Paid if nothing is due, for the students on any checklist
+        listed = [s for s in students if enrolled.get(s.id)]
+        due = {row['student'].id: row['amount_due'] for row in
+               ProgramAccountingController(prog).student_payment_rows(listed)}
+
+        #   Each student's grade, e-mail and pronoun, looked up once rather
+        #   than on every checklist they appear on
+        show_pronoun = Tag.getBooleanTag('student_profile_pronoun_field')
+        details = {}
+        for student in listed:
+            profile = student.getLastProfile()
+            details[student.id] = {
+                'grade': student.getGrade(prog),
+                'email': profile.contact_user.e_mail if profile.contact_user else '',
+                'pronoun': profile.student_info.pronoun if show_pronoun and profile.student_info else None,
+            }
+
         class_list = []
 
         for c in self.program.classes():
             class_dict = {'cls': c}
             student_list = []
 
-            for student in students:
-                if c in student.getEnrolledClasses(self.program):
-                    iac = IndividualAccountingController(self.program, student)
-                    if iac.amount_due() <= 0:
-                        paid_symbol = 'X'
-                    else:
-                        paid_symbol = ''
-                    student_list.append({'user': student, 'paid': paid_symbol})
+            for student in listed:
+                if c.id in enrolled[student.id]:
+                    paid_symbol = 'X' if due[student.id] <= 0 else ''
+                    student_list.append(dict(details[student.id], user=student, paid=paid_symbol))
 
             class_dict['students'] = student_list
             class_list.append(class_dict)

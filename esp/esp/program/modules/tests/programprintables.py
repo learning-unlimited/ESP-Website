@@ -279,6 +279,50 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
                 starts = [item['cls'].meeting_times.order_by('start')[0].start for item in context['scheditems']]
                 self.assertEqual(starts, sorted(starts))
 
+    def test_class_checklists(self):
+        """ Each class's check-in list shows the confirmed students enrolled
+        in it, with their grade and e-mail, and marks who owes nothing. """
+        from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+        from esp.program.models import RegistrationProfile
+        from esp.users.models import ContactInfo, Record, RecordType
+        from esp.users.templatetags.users import getGradeForProg
+
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(25.0)
+        confirmed, unconfirmed = self.students[:2], self.students[2:]
+        reg_confirmed, _ = RecordType.objects.get_or_create(name='reg_confirmed', defaults={'description': 'Confirmed registration'})
+        for student in confirmed:
+            Record.objects.create(user=student, event=reg_confirmed, program=self.program)
+            profile = RegistrationProfile.getLastProfile(student)
+            profile.contact_user = ContactInfo.objects.create(
+                user=student, first_name=student.first_name, last_name=student.last_name,
+                e_mail='%s@checklist.example.com' % student.username)
+            profile.save()
+        #   One confirmed student has paid in full; the other owes
+        IndividualAccountingController(self.program, confirmed[1]).submit_payment(25.0)
+
+        self._login_admin()
+        response = self.client.get('/manage/%s/classchecklists' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        class_list = response.context['class_list']
+        self.assertEqual([item['cls'].id for item in class_list], [c.id for c in self.program.classes()])
+        listed = set()
+        for item in class_list:
+            expected = []
+            for student in sorted(confirmed):
+                if item['cls'] in student.getEnrolledClasses(self.program):
+                    iac = IndividualAccountingController(self.program, student)
+                    expected.append((student.id, 'X' if iac.amount_due() <= 0 else '',
+                                     getGradeForProg(student, self.program.id),
+                                     student.getLastProfile().contact_user.e_mail))
+            got = [(row['user'].id, row['paid'], row['grade'], row['email']) for row in item['students']]
+            self.assertEqual(got, expected, item['cls'].title)
+            listed.update(row['user'] for row in item['students'])
+        self.assertEqual(listed, set(confirmed))
+        self.assertContains(response, confirmed[0].getLastProfile().contact_user.e_mail)
+
     def test_latex_printables_keep_accented_names(self):
         for student in self.students:
             student.first_name = u'Jos\u00e9'

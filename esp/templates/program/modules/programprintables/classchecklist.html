@@ -51,10 +51,10 @@
       <td>{{ student.user.id }}</td>
       <td>{{ student.user.name }}</td>
       {% if "student_profile_pronoun_field"|getBooleanTag %}
-      <td>{{ student.user.getLastProfile.student_info.pronoun|default_if_none:"" }}</td>
+      <td>{{ student.pronoun|default_if_none:"" }}</td>
       {% endif %}
-      <td>{{ student.user|getGradeForProg:program.id }}</td>
-      <td>{{ student.user.getLastProfile.contact_user.e_mail }}</td>
+      <td>{{ student.grade }}</td>
+      <td>{{ student.email }}</td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;{{ student.paid }}</div></td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
