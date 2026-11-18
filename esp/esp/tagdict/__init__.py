@@ -652,6 +652,14 @@ all_program_tags = {
         'is_setting': True,
         'field': JSONValidatedCharField(),
     },
+    'class_durations': {
+        'is_boolean': False,
+        'help_text': 'If set, replaces the choices of the \'Duration\' field on the class creation/editing form. This should be a JSON-formatted list of class lengths in minutes. Example: [60, 90]',
+        'default': None,
+        'category': 'teach',
+        'is_setting': True,
+        'field': JSONValidatedCharField(),
+    },
     'teacherreg_help_text_duration': {
         'is_boolean': False,
         'help_text': 'If set, overrides the help text for the class registration duration field',

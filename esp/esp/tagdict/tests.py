@@ -361,3 +361,27 @@ class TagWarningTest(ProgramFrameworkTest):
         Tag.setTag('student_onsite_checkin_note', target=self.program, value='true')
         result, warnings = self._warnings(lambda: Tag.getProgramTag('student_onsite_checkin_note', self.program))
         self.assertEqual(warnings, ['Tag student_onsite_checkin_note set to boolean value; consider using getBooleanTag()'])
+
+    def testClassDurationsTag(self):
+        """ class_durations (MIT) is a registered program tag: reading it
+        doesn't warn, the class reg form uses it for its duration choices, and
+        the tag settings page only accepts JSON. """
+        from decimal import Decimal
+        from django.core.exceptions import ValidationError
+        from esp.program.modules.forms.teacherreg import TeacherClassRegForm
+        self.assertIn('class_durations', all_program_tags)
+        result, warnings = self._warnings(lambda: Tag.getProgramTag('class_durations', self.program))
+        self.assertIsNone(result)
+        self.assertEqual(warnings, [])
+        Tag.setTag('class_durations', target=self.program, value='[60, 90]')
+        result, warnings = self._warnings(lambda: Tag.getProgramTag('class_durations', self.program))
+        self.assertEqual(result, '[60, 90]')
+        self.assertEqual(warnings, [])
+        Tag._getTag.delete_all()
+        form = TeacherClassRegForm(self.program.classregmoduleinfo)
+        self.assertEqual(form.fields['duration'].choices,
+                         [(Decimal(1), '1:00'), (Decimal('1.5'), '1:30')])
+        field = all_program_tags['class_durations']['field']
+        self.assertEqual(field.clean('[60, 90]'), '[60, 90]')
+        with self.assertRaises(ValidationError):
+            field.clean('(60, 90)')
