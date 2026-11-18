@@ -337,3 +337,27 @@ class TagWarningTest(ProgramFrameworkTest):
         result, warnings = self._warnings(lambda: Tag.getProgramTag('class_style_choices', None))
         self.assertEqual(result, '[["A", "Global"]]')
         self.assertEqual(warnings, [])
+
+    def testChoiceTagBooleanLikeValues(self):
+        """ A choice tag whose choices include 'true'/'false' (e.g.
+        section_attendance_enroll: true/false/teacher) shouldn't trigger the
+        'set to boolean value' warning, but other boolean-looking strings
+        still should. """
+        key = 'section_attendance_enroll'
+        #   The default is 'false', one of the choices
+        result, warnings = self._warnings(lambda: Tag.getProgramTag(key, self.program))
+        self.assertEqual(result, 'false')
+        self.assertEqual(warnings, [])
+        for value in ['true', 'false', 'teacher']:
+            Tag.setTag(key, target=self.program, value=value)
+            result, warnings = self._warnings(lambda: Tag.getProgramTag(key, self.program))
+            self.assertEqual(result, value)
+            self.assertEqual(warnings, [])
+        #   Not one of the choices (they're lowercase), so still a warning
+        Tag.setTag(key, target=self.program, value='False')
+        result, warnings = self._warnings(lambda: Tag.getProgramTag(key, self.program))
+        self.assertEqual(warnings, ['Tag %s set to boolean value; consider using getBooleanTag()' % key])
+        #   A free-text tag with no field still warns
+        Tag.setTag('student_onsite_checkin_note', target=self.program, value='true')
+        result, warnings = self._warnings(lambda: Tag.getProgramTag('student_onsite_checkin_note', self.program))
+        self.assertEqual(warnings, ['Tag student_onsite_checkin_note set to boolean value; consider using getBooleanTag()'])

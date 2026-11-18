@@ -4,12 +4,26 @@ import logging
 import six
 logger = logging.getLogger(__name__)
 
+from django import forms
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from argcache import cache_function
 
 from esp.tagdict import all_global_tags, all_program_tags
+
+def _warn_if_boolean_string(key, value):
+    """ Warn when a tag read as a string looks like it should be read with
+    getBooleanTag().  Skips tags whose registered field is a ChoiceField that
+    lists the value as a choice (e.g. section_attendance_*'s
+    true/false/teacher). """
+    if not (isinstance(value, six.string_types) and value.lower() in ('true', 'false')):
+        return
+    tag_info = all_program_tags.get(key) or all_global_tags.get(key) or {}
+    field = tag_info.get('field')
+    if isinstance(field, forms.ChoiceField) and value in [str(choice) for choice, _ in field.choices]:
+        return
+    logger.warning("Tag %s set to boolean value; consider using getBooleanTag()", key)
 
 # aseering 3/23/2010
 # This model is based on the sample "TaggedItem" model from the Django
@@ -65,10 +79,7 @@ class Tag(models.Model):
                 elif key in all_global_tags:
                     result = all_global_tags[key].get('default')
 
-        if isinstance(result, six.string_types) and (result.lower() == "false" or
-                                               result.lower() == "true"):
-            logger.warning("Tag %s set to boolean value; consider using getBooleanTag()",
-                           key)
+        _warn_if_boolean_string(key, result)
         return result
 
     @cache_function
@@ -122,10 +133,8 @@ class Tag(models.Model):
                     res = all_program_tags[key].get('default')
                 elif key in all_global_tags:
                     res = all_global_tags[key].get('default')
-        if (not boolean) and isinstance(res, six.string_types) and \
-           (res.lower() == "false" or res.lower() == "true"):
-            logger.warning("Tag %s set to boolean value; consider using getBooleanTag()",
-                           key)
+        if not boolean:
+            _warn_if_boolean_string(key, res)
         return res
 
     @classmethod
