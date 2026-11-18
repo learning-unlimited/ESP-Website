@@ -150,7 +150,7 @@ class OnSiteClassList(ProgramModuleObj):
             #   Todo: section current capacity ? (see ClassSection.get_capacity())
             'classes': list(ClassSubject.objects.filter(parent_program=prog, status__gt=0).extra({'teacher_names': """array_to_string(ARRAY(SELECT auth_user.first_name || ' ' || auth_user.last_name FROM auth_user,program_class_teachers WHERE program_class_teachers.classsubject_id=program_class.id AND auth_user.id=program_class_teachers.espuser_id), ', ')""", 'class_size_max_optimal': """SELECT program_classsizerange.range_max FROM program_classsizerange WHERE program_classsizerange.id = optimal_class_size_range_id"""}).values('id', 'class_size_max', 'class_size_max_optimal', 'class_info', 'prereqs', 'hardness_rating', 'grade_min', 'grade_max', 'title', 'teacher_names', 'category__symbol', 'category__id')),
             'sections': sections,
-            'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label', 'start_millis').order_by("start")),
+            'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI AM -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label', 'start_millis').order_by("start")),
             'categories': list(prog.class_categories.all().order_by('-symbol').values('id', 'symbol', 'category')),
         }
         json.dump(data, resp, cls=DjangoJSONEncoder)
