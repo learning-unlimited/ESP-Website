@@ -196,14 +196,26 @@ function renderEditor(newSelection) {
 
 // Every edit names the version it started from; if someone else saved in between, the server refuses
 // and returns the current check, which replaces ours so the person sees what changed.
-async function patch(c, body) {
+// Edits are sent one at a time, each with the newest version we know: two quick edits from this tab (a
+// check number's change event followed by an amount click, a double click) would otherwise both carry the
+// same version, and the second would be refused as a conflict with ourselves.
+let patchChain = Promise.resolve();
+function patch(c, body) {
+  const run = patchChain.then(() => sendPatch(c.id, body));
+  patchChain = run.catch(() => {});
+  return run;
+}
+
+async function sendPatch(id, body) {
+  const cur = checks.find(x => x.id === id);
+  if (!cur) throw new Error('This check is no longer in the batch');
   try {
-    const updated = await api(apiUrl('check', c.id), { method: 'PATCH', json: { ...body, version: c.version } });
-    checks[checks.findIndex(x => x.id === c.id)] = updated;
+    const updated = await api(apiUrl('check', id), { method: 'PATCH', json: { ...body, version: cur.version } });
+    checks[checks.findIndex(x => x.id === id)] = updated;
     return updated;
   } catch (e) {
     if (e.status === 409 && e.body && e.body.check) {
-      checks[checks.findIndex(x => x.id === c.id)] = e.body.check;
+      checks[checks.findIndex(x => x.id === id)] = e.body.check;
       renderList(); renderEditor(false);
       if (document.activeElement !== $('#cur-checknum')) $('#cur-checknum').value = e.body.check.check_number;
       loadBatch();
