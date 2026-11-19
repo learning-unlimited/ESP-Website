@@ -1,7 +1,7 @@
 // Digital Check SSX1 (network firmware 25.07, "SecureLink 2.0") client, run in the browser.
 // The scanner answers CORS requests from any origin; over HTTPS it uses a self-signed cert, so each
 // computer must accept that cert once (open https://192.168.2.1/ and click through the warning).
-import * as openpgp from './vendor/openpgp-6.3.2.min.mjs';
+import * as openpgp from './vendor/openpgp-6.3.2.min.js';
 import { apiUrl } from './common.js';
 
 export const DEFAULT_HOST = 'https://192.168.2.1';
@@ -12,17 +12,23 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 export class SecureLink {
   constructor(host = DEFAULT_HOST) { this.host = host; this.mid = 0; this.sid = null; }
 
-  async cmd(command, extra = {}) {
+  // timeoutMs: give up on a scanner that doesn't answer (a blocked or unreachable address can hang a fetch
+  // for minutes), so the page can say "not reachable" instead of waiting forever.
+  async cmd(command, extra = {}, timeoutMs = 0) {
     const body = { Command: command, MessageId: String(++this.mid), ...extra };
     if (this.sid && !('SessionId' in body)) body.SessionId = this.sid;
-    const r = await fetch(this.host + '/securelink', {
-      method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
-    return r.json();
+    const ctl = timeoutMs ? new AbortController() : null;
+    const timer = ctl && setTimeout(() => ctl.abort(), timeoutMs);
+    try {
+      const r = await fetch(this.host + '/securelink', {
+        method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body), signal: ctl && ctl.signal });
+      return await r.json();
+    } finally { clearTimeout(timer); }
   }
 
   // Sessionless read-only status (works without Connect on 25.07 firmware).
   async status() {
-    const r = await this.cmd('GetParameters', { Params: ['TisState', 'TransportState', 'FeederEmpty', 'JammedDocument', 'CartridgeInstalled'] });
+    const r = await this.cmd('GetParameters', { Params: ['TisState', 'TransportState', 'FeederEmpty', 'JammedDocument', 'CartridgeInstalled'] }, 4000);
     return r.Params || {};
   }
 
