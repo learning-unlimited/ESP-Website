@@ -208,6 +208,15 @@ def ensure_environment():
             print("***** Aborting.")
             exit(-1)
 
+    # The check-scanning module keeps its scans in TREASURY_DATA_DIR, which is
+    # outside the synced checkout (default /var/lib/esp-treasury) and so isn't
+    # created by anything else. `install -d` is an idempotent mkdir -p that also
+    # sets the owner and mode.
+    sudo("install -d -o vagrant -g vagrant -m 700 /var/lib/esp-treasury")
+    # Scanning needs a public key to encrypt to. If there isn't one, make a throwaway
+    # (insecure, and labelled so) pair so a dev VM works out of the box. No-op otherwise.
+    run(env.rbase + "deploy/make_dev_treasury_key.sh")
+
     # Are we running emptydb() or loaddb() right now? If so, skip the database
     # check.
     if env.get("db_running", False):

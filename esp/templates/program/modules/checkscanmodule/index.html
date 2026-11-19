@@ -1,0 +1,28 @@
+{% extends "program/modules/checkscanmodule/base.html" %}
+
+{% block title %}Scan checks - {{ program.niceName }}{% endblock %}
+
+{% block checkscan_script %}index{% endblock %}
+
+{% block checkscan_body %}
+  <section class="panel">
+    <h2>Start a new batch for {{ program.niceName }}</h2>
+    <form id="new-batch" class="inline-form">
+      <label>Note <input id="note" placeholder="optional"></label>
+      <button class="primary">Create batch &amp; start scanning →</button>
+    </form>
+    <p id="preview" class="hint"></p>
+    <div id="new-msg"></div>
+  </section>
+  <section class="panel">
+    <h2>…or continue an open batch</h2>
+    <div class="table-wrap">
+      <table id="batches">
+        <thead><tr><th>Batch</th><th>Created</th><th class="num">Checks</th><th class="num">Need amount</th><th class="num">Total</th><th>Note</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p id="empty" class="hint" hidden>No open batches.</p>
+    <p class="hint">Batches with deposit slips, and deleted batches, are under <a href="{{ base_url }}checkscan_history/">History</a>.</p>
+  </section>
+{% endblock %}

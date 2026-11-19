@@ -1,0 +1,26 @@
+{% extends "main.html" %}
+
+{% comment %}
+  Shared frame for the check-scanning pages.  The pages' scripts find the module's URLs through the
+  data attributes on <main id="checkscan">; see /media/scripts/checkscan/common.js.
+{% endcomment %}
+
+{% block page_width %}fluid-width{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/checkscan.css" />
+{% endblock %}
+
+{% block content %}
+<main id="checkscan" data-base="{{ base_url }}" data-batch-id="{{ batch_id }}">
+{% csrf_token %}
+{% if insecure_dev_key %}
+<div class="banner bad"><b>Development key in use.</b> This server holds the private key for the key it encrypts scans to,
+  so nothing scanned here is confidential. Use it for testing only, never for real checks.</div>
+{% endif %}
+{% block checkscan_body %}{% endblock %}
+</main>
+{% block checkscan_extra %}{% endblock %}
+<script type="module" src="/media/scripts/checkscan/{% block checkscan_script %}{% endblock %}.js"></script>
+{% endblock %}

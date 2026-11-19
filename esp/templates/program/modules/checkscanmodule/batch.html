@@ -1,0 +1,106 @@
+{% extends "program/modules/checkscanmodule/base.html" %}
+
+{% block title %}Scan checks: batch - {{ program.niceName }}{% endblock %}
+
+{% block checkscan_script %}batch{% endblock %}
+
+{% block checkscan_body %}
+  <div class="flow-nav">
+    <a href="{{ base_url }}checkscan/" class="button">← Batches</a>
+    <span class="actions-row"><span id="next-why" class="hint"></span><a id="next-link" class="button primary">Next: finalize batch →</a></span>
+  </div>
+  <section class="panel batch-head">
+    <div>
+      <h2 id="batch-title">Batch</h2>
+      <div id="batch-stats" class="hint"></div>
+      <label class="note-edit">Note <input id="batch-note" placeholder="add a note" size="32" maxlength="200"> <span id="note-msg" class="hint"></span></label>
+    </div>
+    <div class="head-actions">
+      <a id="originals" class="button" download>Download unredacted scans (encrypted)</a>
+      <button id="delete-batch" title="Delete this batch (e.g. a mistyped program). It can be restored from History if this was a mistake.">Delete batch</button>
+    </div>
+  </section>
+
+  <div class="batch-grid">
+    <div class="left-col">
+      <section id="closed" class="panel" hidden>
+        <h3 id="closed-title">Finalized</h3>
+        <p id="closed-text">This batch is finalized: no more scanning or changes. <span id="closed-detail"></span></p>
+        <p><button id="restore-batch" hidden>Restore batch</button></p>
+      </section>
+      <section id="scanner-panel" class="panel">
+        <h3>Scanner <span id="scanner-state" class="pill">checking…</span></h3>
+        <div id="unreachable" class="banner warn" hidden>
+          <b>Can't reach the scanner.</b> If it's plugged in and on,
+          <a id="trust-link" href="https://192.168.2.1/" target="_blank" rel="noopener">open the scanner in a new tab</a>,
+          accept the security warning (once per computer, in Firefox), then come back — this page reconnects by itself.
+        </div>
+        <p>
+          <button id="start" class="primary" disabled>Start scanning into this batch</button>
+          <button id="stop" disabled>Stop</button>
+        </p>
+        <p class="hint">Load checks face out, MICR line at the bottom. Scanning keeps going when the feeder empties — just add more.</p>
+        <div id="upload-stats" class="stats"></div>
+        <div id="errors"></div>
+        <details><summary class="hint">Scanner address</summary><input id="host" size="26"></details>
+      </section>
+
+      <section class="panel">
+        <h3>Checks in this batch</h3>
+        <div class="list-wrap">
+          <table id="list">
+            <thead><tr><th>#</th><th>Check #</th><th class="num">Amount</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p id="list-empty" class="hint">No checks yet — press Start scanning.</p>
+      </section>
+    </div>
+
+    <section class="panel editor">
+      <div id="editor-empty" class="hint">Select a check on the left (or scan some).</div>
+      <div id="editor" hidden>
+        <div class="current-head">
+          <span>Check <b id="cur-id"></b> · <span id="cur-pos" class="hint"></span> <span id="cur-status"></span></span>
+          <span><button id="prev" title="Previous (↑)">▲ Prev</button> <button id="next" title="Next (↓)">Next ▼</button>
+            <button id="void">Remove</button></span>
+        </div>
+        <div class="check-images">
+          <figure><img id="cur-img" alt="Front (redacted)" title="Click to enlarge"><figcaption>Front</figcaption></figure>
+          <figure><img id="cur-rear" alt="Back" title="Click to enlarge"><figcaption id="rear-caption">Back</figcaption></figure>
+        </div>
+        <div id="edit-controls">
+          <div class="edit-row">
+            <label class="checknum">Check #
+              <input id="cur-checknum" autocomplete="off" inputmode="numeric">
+            </label>
+            <span class="confirms">
+              <button id="ok-payee" class="confirm" aria-pressed="false">Made out to MIT ESP</button>
+              <button id="ok-signed" class="confirm" aria-pressed="false">Signed</button>
+              <button id="ok-endorsed" class="confirm" aria-pressed="false">Endorsed</button>
+            </span>
+          </div>
+          <div id="checknum-warn" class="bad small-text" hidden>MICR couldn't read the check number — type it from the check.</div>
+          <div class="amount-row">Amount: <b id="cur-amount" class="big"></b>
+            <button id="clear-amount" class="small" title="Blank the amount, e.g. when it's illegible and someone else needs to review it">Clear</button></div>
+          <div class="edit-row">
+            <span id="amount-buttons" class="amount-buttons"></span>
+            <label class="manual">Other $ <input id="manual-amount" autocomplete="off" inputmode="decimal" placeholder="75 or 1,250.00"></label>
+          </div>
+        </div>
+        <div id="locked" class="banner" hidden></div>
+        <div id="amount-msg"></div>
+        <details class="howto"><summary class="hint">How this works</summary>
+          <p class="hint">For each check: confirm it's made out to MIT ESP, signed, and endorsed on the back, then click its amount.
+            Once all of that is done it moves on to the next check that still needs something.
+            Type another amount + Enter to use it (it becomes a button). If a check isn't made out to MIT ESP or isn't signed,
+            set it aside and press Remove. ↑/↓ moves between checks; click a check on the left to change it; click an image to enlarge it.</p>
+        </details>
+      </div>
+    </section>
+  </div>
+{% endblock %}
+
+{% block checkscan_extra %}
+<dialog id="zoom-dialog"><img id="zoom-img" alt=""><form method="dialog"><button>Close</button></form></dialog>
+{% endblock %}

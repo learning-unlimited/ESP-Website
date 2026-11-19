@@ -35,6 +35,7 @@ Pygments==2.10.0 # django-extensions dependency
 pyinotify # Makes dev servers auto-reload
 pylibmc==1.5.0 # Talks to memcached
 pytz==2015.4 # Required for timezone support
+reportlab==3.6.9 # Builds the check-scanning deposit slip PDFs; newest release that still accepts our pillow 8 pin (4.x and 3.6.10+ need pillow>=9)
 requests==2.31.0 # Ships ILP lottery models to the remote Gurobi solver service
 sentry-sdk # Required for Sentry error reporting
 setuptools==57.5.0 # For building packages from source; stripe and a few others don't work with v58+

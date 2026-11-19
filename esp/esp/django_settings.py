@@ -69,7 +69,17 @@ STATIC_URL = '/static/'
 
 LOGIN_REDIRECT_URL = '/'
 
+# Where the check-scanning module keeps uploaded scans.  It must NOT be under MEDIA_ROOT (which is served
+# publicly), should be outside the git checkout, and must be writable by the web server.  MIT's esp-web and
+# esp-dev use this default (owned by www-data, mode 700), and the Vagrant dev VM does too: fab creates it
+# (see ensure_environment() in fabfile.py).
+TREASURY_DATA_DIR = '/var/lib/esp-treasury'
+# The treasurer's ASCII-armored OpenPGP public key, which browsers encrypt scans to.  None means
+# <TREASURY_DATA_DIR>/treasurer.asc.
+TREASURY_PUBLIC_KEY_FILE = None
+
 LOG_FILE = "/tmp/esp-website.log"
+
 # Set to DEBUG for more spam or WARNING for less.  Note: setting to 'DEBUG'
 # when DEBUG=True will cause every query to be logged (to the
 # django.db.backends logger).

@@ -2350,6 +2350,7 @@ from esp.program.models.app_ import *
 from esp.program.models.flags import *
 from esp.program.models.lottery import *
 from esp.program.models.nametags import *
+from esp.program.models.treasury import *
 
 def install():
     from esp.program.models.class_ import install as install_class

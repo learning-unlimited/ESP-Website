@@ -1,0 +1,50 @@
+{% extends "program/modules/checkscanmodule/base.html" %}
+
+{% block title %}Deposit slips - {{ program.niceName }}{% endblock %}
+
+{% block checkscan_script %}slips{% endblock %}
+
+{% block checkscan_body %}
+  <div class="flow-nav">
+    <a id="back" class="button">← Back to finalize</a>
+  </div>
+  <section class="panel">
+    <h2>Deposit slips — <span id="batch-title"></span></h2>
+    <div id="not-final" class="banner warn" hidden></div>
+
+    <div id="current" hidden>
+      <div class="actions-row">
+        <span id="current-info"></span>
+        <button id="redo">Redo slips…</button>
+      </div>
+      <p class="hint">Redo if the bank wants the checks split differently (e.g. a cap on checks per slip). If an error is found later,
+        you can discard your deposit slips and reopen the batch for edits (step 3). Discarded slips are kept on record.</p>
+      <div id="slips" class="slips-grid"></div>
+    </div>
+
+    <div id="prepare" hidden>
+      <p class="summary totals" id="prep-summary"></p>
+      <div class="form-grid">
+        <div class="static-field">Program <b id="program"></b></div>
+        <div class="static-field">Treasurer <b id="treasurer"></b></div>
+        <label>Max checks per ticket <input id="max" inputmode="numeric" placeholder="no limit"></label>
+      </div>
+      <div class="table-wrap">
+        <table id="plan">
+          <thead><tr><th>Slip</th><th>Checks</th><th class="num">Check total</th><th>Bag #</th><th>Currency $</th><th>Coins $</th><th class="num">Slip total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p id="plan-total" class="totals"></p>
+      <button id="create" class="primary">Create deposit slips</button>
+      <span id="msg"></span>
+    </div>
+  </section>
+
+  <section id="old-panel" class="panel" hidden>
+    <details>
+      <summary><b>Discarded slips</b> <span id="old-count" class="hint"></span></summary>
+      <div id="old" class="slips-grid"></div>
+    </details>
+  </section>
+{% endblock %}

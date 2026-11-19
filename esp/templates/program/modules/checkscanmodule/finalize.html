@@ -1,0 +1,31 @@
+{% extends "program/modules/checkscanmodule/base.html" %}
+
+{% block title %}Finalize batch - {{ program.niceName }}{% endblock %}
+
+{% block checkscan_script %}finalize{% endblock %}
+
+{% block checkscan_body %}
+  <div class="flow-nav">
+    <a id="back" class="button">← Back to scanning</a>
+    <a id="next" class="button primary" hidden>Next: deposit slips →</a>
+  </div>
+  <section class="panel">
+    <h2>Finalize — <span id="batch-title"></span></h2>
+    <div id="blocked" class="banner bad" hidden></div>
+    <p id="summary" class="totals"></p>
+    <div id="status"></div>
+    <div class="actions-row">
+      <button id="finalize" class="primary" hidden>Finalize batch</button>
+      <button id="reopen" hidden>Reopen batch for changes</button>
+      <span id="msg"></span>
+    </div>
+    <p id="explain" class="hint">Finalizing closes the batch: no more scanning, amount changes or removing checks. Then you prepare the deposit slips.
+      If an error is found later, you can discard your deposit slips and reopen the batch for edits.</p>
+    <div class="table-wrap">
+      <table id="checks">
+        <thead><tr><th>#</th><th>Check #</th><th class="num">Amount</th><th>To MIT ESP</th><th>Signed</th><th>Endorsed</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

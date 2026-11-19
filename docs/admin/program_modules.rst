@@ -814,3 +814,16 @@ On-Site User Check-Out (OnSiteCheckoutModule)
 ---------------------------------------------
 
 This module can be used to keep track of students that have checked *out* of a program (as opposed to check in). The module allows an onsite user to select a student with a search bar, then choose which classes, if any, the student will be unenrolled from when they are checked out. There is also an option to check out all students that have checked in (with multiple confirmation checks), in the case that you want to record program attendance separately for each day/weekend/etc.
+
+Check Scanning (CheckScanModule)
+--------------------------------
+
+This module is for the treasurer.  It scans the paper checks a program receives with a network check scanner (a Digital Check SSX1 connected to the computer), records each check's amount, and prepares the bank deposit slips.  Only program administrators can use it.
+
+Checks are scanned into numbered *batches* for the program.  For each check you confirm that it is made out to MIT ESP, signed and endorsed, and enter its amount.  Once every check in a batch is complete you finalize the batch, which closes it to changes, and then create one or more deposit slips (the bank limits how many checks fit on one ticket).  A finalized batch can be reopened as long as it has no current slips.  Each slip comes as a PDF with a fill-in guide for the deposit ticket and a check list for each copy.
+
+The browser talks to the scanner directly, so nothing needs to be installed on the scanning computer.  Before anything is uploaded, the original check images and the MICR line are encrypted in the browser with the treasurer's OpenPGP public key, so the website never holds an unencrypted original.  It stores the encrypted files, a redacted copy of the front of each check and the rear image, outside the public media directory (the ``TREASURY_DATA_DIR`` setting).  Checks are not linked to students or payments.
+
+The scans are kept in ``TREASURY_DATA_DIR``, which defaults to ``/var/lib/esp-treasury``.  Create it owned by the web server (mode 700), keep it outside the website's checkout, and make sure your backups include it along with the database.  A development copy can point it somewhere else in ``local_settings.py``.
+
+On a development VM, the first ``fab`` command that sets up the environment creates a throwaway key pair if there is no public key yet (``deploy/make_dev_treasury_key.sh``), so scanning and decrypting work for testing.  Its private key is left in the data directory as ``treasurer-dev-private.asc`` with no passphrase, so it is insecure: the module's pages show a warning while that file exists, and it must never be used for real checks.  Production never generates a key.  The server also needs the treasurer's public key at ``TREASURY_PUBLIC_KEY_FILE`` (by default ``treasurer.asc`` in the data directory).

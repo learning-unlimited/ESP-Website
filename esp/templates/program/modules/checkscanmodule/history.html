@@ -1,0 +1,39 @@
+{% extends "program/modules/checkscanmodule/base.html" %}
+
+{% block title %}Check scanning history - {{ program.niceName }}{% endblock %}
+
+{% block checkscan_script %}history{% endblock %}
+
+{% block checkscan_body %}
+  <section class="panel">
+    <h2>All scan batches</h2>
+    <div class="table-wrap">
+      <table id="batches">
+        <thead><tr><th>Batch</th><th>Created</th><th>By</th><th class="num">Checks</th><th class="num">Removed</th><th class="num">Need amount</th><th class="num">Total</th><th>Status</th><th>Note</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p id="no-batches" class="hint" hidden>No batches yet.</p>
+  </section>
+  <section class="panel">
+    <h2>All deposit slips</h2>
+    <div class="table-wrap">
+      <table id="deposits">
+        <thead><tr><th>Date</th><th>Batch</th><th>Slip</th><th>Program (on slip)</th><th>Treasurer</th><th>Bag</th><th class="num">Checks</th><th class="num">Check total</th><th class="num">Cash</th><th class="num">Coins</th><th class="num">Total</th><th>Slip</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p id="no-deposits" class="hint" hidden>No deposit slips yet.</p>
+  </section>
+  <section id="archived-panel" class="panel" hidden>
+    <details>
+      <summary><b>Deleted batches</b> <span class="hint">— can be restored</span></summary>
+      <div class="table-wrap">
+        <table id="archived">
+          <thead><tr><th>Batch</th><th>Created</th><th>Deleted</th><th class="num">Checks</th><th>Note</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+{% endblock %}

@@ -1,0 +1,160 @@
+/* Styles for the check-scanning module; everything is scoped under #checkscan so it can sit inside the site theme. */
+#checkscan, #zoom-dialog, #toast {
+  --bg: #f6f7f9; --panel: #fff; --text: #1d2330; --muted: #667085; --line: #d9dde4;
+  --accent: #8a1538; --ok: #1a7f37; --bad: #b42318; --warn-bg: #fff7e0; --warn-line: #e5c35c;
+  color-scheme: light;
+}
+#checkscan, #checkscan *, #zoom-dialog, #zoom-dialog *, #toast { box-sizing: border-box; }
+#checkscan [hidden], #zoom-dialog[hidden], #toast[hidden] { display: none !important; }
+#checkscan { margin: 0; color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+#checkscan nav.top { display: flex; gap: 18px; align-items: center; padding: 10px 20px; background: var(--accent); color: #fff; flex-wrap: wrap; }
+#checkscan nav.top a { color: #fde7ee; text-decoration: none; padding: 2px 0; border-bottom: 2px solid transparent; }
+#checkscan nav.top a.active, #checkscan nav.top a:hover { color: #fff; border-bottom-color: #fff; }
+#checkscan nav.top .user { margin-left: auto; opacity: .85; font-size: 13px; }
+#checkscan { padding: 16px 20px; display: grid; gap: 16px; max-width: 1400px; margin: 0 auto; }
+#checkscan.narrow { max-width: 640px; }
+#checkscan.scan { grid-template-columns: minmax(280px, 380px) 1fr; align-items: start; }
+@media (max-width: 860px) {
+#checkscan.narrow { max-width: 640px; }
+#checkscan.scan { grid-template-columns: 1fr; }
+}
+#checkscan .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 18px; min-width: 0; }
+#checkscan h2 { margin: 0 0 10px; font-size: 18px; display: flex; gap: 10px; align-items: center; }
+#checkscan label { display: block; margin: 8px 0; }
+#checkscan input, #checkscan select, #checkscan button { font: inherit; }
+#checkscan input, #checkscan select { padding: 5px 8px; border: 1px solid var(--line); border-radius: 5px; background: #fff; max-width: 100%; }
+#checkscan button { padding: 6px 14px; border: 1px solid var(--line); border-radius: 5px; background: #fff; cursor: pointer; }
+#checkscan button:hover:not(:disabled) { border-color: var(--accent); }
+#checkscan button:disabled { opacity: .5; cursor: default; }
+#checkscan button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+#checkscan button.small, #checkscan a.small { font-size: 13px; padding: 2px 8px; }
+#checkscan button.armed { background: var(--bad); color: #fff; border-color: var(--bad); }
+#checkscan .hint { color: var(--muted); font-size: 13px; }
+#checkscan .ok { color: var(--ok); }
+#checkscan .bad { color: var(--bad); }
+#checkscan .pill { display: inline-block; padding: 1px 10px; border-radius: 99px; background: #eef0f3; font-size: 13px; font-weight: normal; }
+#checkscan .pill.ok { background: #dcf3e2; color: var(--ok); }
+#checkscan .pill.bad { background: #fde3e1; color: var(--bad); }
+#checkscan .pill.wait { background: var(--warn-bg); color: #8a5a00; }
+#checkscan .banner { padding: 8px 12px; border-radius: 6px; margin: 8px 0; border: 1px solid var(--line); }
+#checkscan .banner.warn { background: var(--warn-bg); border-color: var(--warn-line); }
+#checkscan .banner.bad { background: #fde3e1; border-color: #f2a69f; color: var(--bad); font-size: 13px; }
+#checkscan .stats { margin: 8px 0; font-size: 14px; }
+#checkscan .current-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+#checkscan input.needs, #checkscan td.needs { background: #fde3e1; }
+#checkscan .amount-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+#checkscan button.amount { font-size: 20px; padding: 8px 18px; font-variant-numeric: tabular-nums; }
+#checkscan button.amount kbd { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; margin-right: 8px; vertical-align: middle; }
+#checkscan .manual input { font-size: 20px; width: 9em; }
+#checkscan .checknum input { font-size: 18px; width: 9em; }
+#checkscan .filters { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+#checkscan .filters label { margin: 0; }
+#checkscan .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0 16px; }
+#checkscan .table-wrap { overflow-x: auto; }
+#checkscan table { border-collapse: collapse; width: 100%; font-size: 14px; }
+#checkscan th, #checkscan td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+#checkscan th { color: var(--muted); font-weight: 600; }
+#checkscan .num { text-align: right; font-variant-numeric: tabular-nums; }
+#checkscan td.editable { cursor: text; text-decoration: underline dotted var(--muted); }
+#checkscan tr.voided td { color: var(--muted); text-decoration: line-through; }
+#checkscan tr.muted td { color: var(--muted); }
+#checkscan .actions { display: flex; gap: 6px; align-items: center; }
+#checkscan .totals { font-weight: 600; }
+#checkscan h3 { margin: 0 0 8px; font-size: 16px; display: flex; gap: 8px; align-items: center; }
+#checkscan a.button { display: inline-block; padding: 6px 14px; border: 1px solid var(--line); border-radius: 5px; background: #fff; color: var(--text); text-decoration: none; }
+#checkscan a.button.disabled { opacity: .5; cursor: default; pointer-events: none; }
+#checkscan a.button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+#checkscan .batch-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+#checkscan a.back { font-size: 13px; color: var(--muted); text-decoration: none; }
+#checkscan a.back:hover { color: var(--accent); }
+#checkscan .note-edit { margin: 6px 0 0; font-size: 14px; }
+#checkscan .note-edit input { font-size: 14px; padding: 2px 6px; }
+#checkscan .batch-head h2 { margin-bottom: 2px; }
+#checkscan .head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+#checkscan .batch-grid { display: grid; grid-template-columns: minmax(280px, 360px) 1fr; gap: 16px; align-items: start; }
+@media (max-width: 860px) {
+#checkscan .batch-grid { grid-template-columns: 1fr; }
+}
+#checkscan .left-col { display: grid; gap: 16px; min-width: 0; }
+#checkscan .list-wrap { max-height: 55vh; overflow-y: auto; }
+#checkscan tr.clickable { cursor: pointer; }
+#checkscan tr.clickable:hover td { background: #f3f4f7; }
+#checkscan tr.selected td { background: #f9e3ea !important; font-weight: 600; }
+#checkscan .big { font-size: 20px; }
+#checkscan .amount-row { margin: 6px 0; }
+#checkscan button.amount.current { border: 2px solid var(--accent); background: #f9e3ea; }
+#checkscan .inline-form { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+#checkscan .inline-form label { margin: 0; }
+#zoom-dialog { max-width: 95vw; border: 1px solid var(--line); border-radius: 8px; }
+#zoom-dialog img { max-width: 90vw; display: block; margin-bottom: 8px; }
+/* flow steps */
+#checkscan ol.steps { display: flex; gap: 0; list-style: none; margin: 0; padding: 0; counter-reset: step; flex-wrap: wrap; }
+#checkscan ol.steps li { counter-increment: step; color: var(--muted); padding: 4px 14px 4px 0; }
+#checkscan ol.steps li::before { content: counter(step); display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  border: 1px solid var(--line); margin-right: 6px; font-size: 12px; background: #fff; }
+#checkscan ol.steps li:not(:last-child)::after { content: '→'; margin-left: 14px; color: var(--line); }
+#checkscan ol.steps li.current { color: var(--text); font-weight: 600; }
+#checkscan ol.steps li.current::before { background: var(--accent); border-color: var(--accent); color: #fff; }
+#checkscan ol.steps li.done::before { content: '✓'; background: #dcf3e2; border-color: #9fd8ae; color: var(--ok); }
+#checkscan ol.steps a { color: inherit; }
+#checkscan .flow-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+/* spinner + toast */
+#checkscan .spinner { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; border: 2px solid currentColor;
+  border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#checkscan .pill.big-state { font-size: 15px; padding: 3px 12px; font-weight: 600; }
+#toast { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 10;
+  max-width: min(560px, calc(100vw - 32px)); background: var(--bad); color: #fff; padding: 10px 16px; border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+#checkscan button.attention { animation: pulse .6s ease-in-out 4; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 5px rgba(180,35,24,.35); border-color: var(--bad); } }
+#checkscan pre.sheet { background: #fbfbfc; border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; margin: 8px 0;
+  font: 13px/1.4 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; overflow-x: auto; max-width: 100%; }
+#checkscan tr.sheet-row > td { white-space: normal; background: #fafafa; }
+#checkscan tr.missing td { background: #fde3e1; }
+#checkscan ol.steps li.blocked { opacity: .55; cursor: not-allowed; }
+#checkscan a.button.disabled-look, #checkscan button.disabled-look { opacity: .5; }
+#checkscan .slips-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); }
+@media (max-width: 520px) {
+#checkscan .slips-grid { grid-template-columns: 1fr; }
+}
+#checkscan .slip-card h3 { justify-content: space-between; }
+#checkscan tr.superseded td { color: var(--muted); }
+#checkscan .actions-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+#checkscan .confirm-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+#checkscan button.confirm { font-size: 16px; padding: 8px 16px; }
+#checkscan button.confirm[aria-pressed="true"] { background: #dcf3e2; border-color: #9fd8ae; color: var(--ok); font-weight: 600; }
+#checkscan button.confirm[aria-pressed="false"] { border-style: dashed; }
+/* compact data-entry editor: everything for one check fits on a laptop screen */
+#checkscan { padding-block: 10px; gap: 10px; }
+#checkscan .panel { padding: 10px 14px; }
+#checkscan ol.steps li { padding-block: 2px; }
+#checkscan .batch-head h2 { font-size: 17px; }
+#checkscan .note-edit { margin-top: 2px; }
+#checkscan .check-images { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0; }
+#checkscan .check-images figure { margin: 0; min-width: 0; }
+#checkscan .check-images img { display: block; width: 100%; max-height: 26vh; object-fit: contain; background: #f3f4f7;
+  border: 1px solid var(--line); border-radius: 4px; cursor: zoom-in; }
+#checkscan .check-images figcaption { font-size: 12px; color: var(--muted); }
+@media (max-width: 560px) {
+#checkscan .check-images { grid-template-columns: 1fr; }
+}
+#checkscan .edit-row { display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+#checkscan .edit-row label { margin: 0; }
+#checkscan .checknum input { font-size: 17px; width: 7em; }
+#checkscan .confirms { display: flex; gap: 6px; flex-wrap: wrap; }
+#checkscan button.confirm { font-size: 14px; padding: 5px 10px; }
+#checkscan .amount-buttons { margin: 0; gap: 6px; }
+#checkscan button.amount { font-size: 17px; padding: 5px 12px; }
+#checkscan .manual input { font-size: 17px; width: 7.5em; }
+#checkscan .big { font-size: 18px; }
+#checkscan .small-text { font-size: 13px; }
+#checkscan .howto { margin-top: 4px; }
+#checkscan .howto p { margin: 4px 0; }
+#zoom-dialog img { max-width: 92vw; max-height: 80vh; }
+#checkscan .list-wrap { max-height: calc(100vh - 330px); min-height: 160px; }
+#checkscan #list td.status { max-width: 9em; overflow: hidden; text-overflow: ellipsis; }
+#zoom-img { cursor: zoom-out; }
+#zoom-dialog { padding: 8px; }
+#zoom-dialog::backdrop { background: rgba(0,0,0,.55); cursor: zoom-out; }
+#checkscan .static-field { margin: 8px 0; }
