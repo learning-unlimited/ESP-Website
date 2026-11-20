@@ -124,8 +124,7 @@ class DonationModule(ProgramModuleObj):
         return self.apply_settings().get(name, default)
 
     def line_item_type(self):
-        (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
-        return donate_type
+        return LineItemType.get_or_create_for_program(self.program, text=self.get_setting('donation_text'))[0]
 
     def isCompleted(self, user=None):
         """Whether the user made a decision about donating to LU."""
@@ -133,7 +132,10 @@ class DonationModule(ProgramModuleObj):
         return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     def students(self, QObject = False):
-        QObj = Q(transfer__line_item=self.line_item_type())
+        # Match on text rather than calling line_item_type(), so that this
+        # query never creates rows and also counts any duplicate line items.
+        QObj = Q(transfer__line_item__program=self.program,
+                 transfer__line_item__text=self.get_setting('donation_text'))
 
         if QObject:
             return {'donation': QObj}

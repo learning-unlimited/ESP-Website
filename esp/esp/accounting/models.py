@@ -39,8 +39,9 @@ logger = logging.getLogger(__name__)
 from esp.users.models import ESPUser
 from esp.program.models import Program, FinancialAidRequest
 from esp.db.fields import AjaxForeignKey
+from esp.db.locking import get_or_create_locked, lock_row
 
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Sum
 
 from decimal import Decimal
@@ -59,6 +60,16 @@ class LineItemType(models.Model):
         choices=[('single', 'Single'), ('multiple', 'Multiple')],
         help_text='For line items with options, whether students may select one option (single) or multiple options (multiple).',
     )
+
+    @classmethod
+    def get_or_create_for_program(cls, program, defaults=None, **kwargs):
+        """
+        Like LineItemType.objects.get_or_create(program=program, **kwargs),
+        but safe when concurrent requests race to create the same row; see
+        get_or_create_locked(). Its newest-duplicate choice matches the
+        default_*_lineitemtype() lookups.
+        """
+        return get_or_create_locked(cls, program, defaults=defaults, program=program, **kwargs)
 
     @property
     def amount(self):
@@ -172,15 +183,23 @@ class FinancialAidGrant(models.Model):
             return
 
         from esp.accounting.controllers import IndividualAccountingController
-        iac = IndividualAccountingController(self.program, self.user)
-        source_account = iac.default_finaid_account()
-        dest_account = iac.default_source_account()
-        line_item_type = iac.default_finaid_lineitemtype()
+        with transaction.atomic():
+            # Serialize concurrent finalize() calls for this user, then re-check
+            # the flag, which may have been set since this instance was loaded.
+            lock_row(self.user)
+            if self.pk and FinancialAidGrant.objects.filter(pk=self.pk, finalized=True).exists():
+                self.finalized = True
+                return
 
-        (transfer, created) = Transfer.objects.get_or_create(source=source_account, destination=dest_account, user=self.user, line_item=line_item_type, amount_dec=iac.amount_finaid())
-        self.finalized = True
-        self.save()
-        return transfer
+            iac = IndividualAccountingController(self.program, self.user)
+            source_account = iac.default_finaid_account()
+            dest_account = iac.default_source_account()
+            line_item_type = iac.default_finaid_lineitemtype()
+
+            (transfer, created) = get_or_create_locked(Transfer, self.user, source=source_account, destination=dest_account, user=self.user, line_item=line_item_type, amount_dec=iac.amount_finaid())
+            self.finalized = True
+            self.save()
+            return transfer
 
     def __str__(self):
         if self.percent and self.amount_max_dec:

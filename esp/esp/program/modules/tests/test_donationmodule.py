@@ -1,8 +1,10 @@
 """Tests for esp.program.modules.handlers.donationmodule"""
 from django.test import SimpleTestCase, TestCase
+from esp.accounting.models import Account, LineItemType, Transfer
 from esp.program.modules.handlers.donationmodule import DonationModule, DonationForm
 from esp.program.models import Program, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
+from esp.users.models import ESPUser
 
 class DonationFormTest(SimpleTestCase):
     """Tests for DonationForm validation logic."""
@@ -76,3 +78,22 @@ class DonationModuleTest(TestCase):
         """Test that line_item_type correctly resolves or creates accounting records."""
         lit = self.module.line_item_type()
         self.assertIsNotNone(lit)
+
+    def test_students_does_not_create_line_item(self):
+        """Test that listing donors never creates a line item type."""
+        self.module.students()
+        self.assertFalse(LineItemType.objects.filter(program=self.prog).exists())
+
+    def test_students_counts_donors_on_duplicate_line_items(self):
+        """Test that donors are found even if past races duplicated the line item type."""
+        text = self.module.get_setting('donation_text')
+        source = Account.objects.create(name='source', description='')
+        destination = Account.objects.create(name='destination', description='', program=self.prog)
+        donors = []
+        for i in range(2):
+            lit = LineItemType.objects.create(program=self.prog, text=text)
+            donor = ESPUser.objects.create(username='donor%d' % i)
+            Transfer.objects.create(source=source, destination=destination, user=donor,
+                                    line_item=lit, amount_dec=10)
+            donors.append(donor)
+        self.assertEqual(set(self.module.students()['donation']), set(donors))
