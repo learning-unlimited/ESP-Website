@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import json
 from unittest.mock import patch
 
+from esp.program.controllers.lottery import LotteryAssignmentController
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
 
@@ -45,6 +46,7 @@ class LotteryFrontendModuleTest(ProgramFrameworkTest):
     @patch('esp.program.modules.handlers.lotteryfrontendmodule.LotteryAssignmentController')
     def test_lottery_execute_success(self, MockLAC):
         """lottery_execute returns stats and lottery_data on success."""
+        MockLAC.default_options = LotteryAssignmentController.default_options
         mock_instance = MockLAC.return_value
         mock_instance.compute_stats.return_value = {}
         mock_instance.extract_stats.return_value = {'num_enrolled': 5}
@@ -53,7 +55,7 @@ class LotteryFrontendModuleTest(ProgramFrameworkTest):
         self.client.login(username='lottery_admin_test', password='password')
         response = self.client.post(
             self._manage_url('lottery_execute'),
-            {'lottery_num_iterations': '100', 'lottery_fillrate': '0.9'},
+            {'lottery_Kp': '1.5', 'lottery_max_sections': '3'},
         )
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
@@ -63,12 +65,12 @@ class LotteryFrontendModuleTest(ProgramFrameworkTest):
         self.assertIn('lottery_data', result)
         # Ensure numeric options are coerced to floats before passing to the controller.
         _, kwargs = MockLAC.call_args
-        self.assertIn('num_iterations', kwargs)
-        self.assertIn('fillrate', kwargs)
-        self.assertIsInstance(kwargs['num_iterations'], float)
-        self.assertIsInstance(kwargs['fillrate'], float)
-        self.assertEqual(kwargs['num_iterations'], 100.0)
-        self.assertEqual(kwargs['fillrate'], 0.9)
+        self.assertIn('Kp', kwargs)
+        self.assertIn('max_sections', kwargs)
+        self.assertIsInstance(kwargs['Kp'], float)
+        self.assertIsInstance(kwargs['max_sections'], float)
+        self.assertEqual(kwargs['Kp'], 1.5)
+        self.assertEqual(kwargs['max_sections'], 3.0)
 
     @patch('esp.program.modules.handlers.lotteryfrontendmodule.LotteryAssignmentController')
     def test_lottery_execute_lottery_exception(self, MockLAC):
@@ -93,6 +95,7 @@ class LotteryFrontendModuleTest(ProgramFrameworkTest):
     @patch('esp.program.modules.handlers.lotteryfrontendmodule.LotteryAssignmentController')
     def test_lottery_execute_bool_option_coercion(self, MockLAC):
         """lottery_execute correctly coerces 'True'/'False' POST strings to booleans."""
+        MockLAC.default_options = LotteryAssignmentController.default_options
         mock_instance = MockLAC.return_value
         mock_instance.compute_stats.return_value = {}
         mock_instance.extract_stats.return_value = {}
@@ -101,12 +104,52 @@ class LotteryFrontendModuleTest(ProgramFrameworkTest):
         self.client.login(username='lottery_admin_test', password='password')
         self.client.post(
             self._manage_url('lottery_execute'),
-            {'lottery_use_priority': 'True', 'lottery_check_sat': 'False'},
+            {'lottery_use_student_apps': 'True', 'lottery_check_grade': 'False'},
         )
         # Verify controller was instantiated with properly-typed kwargs
         call_kwargs = MockLAC.call_args[1]
-        self.assertIs(call_kwargs.get('use_priority'), True)
-        self.assertIs(call_kwargs.get('check_sat'), False)
+        self.assertIs(call_kwargs.get('use_student_apps'), True)
+        self.assertIs(call_kwargs.get('check_grade'), False)
+
+    @patch('esp.program.modules.handlers.lotteryfrontendmodule.LotteryAssignmentController')
+    def test_lottery_execute_ignores_unknown_keys(self, MockLAC):
+        """Keys that don't map to a controller option are dropped (issue #5069)."""
+        MockLAC.default_options = LotteryAssignmentController.default_options
+        mock_instance = MockLAC.return_value
+        mock_instance.compute_stats.return_value = {}
+        mock_instance.extract_stats.return_value = {}
+        mock_instance.export_assignments.return_value = {}
+
+        self.client.login(username='lottery_admin_test', password='password')
+        response = self.client.post(
+            self._manage_url('lottery_execute'),
+            {
+                'lottery_': '1',
+                'lottery_-bad': '1',
+                'lottery_program': '1',
+                'x_lottery_Ki': '2',
+                'lottery_Ki': '1.3',
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        _, kwargs = MockLAC.call_args
+        self.assertEqual(kwargs, {'Ki': 1.3})
+
+    @patch('esp.program.modules.handlers.lotteryfrontendmodule.LotteryAssignmentController')
+    def test_lottery_execute_rejects_nonfinite(self, MockLAC):
+        """'inf'/'nan' values return an error instead of reaching the controller (issue #5069)."""
+        MockLAC.default_options = LotteryAssignmentController.default_options
+
+        self.client.login(username='lottery_admin_test', password='password')
+        for bad in ('inf', '-inf', 'nan'):
+            response = self.client.post(
+                self._manage_url('lottery_execute'),
+                {'lottery_Kp': bad},
+            )
+            self.assertEqual(response.status_code, 200)
+            data = json.loads(response.content)
+            self.assertIn('Kp', data['response'][0]['error_msg'])
+        MockLAC.assert_not_called()
 
     # ------------------------------------------------------------------
     # lottery_save (aux_call)

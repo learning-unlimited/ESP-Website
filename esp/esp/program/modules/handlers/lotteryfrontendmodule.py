@@ -1,5 +1,5 @@
-import math
 import logging
+import math
 
 from esp.program.models import StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
@@ -35,13 +35,6 @@ class LotteryFrontendModule(ProgramModuleObj):
         }
         return render_to_response(self.baseDir()+'lottery.html', request, context)
 
-    def is_float(self, s):
-        try:
-            val = float(s)
-            return math.isfinite(val)
-        except (ValueError, TypeError):
-            return False
-
     @aux_call
     @json_response()
     @needs_admin
@@ -52,7 +45,8 @@ class LotteryFrontendModule(ProgramModuleObj):
         for key in request.POST:
             if key.startswith('lottery_'):
                 opt_key = key[len('lottery_'):]
-                if not opt_key or not opt_key.isidentifier():
+                #   Ignore anything that isn't a controller option (e.g. 'program')
+                if opt_key not in LotteryAssignmentController.default_options:
                     continue
                 value = request.POST[key]
 
@@ -64,12 +58,12 @@ class LotteryFrontendModule(ProgramModuleObj):
                     value = None
                 else:
                     try:
-                        f_val = float(value)
-                        if not math.isfinite(f_val):
-                            continue
-                        value = f_val
-                    except (ValueError, TypeError):
+                        value = float(value)
+                    except ValueError:
                         pass
+                    else:
+                        if not math.isfinite(value):
+                            return {'response': [{'error_msg': f'Option {opt_key} must be a finite number.'}]}
 
                 options[opt_key] = value
 
