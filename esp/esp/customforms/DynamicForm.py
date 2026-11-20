@@ -242,6 +242,9 @@ class CustomFormHandler():
                 if 'widget_attrs' in self._field_types[field['field_type']]:
                     widget_attrs.update(self._field_types[field['field_type']]['widget_attrs'])
                 typeMap = self._field_types[field['field_type']]['typeMap']
+                # Django's NullBooleanField.validate() ignores `required`; ours doesn't.
+                if field['required'] and typeMap is forms.NullBooleanField:
+                    typeMap = RequiredNullBooleanField
 
                 # Setting classes required for front-end validation
                 if field['required']:
@@ -689,7 +692,10 @@ class FormHandler:
             elif generic_fields[ftype]['typeMap'] is not DummyField:
                 response_data['questions'].append([qname, field['label'], ftype])
 
-        users = ESPUser.objects.in_bulk([response['user_id'] for response in responses])
+        # Anonymous forms' responses have no user column
+        users = {}
+        if not form.anonymous:
+            users = ESPUser.objects.in_bulk([response['user_id'] for response in responses])
 
         # Pre-fetch for only_fkey_model
         fkey_instances = {}

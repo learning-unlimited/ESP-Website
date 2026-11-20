@@ -9,6 +9,7 @@ from esp.accounting.controllers import IndividualAccountingController
 from esp.program.models import RegistrationProfile
 from esp.program.modules.tests.support import ModuleHandlerTestMixin
 from esp.program.tests import ProgramFrameworkTest
+from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, Record, RecordType
 
 _RECORD_TYPES = {
@@ -143,4 +144,23 @@ class OnSiteRegisterTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertTrue(
             Record.objects.filter(user=new_user, program=self.program, event__name='onsite').exists()
         )
+        mock_paid.assert_called_once_with(self.program, new_user, False)
+
+    @patch.object(ESPUser, 'recoverPassword')
+    @patch.object(IndividualAccountingController, 'updatePaid')
+    def test_registration_with_the_paid_field_hidden(self, mock_paid, mock_recover):
+        """With onsite_show_paid_field off the field is gone, so the POST has no
+        'paid' key at all -- the handler must read it as unpaid, not raise."""
+        Tag._getTag.delete_all()
+        self.addCleanup(Tag._getTag.delete_all)
+        Tag.setTag('onsite_show_paid_field', value='False')
+        mock_recover.return_value = None
+        self.login_as('admin')
+
+        data = self._valid_data(email='nopaid@example.com')
+        del data['paid']
+        response = self.client.post(self._url(), data)
+
+        self.assertEqual(response.status_code, 200)
+        new_user = ESPUser.objects.get(email='nopaid@example.com')
         mock_paid.assert_called_once_with(self.program, new_user, False)
