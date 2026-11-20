@@ -501,19 +501,20 @@ def getRebuildData(request):
                 form_id = int(request.GET['form_id'])
             except (KeyError, ValueError):
                 return HttpResponse(status=400)
-            try:
-                #   Waits for any save of this form still in progress, so the builder never reads it half-done or stale
-                with transaction.atomic():
+            #   Waits for any save of this form still in progress and holds the lock while reading,
+            #   so the builder never reads it half-done or stale
+            with transaction.atomic():
+                try:
                     form = Form.objects.select_for_update().get(pk=form_id)
-            except Form.DoesNotExist:
-                return JsonResponse({'message': f'Form {form_id} not found.'}, status=404)
-            if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
-                return JsonResponse({'message': 'You do not have permission to edit or copy this form.'}, status=403)
-            fh = FormHandler(form=form, request=request)
-            try:
-                return HttpResponse(json.dumps(fh.rebuildData()))
-            except Exception as err:
-                return HttpResponse(json.dumps({'message': str(err)}), status=400)
+                except Form.DoesNotExist:
+                    return JsonResponse({'message': f'Form {form_id} not found.'}, status=404)
+                if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+                    return JsonResponse({'message': 'You do not have permission to edit or copy this form.'}, status=403)
+                fh = FormHandler(form=form, request=request)
+                try:
+                    return HttpResponse(json.dumps(fh.rebuildData()))
+                except Exception as err:
+                    return HttpResponse(json.dumps({'message': str(err)}), status=400)
     return HttpResponse(status=400)
 
 @user_passes_test(test_func)
