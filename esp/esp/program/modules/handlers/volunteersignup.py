@@ -42,6 +42,7 @@ from esp.users.models import ESPUser
 from esp.program.models import VolunteerOffer
 from django.db.models.query import Q
 from esp.tagdict.models import Tag
+from esp.utils.ids import get_by_id_or_404
 
 class VolunteerSignup(ProgramModuleObj, CoreModule):
     doc = """Provides a form for volunteers to signup for particular timeslots."""
@@ -156,7 +157,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and 'user' in request.GET:
-                volunteer = ESPUser.objects.get(id=request.GET['user'])
+                volunteer = get_by_id_or_404(ESPUser, request.GET['user'])
             else:
                 volunteer = request.user
             scheditems = []

@@ -307,6 +307,41 @@ class ClassStateTransitionTest(ProgramFrameworkTest):
         self.assertFalse(ClassSubject.objects.filter(pk=cls_id).exists())
         self.assertFalse(ClassSection.objects.filter(parent_class_id=cls_id).exists())
 
+    def _deletesection_url(self, sec_id=None):
+        url = f'{self.manage_url}deletesection/{self.cls.id}'
+        return url if sec_id is None else f'{url}?sec_id={sec_id}'
+
+    def test_deletesection_confirm_deletes_section(self):
+        """Confirming the delete removes the section and goes back to manageclass."""
+        sec = self.cls.sections.first()
+        response = self.client.post(self._deletesection_url(sec.id), {'sure': 'True'})
+        self.assertRedirects(
+            response,
+            f'{self.manage_url}manageclass/{self.cls.id}',
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(ClassSection.objects.filter(pk=sec.id).exists())
+
+    def test_deletesection_cancel_keeps_section(self):
+        """Cancel goes back to manageclass instead of a 404, and deletes nothing."""
+        sec = self.cls.sections.first()
+        response = self.client.post(self._deletesection_url(sec.id), {'sure': 'False'})
+        self.assertRedirects(
+            response,
+            f'{self.manage_url}manageclass/{self.cls.id}',
+            fetch_redirect_response=False,
+        )
+        self.assertTrue(ClassSection.objects.filter(pk=sec.id).exists())
+
+    def test_deletesection_missing_sec_id_shows_error(self):
+        """Confirming without sec_id shows the error page instead of a KeyError."""
+        section_count = ClassSection.objects.filter(parent_class=self.cls).count()
+        response = self.client.post(self._deletesection_url(), {'sure': 'True'})
+        self.assertTemplateUsed(response, 'error.html')
+        self.assertContains(response, 'Unable to delete a section', status_code=500)
+        self.assertEqual(
+            ClassSection.objects.filter(parent_class=self.cls).count(), section_count)
+
 
 class SectionManagementTest(ProgramFrameworkTest):
     """Tests for SectionManageForm validation and manageclass modify_sec action."""
