@@ -36,7 +36,7 @@ Form settings
 - **Anonymous**: responses aren't tied to an account. An anonymous form open to everyone can be filled in without logging in. Anonymous forms can't use profile questions, and this setting can't be changed once the form is created.
 - **Link answers to**: ties each response to a program or class. Choose a particular one, or let respondents pick.
 - **Use in registration**: for a form linked to a particular program, adds it as a step in that program's student or teacher registration (the Student Custom Form, Teacher Custom Form or Teacher Logistics Quiz module must be enabled for the program).
-- **After submitting**: the thank-you message, and optionally a link to show under it ("Click here to proceed"). Respondents aren't redirected automatically.
+- **After submitting**: the thank-you message, and optionally a link to show under it ("Click here to proceed"). Respondents aren't redirected automatically. Respondents filling in the form as a registration step go back to registration instead, so they don't see the message or link.
 
 Correct answers
 ---------------

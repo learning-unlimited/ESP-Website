@@ -234,7 +234,8 @@ def onModify(request):
             try:
                 metadata = json.loads(request.body)
                 try:
-                    form = Form.objects.get(id=int(metadata['form_id']))
+                    #   Locked until this save commits, so a metadata read for the same form waits for it
+                    form = Form.objects.select_for_update().get(id=int(metadata['form_id']))
 
                 except (Form.DoesNotExist, ValueError):
                     raise ESPError(f'Form {metadata["form_id"]} not found', log=False)
@@ -501,7 +502,9 @@ def getRebuildData(request):
             except (KeyError, ValueError):
                 return HttpResponse(status=400)
             try:
-                form = Form.objects.get(pk=form_id)
+                #   Waits for any save of this form still in progress, so the builder never reads it half-done or stale
+                with transaction.atomic():
+                    form = Form.objects.select_for_update().get(pk=form_id)
             except Form.DoesNotExist:
                 return JsonResponse({'message': f'Form {form_id} not found.'}, status=404)
             if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:

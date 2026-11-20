@@ -1035,7 +1035,8 @@ function formInspector(root) {
 
     // After submitting
     root.append(h('hr', { class: 'cfb-sep' }));
-    root.append(row('After submitting, show', textArea('cfb-f-msg', s.successMessage, set('successMessage'), 2, { maxlength: LIMITS.successMessage }), null, 'cfb-f-msg'));
+    root.append(row('After submitting, show', textArea('cfb-f-msg', s.successMessage, set('successMessage'), 2, { maxlength: LIMITS.successMessage }),
+        linkModuleApplies() && s.linkModule ? 'Respondents filling this in as a registration step go back to registration instead, so they don’t see this message or link.' : null, 'cfb-f-msg'));
     const urlErr = h('div', { class: 'cfb-err' });
     const checkUrl = v => { urlErr.textContent = badSuccessUrl(v) ? 'Use a link starting with /, http:// or https://.' : ''; };
     root.append(row('Link on the thank-you page', textInput('cfb-f-url', s.successUrl, v => { set('successUrl')(v); checkUrl(v); }, { inputmode: 'url', placeholder: '/learn/…/studentreg', maxlength: LIMITS.successUrl }),
