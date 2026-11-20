@@ -289,7 +289,9 @@ class AutoschedulerController(object):
         new_history = []
         for section, (old_r, new_r) in sections.items():
             if old_r is None:
-                assert new_r is not None, "Did nothing"
+                if new_r is None:
+                    # Scheduled and then unscheduled again: no net change.
+                    continue
                 new_history.append({
                     "action": "schedule",
                     "section": section,
