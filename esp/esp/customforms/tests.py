@@ -1135,6 +1135,46 @@ class FormRowLockTest(TransactionTestCase):
         self.form.refresh_from_db()
         self.assertEqual(self.form.title, 'Renamed')
 
+    def test_save_waits_until_a_metadata_read_has_finished(self):
+        """The metadata view keeps the row locked for the whole read, not just while fetching the form."""
+        reading, release = threading.Event(), threading.Event()
+        original = FormHandler.rebuildData
+        results = {}
+
+        def paused_rebuild(handler):
+            reading.set()
+            release.wait(30)
+            return original(handler)
+
+        def call(name, send):
+            try:
+                results[name] = send()
+            finally:
+                connection.close()
+
+        payload = {'form_id': self.form.id, 'title': 'Renamed', 'desc': '', 'anonymous': False,
+                   'link_type': '-1', 'link_id': -1, 'success_message': 'OK', 'success_url': '/',
+                   'perms': '', 'pages': []}
+        with patch.object(FormHandler, 'rebuildData', paused_rebuild):
+            read = threading.Thread(target=call, args=('read', lambda: self.client.get(
+                '/customforms/metadata/', {'form_id': self.form.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')))
+            read.start()
+            self.assertTrue(reading.wait(30))
+            save = threading.Thread(target=call, args=('save', lambda: self.client.post(
+                '/customforms/modify/', json.dumps(payload), content_type='application/json',
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')))
+            save.start()
+            save.join(self.HOLD)
+            try:
+                self.assertTrue(save.is_alive(), 'the save did not wait for the metadata read')
+            finally:
+                release.set()
+                read.join(30)
+                save.join(30)
+        #   The read saw the form as it was before the save
+        self.assertEqual(json.loads(results['read'].content)['title'], 'Row Lock Form')
+        self.assertEqual(results['save'].content, b'OK')
+
 
 class FailedFormSaveRollbackTest(TestCase):
     """
