@@ -2127,10 +2127,24 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         Uses the request object to return the appropriate instance for this model,
         for use by custom-forms.
         It should either return the instance, or 'None', if the corresponding instance doesn't exist.
+
+        This is the user's own contact info: the contact_user of their latest
+        registration profile. A student's guardian and emergency contacts are
+        also stored with user=request.user, so the user's newest ContactInfo
+        may not be their own.
         """
-        queryset=cls.objects.filter(user=request.user).order_by('-id')
-        if queryset: return queryset[0]
-        else: return None
+        from esp.program.models import RegistrationProfile
+        profile = RegistrationProfile.getLastProfile(request.user)
+        if profile.contact_user_id is not None:
+            #   Re-fetch, since the profile (and its contact_user) may be cached;
+            #   only use it if it really belongs to this user
+            own = cls.objects.filter(id=profile.contact_user_id, user=request.user).first()
+            if own is not None:
+                return own
+        #   No usable profile contact info, e.g. one created by a custom form: use
+        #   the newest record that isn't someone's guardian or emergency contact
+        return cls.objects.filter(user=request.user, as_guardian__isnull=True,
+                                  as_emergency__isnull=True).order_by('-id').first()
 
     user = AjaxForeignKey(ESPUser, blank=True, null=False, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=64)
