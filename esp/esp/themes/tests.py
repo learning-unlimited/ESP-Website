@@ -430,7 +430,8 @@ class ScssPipelineTest(TestCase):
         """clear_theme() replaces the compiled CSS with stock Bootstrap rather than deleting it."""
         self.tc.clear_theme()
         self.assertIn('.card', self._read_compiled_css())
-        self.assertIsNotNone(Tag.getTag('current_theme_version'))
+        #   getTag() falls back to a default, so check that a version was stored
+        self.assertTrue(Tag.objects.filter(key='current_theme_version').exists())
 
     def test_recompile_theme_without_theme_compiles_default_stylesheet(self):
         """recompile_theme() on a site with no theme compiles stock Bootstrap instead of failing."""

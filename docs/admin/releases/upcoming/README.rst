@@ -101,5 +101,5 @@ Developer Notes
 
 - Upgraded Django from 4.2.30 to 5.2.14 (LTS).
 - Updated dependencies for Django 5.2 compatibility: ``django-debug-toolbar`` 5.1.0 → 5.2.0.
-- ``theme_compiled.css`` now always exists: ``ThemeController.clear_theme()`` writes stock Bootstrap 5 (via the new ``compile_default_css()``) instead of deleting it, and the Docker entrypoint compiles it on first start.
+- When no theme is loaded, ``theme_compiled.css`` now holds stock Bootstrap 5 instead of being missing: ``manage.py recompile_theme`` (and so ``manage.py update``) compiles it via the new ``compile_default_css()``, ``ThemeController.clear_theme()`` writes it instead of deleting the file, and the Docker entrypoint compiles it on first start if it is missing. Sites with no theme that are not run with Docker must run ``manage.py update`` (or ``manage.py recompile_theme``) once after upgrading; until then their pages are unstyled.
 - Removed the leftover Bootstrap 2 files from ``esp/public/media/theme_editor/`` (``bootstrap_initial.css``, the BS2 ``js/`` plugins and tests, glyphicon sprites in ``img/``, and the BS2 ``Makefile``, ``README.md``, ``LICENSE`` and ``.travis.yml``).
