@@ -41,6 +41,7 @@ from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.qsd.models import QuasiStaticData
 from esp.resources.models import Resource, ResourceRequest, ResourceType
+from esp.survey.models import Question, QuestionType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
@@ -1935,10 +1936,12 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
 class SeedDummyDataTest(TestCase):
     """Tests for the seed_dummy_data management command."""
 
-    def test_seed_dummy_data_creates_programs_and_users(self):
-        """Running seed_dummy_data creates expected programs and users."""
+    @classmethod
+    def setUpTestData(cls):
         call_command('seed_dummy_data', verbosity=0)
 
+    def test_seed_dummy_data_creates_programs_and_users(self):
+        """Running seed_dummy_data creates expected programs and users."""
         # Programs
         for url in ['SplashDev/2026', 'SparkDev/2026']:
             self.assertTrue(
@@ -1960,7 +1963,6 @@ class SeedDummyDataTest(TestCase):
 
     def test_seed_dummy_data_idempotent(self):
         """Running seed_dummy_data twice does not duplicate data."""
-        call_command('seed_dummy_data', verbosity=0)
         count_before = Program.objects.filter(url__in=['SplashDev/2026', 'SparkDev/2026']).count()
 
         call_command('seed_dummy_data', verbosity=0)
@@ -1970,7 +1972,6 @@ class SeedDummyDataTest(TestCase):
 
     def test_seed_dummy_data_flush_recreates_data(self):
         """Running with --flush clears and re-seeds; programs exist afterward."""
-        call_command('seed_dummy_data', verbosity=0)
         self.assertTrue(Program.objects.filter(url='SplashDev/2026').exists())
 
         call_command('seed_dummy_data', '--flush', verbosity=0)
@@ -1978,6 +1979,25 @@ class SeedDummyDataTest(TestCase):
             Program.objects.filter(url='SplashDev/2026').exists(),
             'Programs should exist after flush (command re-seeds)',
         )
+
+    def test_seed_dummy_data_survey_questions_render(self):
+        """Seeded survey questions use real QuestionTypes and render without errors."""
+        questions = Question.objects.filter(survey__program__url__in=['SplashDev/2026', 'SparkDev/2026'])
+        self.assertGreater(questions.count(), 0)
+        for question in questions:
+            with self.subTest(question=str(question)):
+                question.question_type.full_clean()
+                self.assertIn(question.name, question.render())
+
+    def test_seed_dummy_data_repairs_legacy_question_types(self):
+        """Re-seeding moves questions off the legacy template-less types and removes them."""
+        legacy = QuestionType.objects.create(name='rating')
+        Question.objects.filter(name='Overall rating').update(question_type=legacy)
+
+        call_command('seed_dummy_data', verbosity=0)
+        self.assertFalse(QuestionType.objects.filter(name='rating').exists())
+        self.assertFalse(Question.objects.filter(name='Overall rating').exclude(
+            question_type__name='Numeric Rating').exists())
 
 class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     """Tests for making class flags visible to teachers."""
