@@ -53,6 +53,8 @@ def apply_raw_list_settings(list, data):
     Apply the settings in 'data' to the specified list.
     This is functionally equivalent to writing 'data' to a file and calling "load_list_settings()" on that file.
     """
+    if isinstance(data, str):
+        data = data.encode()
     with NamedTemporaryFile() as f:
         f.write(data)
         f.file.flush()
@@ -69,7 +71,9 @@ def apply_list_settings(list, data):
     """
 
     with NamedTemporaryFile() as f:
-        f.writelines( ( "%s = %s\n" % (key, repr(value)) for key, value in data.items() ) )
+        f.writelines(
+            (("%s = %s\n" % (key, repr(value))).encode() for key, value in data.items())
+        )
         f.file.flush()
         return call([MM_PATH + "config_list", "-i", f.name, list])
 
@@ -170,10 +174,18 @@ def remove_list_member(list, member):
 
     return Popen([MM_PATH + "remove_members", "--nouserack", "--noadminack", "--file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
 
+def _decode_output(output):
+    """ Decode Mailman command output, which Popen returns as bytes.
+
+    Uses iso-8859-1 to match the encoding we send to Mailman in add_list_members().
+    """
+    return output.decode('iso-8859-1')
+
 @enable_with_setting(settings.USE_MAILMAN)
 def list_contents(lst):
     """ Return the list of email addresses on the specified mailing list """
-    contents = Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
+    output = Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0]
+    contents = _decode_output(output).split('\n')
 
     try:
         # It seems the empty string gets dragged into this list.
@@ -200,7 +212,8 @@ def all_lists(show_nonpublic=False):
     args = [MM_PATH + "list_lists", "-b"]
     if not show_nonpublic:
         args.append("-a")
-    return Popen(args, stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
+    output = Popen(args, stdout=PIPE, stderr=PIPE).communicate()[0]
+    return _decode_output(output).splitlines()
 
 @enable_with_setting(settings.USE_MAILMAN)
 def lists_containing(user):
@@ -212,7 +225,7 @@ def lists_containing(user):
 
     args = [MM_PATH + "find_member", search_regex]
     data = Popen(args, stdout=PIPE, stderr=PIPE).communicate()
-    data = data[0].split('\n')
+    data = _decode_output(data[0]).splitlines()
 
     # find_member's output is of the form
     #
@@ -223,8 +236,8 @@ def lists_containing(user):
     #     list3
     #     list4
     #
-    # We only want the lists; grab those:
+    # We only want the lists, which are the indented lines; grab those:
 
-    lists = [x.strip() for x in data]
+    lists = [x.strip() for x in data if x[:1].isspace()]
     lists = [x for x in lists if x]
     return lists
