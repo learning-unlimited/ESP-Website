@@ -255,3 +255,15 @@ body:has(.navbar.fixed-top) {
 body:has(.navbar.fixed-bottom) {
     --reg-sticky-bottom: 5.5rem;
 }
+
+/* Steps the user can't reach yet (after a lottery) or any more (closed). */
+.reg-checklist .reg-gate-heading th {
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bs-secondary-color);
+  background: transparent;
+  padding-top: 0.75rem;
+}
+.reg-checklist .reg-step-unavailable td { color: var(--bs-secondary-color); }
+.reg-checklist .reg-step-status { font-size: 0.8em; white-space: nowrap; }

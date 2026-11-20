@@ -1327,7 +1327,7 @@ class Program(models.Model, CustomFormsLinkModel):
         modules = list(self.getModules_cached(tl, old_prog))
 
         if user and not user.isAdmin(self):
-            modules = [m for m in modules if m.is_valid()]
+            modules = [m for m in modules if m.is_open(user)]
 
         if user:
             for module in modules:
