@@ -463,8 +463,8 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
         target_grade = 11
         yog = ESPUser.current_schoolyear() + (12 - target_grade)
         self.client.post(
-            '/manage/userview/',
-            data={'username': self.student.username, 'graduation_year': yog}
+            '/manage/userview',
+            data={'username': self.student.username, 'graduation_year': yog},
         )
         # Refresh student from DB
         student_fresh = ESPUser.objects.get(pk=self.student.pk)
@@ -502,8 +502,8 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
             self._login(other_student)
             target_yog = ESPUser.current_schoolyear() + (12 - 11)
             response = self.client.post(
-                '/manage/userview/',
-                data={'username': self.student.username, 'graduation_year': target_yog}
+                '/manage/userview',
+                data={'username': self.student.username, 'graduation_year': target_yog},
             )
             # Should be 302 redirect to login or 403 forbidden, never 200 + change
             self.assertIn(response.status_code, [302, 403])
