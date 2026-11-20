@@ -156,6 +156,10 @@ function fetchList(kind, key, url, params) {
     }
     return cache[key];
 }
+function retryable(kind, key, entry) {
+    return h('div', { class: 'cfb-err' }, entry.error + ' ',
+        h('button', { type: 'button', class: 'cfb-linkbtn', onclick: () => { delete remote[kind][key]; render({ keepFocus: true }); } }, 'Try again'));
+}
 const permGroups = prog => fetchList('perms', prog, URLS.perms, { prog_id: prog });
 const linkTargets = model => fetchList('links', model, URLS.links, { link_model: model });
 const programModules = prog => fetchList('modules', prog, URLS.modules, { program: prog });
@@ -251,6 +255,11 @@ function restore(snap) {
     if (sel.id && !loc) sel = { kind: 'form' }; else if (loc) pageIx = loc.pi;
     lastKey = null; render();
 }
+//   Undo for a notice: only while its change is still the latest one
+function undoThis() {
+    const mark = hist[hist.length - 1];
+    return () => { if (hist[hist.length - 1] === mark) undo(); else toast('Later changes were made; use Undo in the top bar instead.'); };
+}
 function undo() { if (!hist.length || saving) return; fut.push(snapshot()); restore(hist.pop()); toast('Undone'); }
 function redo() { if (!fut.length || saving) return; hist.push(snapshot()); restore(fut.pop()); toast('Redone'); }
 
@@ -296,7 +305,9 @@ function fieldProblems(f) {
         if (!blank(f.charMax) && !NONNEG_INT.test(f.charMax)) out.push('The maximum length must be a whole number.');
         else if (!blank(f.charMax) && Number(f.charMax) < 1) out.push('The maximum length must be at least 1.');
         else if (t.cap && Number(f.charMax) > t.cap) out.push('Answers to this type can be at most ' + t.cap + ' characters.');
-        if (NONNEG_INT.test(f.charMin) && NONNEG_INT.test(f.charMax) && Number(f.charMin) > Number(f.charMax)) out.push('The minimum length is longer than the maximum.');
+        //   A blank maximum is saved as the column's limit
+        const maxLen = NONNEG_INT.test(f.charMax) ? Number(f.charMax) : t.cap;
+        if (NONNEG_INT.test(f.charMin) && maxLen && Number(f.charMin) > maxLen) out.push(blank(f.charMax) ? 'The minimum length is longer than the ' + t.cap + ' characters this type can store.' : 'The minimum length is longer than the maximum.');
     }
     if (f.type === 'numeric') {
         if (!blank(f.min) && !INT.test(f.min)) out.push('The smallest value must be a whole number.');
@@ -306,7 +317,7 @@ function fieldProblems(f) {
     if (hasCorrect(f)) {
         if (t.correct === 'one' && !(f.correct >= 0 && f.correct < f.options.length)) out.push('The correct answer is no longer one of the choices.');
         if (t.correct === 'many' && f.correct.some(i => !(i >= 0 && i < f.options.length))) out.push('A correct answer is no longer one of the choices.');
-        if (t.correct === 'number' && !Number.isFinite(Number(f.correct))) out.push('The correct answer must be a number.');
+        if (t.correct === 'number' && !INT.test(String(f.correct).trim())) out.push('The correct answer must be a whole number.');
         if (t.correct === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(f.correct)) out.push('The correct answer must be a date.');
         if (t.correct === 'time' && !/^([01]\d|2[0-3]):[0-5]\d$/.test(f.correct)) out.push('The correct answer must be a time like 09:30 or 14:00.');
     }
@@ -337,6 +348,13 @@ function formProblems() {
         if (list && list.status === 'ok' && !list.data.some(o => o.id === s.linkId)) out.push({ msg: 'The linked ' + s.linkType.toLowerCase() + ' no longer exists.', id: null });
     }
     allFields().forEach(f => fieldProblems(f).forEach(m => out.push({ msg: m, id: f.id })));
+    //   The server saves all of a form's questions about one profile model to a single record
+    const byCategory = {};
+    allFields().filter(f => TYPES[f.type].linked && f.linkId !== '').forEach(f => (byCategory[TYPES[f.type].category] = byCategory[TYPES[f.type].category] || []).push(f));
+    Object.entries(byCategory).forEach(([category, fields]) => {
+        const other = fields.find(f => f.linkId !== fields[0].linkId);
+        if (other) out.push({ id: other.id, msg: 'All profile questions about ' + categoryName(category) + ' must update the same record.' });
+    });
     state.pages.forEach((p, pi) => p.sections.forEach(sec => {
         const name = (sec.title.trim() ? 'The section “' + sec.title.trim() + '”' : 'An untitled section') + ' on page ' + (pi + 1);
         if (!sec.fields.length) out.push({ id: sec.id, msg: name + ' has no questions.' });
@@ -430,6 +448,10 @@ function renderTop() {
     document.getElementById('cfb-m-preview').setAttribute('aria-pressed', mode === 'preview');
     document.getElementById('cfb-panes').classList.toggle('cfb-previewing', mode === 'preview');
     document.getElementById('cfb-settings').setAttribute('aria-pressed', mode === 'edit' && sel.kind === 'form');
+    //   The page loads with these disabled; nothing can be edited while a save is in flight
+    document.getElementById('cfb-title').disabled = saving;
+    ['cfb-m-edit', 'cfb-m-preview', 'cfb-settings'].forEach(id => { document.getElementById(id).disabled = saving; });
+    document.getElementById('cfb-panes').inert = saving;
 }
 function goToProblem(probs) {
     const p = probs[problemIx++ % probs.length];
@@ -437,7 +459,7 @@ function goToProblem(probs) {
     if (p.id) { const loc = find(p.id); pageIx = loc.pi; sel = { kind: loc.kind, id: p.id }; } else sel = { kind: 'form' };
     render();
     requestAnimationFrame(() => {
-        const el = document.querySelector('.cfb-field.cfb-sel, .cfb-section.cfb-selected-ring, .cfb-formhead');
+        const el = document.querySelector(p.id ? '.cfb-field.cfb-sel, .cfb-section.cfb-selected-ring' : '.cfb-formhead');
         if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
         if (!p.id) toast(p.msg);
     });
@@ -662,7 +684,7 @@ function deleteField(id) {
     commit(s => s.pages[loc.pi].sections[loc.si].fields.splice(loc.fi, 1));
     if (sel.id === id) sel = { kind: 'section', id: loc.section.id };
     render();
-    toast('Question deleted.' + savedAnswersNote(savedCount([loc.field])), undo);
+    toast('Question deleted.' + savedAnswersNote(savedCount([loc.field])), undoThis());
 }
 function deleteSection(id) {
     const loc = find(id), n = loc.section.fields.length, saved = savedCount(loc.section.fields);
@@ -671,14 +693,14 @@ function deleteSection(id) {
     sel = { kind: 'form' };
     //   A page's last section takes the page with it, so no empty page is left behind
     commit(s => { if (lastOnPage) { s.pages.splice(loc.pi, 1); pageIx = Math.max(0, loc.pi - 1); } else s.pages[loc.pi].sections.splice(loc.si, 1); });
-    toast((lastOnPage ? 'Section and page ' + (loc.pi + 1) + ' deleted' : 'Section deleted') + (n ? ' with ' + plural(n, 'question') : '') + '.' + savedAnswersNote(saved), undo);
+    toast((lastOnPage ? 'Section and page ' + (loc.pi + 1) + ' deleted' : 'Section deleted') + (n ? ' with ' + plural(n, 'question') : '') + '.' + savedAnswersNote(saved), undoThis());
 }
 function deletePage(pi) {
     const fields = state.pages[pi].sections.flatMap(s => s.fields);
     sel = { kind: 'form' };
     //   Show the page before the deleted one (or the new first page)
     commit(s => { s.pages.splice(pi, 1); pageIx = Math.max(0, pi - 1); });
-    toast('Page deleted' + (fields.length ? ' with ' + plural(fields.length, 'question') : '') + '.' + savedAnswersNote(savedCount(fields)), undo);
+    toast('Page deleted' + (fields.length ? ' with ' + plural(fields.length, 'question') : '') + '.' + savedAnswersNote(savedCount(fields)), undoThis());
 }
 
 // ---------- Inspector ----------
@@ -799,7 +821,7 @@ function correctEditor(f) {
     else if (t.correct === 'textarea') control = textArea('cfb-i-correct', f.correct || '', v => live(() => { find(id).field.correct = v; }, id + 'correct'), 2);
     else {
         const type = { number: 'number', date: 'date', time: 'time' }[t.correct] || 'text';
-        control = h('input', { id: 'cfb-i-correct', type, value: f.correct || '', step: t.correct === 'number' ? 'any' : null,
+        control = h('input', { id: 'cfb-i-correct', type, value: f.correct || '', step: t.correct === 'number' ? 1 : null,
             oninput: e => live(() => { find(id).field.correct = e.target.value; }, id + 'correct') });
     }
     return answerCheck(f, row('Correct answer', control, 'Respondents must give exactly this answer to continue. Leave blank to accept any answer.', 'cfb-i-correct'));
@@ -866,10 +888,11 @@ function linkedRecordEditor(f) {
     if (particular) {
         const list = linkTargets(t.category);
         if (list.status === 'loading') content.append(h('div', { class: 'cfb-help', text: 'Loading records…' }));
-        else if (list.status === 'error') content.append(h('div', { class: 'cfb-err', text: list.error }));
+        else if (list.status === 'error') content.append(retryable('links', t.category, list));
         else content.append(selectBox('cfb-i-linkid', [['', 'Choose a record…', true], ...list.data.map(o => [String(o.id), o.name])], f.linkId,
             v => change(() => { find(id).field.linkId = v; })));
         if (f.linkId === '') content.append(h('div', { class: 'cfb-err', text: 'Choose a record, or switch back to the respondent’s own.' }));
+        content.append(h('div', { class: 'cfb-help', text: 'All of this form’s questions about ' + categoryName(t.category) + ' update the same record.' }));
     }
     return h('details', { open: particular || null }, h('summary', { text: 'Which record it updates' }), content);
 }
@@ -930,7 +953,7 @@ function formInspector(root) {
         if (s.permProgram) {
             const groups = permGroups(s.permProgram);
             if (groups.status === 'loading') root.append(h('p', { class: 'cfb-help', text: 'Loading groups…' }));
-            else if (groups.status === 'error') root.append(h('div', { class: 'cfb-err', text: groups.error }));
+            else if (groups.status === 'error') root.append(retryable('perms', s.permProgram, groups));
             else {
                 const list = groupsFor(groups.data, s.role) || [];
                 if (!list.length) root.append(h('div', { class: 'cfb-callout cfb-warn', text: 'This program has no groups of ' + (ROLE_NAMES[s.role] || s.role).toLowerCase() + ' to choose from. Set the program to “Any”.' }));
@@ -961,7 +984,8 @@ function formInspector(root) {
             if (list.status === 'ok') opts = opts.concat(list.data.map(o => [String(o.id), o.name]));
             else if (s.linkId !== -1) opts.push([String(s.linkId), s.linkType + ' #' + s.linkId]);
             root.append(row('Which ' + s.linkType.toLowerCase(), selectBox('cfb-f-linkid', opts, String(s.linkId),
-                v => change(st => { Object.assign(st.settings, { linkId: Number(v), linkModule: '' }); })), list.status === 'loading' ? 'Loading…' : list.status === 'error' ? list.error : null, 'cfb-f-linkid'));
+                v => change(st => { Object.assign(st.settings, { linkId: Number(v), linkModule: '' }); })), list.status === 'loading' ? 'Loading…' : null, 'cfb-f-linkid'));
+            if (list.status === 'error') root.append(retryable('links', s.linkType, list));
             if (linkModuleApplies()) root.append(moduleRow());
         }
         if (meta.formId && !isNone(meta.savedLinkType) && s.linkType !== meta.savedLinkType) {
@@ -988,25 +1012,33 @@ function moduleRow() {
     if (s.linkModule && !opts.some(([v]) => v === s.linkModule)) opts.push([s.linkModule, (MODULE_NAMES[s.linkModule] || s.linkModule) + (mods.status === 'ok' ? ' (not enabled)' : '')]);
     let help = 'Adds this form as a step in that program’s registration.';
     if (mods.status === 'loading') help = 'Loading registration modules…';
-    else if (mods.status === 'error') help = mods.error;
+    else if (mods.status === 'error') help = null;
     else if (opts.length === 1) help = 'To add this form to registration, first enable the Student Custom Form, Teacher Custom Form or Teacher Logistics Quiz module for this program.';
     else if (s.linkModule === 'TeacherQuizModule') help = 'Quiz: teachers must give the correct answer to every question that has one. Set them under “Answer checking” on each question.';
-    return row('Use in registration', selectBox('cfb-f-module', opts, s.linkModule, v => change(st => { st.settings.linkModule = v; })), help, 'cfb-f-module');
+    const r = row('Use in registration', selectBox('cfb-f-module', opts, s.linkModule, v => change(st => { st.settings.linkModule = v; })), help, 'cfb-f-module');
+    if (mods.status === 'error') r.append(retryable('modules', String(s.linkId), mods));
+    return r;
 }
 function templatePicker() {
-    const pick = selectBox('cfb-f-template', [['', 'Choose a form…'], ...CONFIG.forms.map(f => [String(f.id), f.title + ' (#' + f.id + ')'])], '', () => null);
+    const pick = selectBox('cfb-f-template', [['', 'Choose a form…'], ...CONFIG.forms.map(f => [String(f.id), f.title + ' (#' + f.id + ')'])], pickedTemplate, v => { pickedTemplate = v; });
     const status = h('div', { class: 'cfb-help' });
     const load = h('button', { type: 'button', class: 'cfb-btn', onclick: async () => {
         if (!pick.value) return;
         if (dirty() && !window.confirm('Replace what you have so far with a copy of this form? You can undo this.')) return;
+        const token = ++copyToken, before = JSON.stringify(toServer());
         load.disabled = true; status.textContent = 'Loading…';
-        try {
-            const md = await getJSON(URLS.metadata, { form_id: pick.value });
-            const copy = fromMetadata(md, true);
-            commit(() => { state = copy; });
-            pageIx = 0; sel = { kind: 'form' }; render();
-            toast('Copied “' + (md.title || 'form') + '”. Saving creates a new form.', undo);
-        } catch (e) { status.textContent = e.message; load.disabled = false; }
+        let md;
+        try { md = await getJSON(URLS.metadata, { form_id: pick.value }); } catch (e) {
+            if (token === copyToken) { status.textContent = e.message; load.disabled = false; }
+            return;
+        }
+        //   Only the latest request applies, and only if nothing changed while it loaded
+        if (token !== copyToken) return;
+        if (JSON.stringify(toServer()) !== before) { toast('The form changed while the copy loaded, so it wasn’t replaced. Click Copy again to replace it.'); render(); return; }
+        const copy = fromMetadata(md, true);
+        commit(() => { state = copy; });
+        pageIx = 0; sel = { kind: 'form' }; render();
+        toast('Copied “' + (md.title || 'form') + '”. Saving creates a new form.', undoThis());
     } }, 'Copy');
     return h('div', { class: 'cfb-row' }, h('label', { for: 'cfb-f-template', text: 'Start from a copy of' }),
         h('div', { style: 'display:flex;gap:6px' }, pick, load), status);
@@ -1069,7 +1101,11 @@ function pvField(f) {
     }
     let ctl;
     if (f.type === 'longAns' || f.type === 'reallyLongAns') ctl = h('textarea', Object.assign({ rows: f.type === 'longAns' ? 3 : 6, oninput: e => set(e.target.value) }, common), a[f.id] || '');
-    else if (f.type === 'file') ctl = h('input', Object.assign({ type: 'file', onchange: e => set(e.target.files[0] ? e.target.files[0].name : '') }, common));
+    else if (f.type === 'file') {
+        //   A new file input starts empty, so forget the earlier choice (the site also asks for files again)
+        delete a[f.id];
+        ctl = h('input', Object.assign({ type: 'file', onchange: e => set(e.target.files[0] ? e.target.files[0].name : '') }, common));
+    }
     else ctl = h('input', Object.assign({ type: { numeric: 'number', date: 'date', time: 'time', email: 'email', phone: 'tel' }[f.type] || 'text',
         value: a[f.id] || '', oninput: e => set(e.target.value) }, common));
     return h('div', { class: 'cfb-row' }, label, help(f, id),
@@ -1122,7 +1158,8 @@ function next() {
 }
 
 // ---------- Saving and loading ----------
-let toastTimer;
+//   The copy picker's choice survives re-renders of the settings panel
+let toastTimer, copyToken = 0, pickedTemplate = '';
 function toast(msg, action) {
     const t = document.getElementById('cfb-toast'); t.replaceChildren(h('span', { text: msg }));
     if (action) t.append(h('button', { type: 'button', text: 'Undo', onclick: () => { action(); t.hidden = true; } }));
@@ -1194,7 +1231,7 @@ function fatal(msg) {
 }
 
 // ---------- Wiring ----------
-document.getElementById('cfb-title').addEventListener('input', e => { if (state) live(s => { s.title = e.target.value; }, 'title'); });
+document.getElementById('cfb-title').addEventListener('input', e => { if (meta.loaded && !saving) live(s => { s.title = e.target.value; }, 'title'); });
 document.getElementById('cfb-undo').onclick = undo;
 document.getElementById('cfb-redo').onclick = redo;
 document.getElementById('cfb-save').onclick = save;
@@ -1208,11 +1245,11 @@ document.getElementById('cfb-settings').onclick = () => {
     const first = insp.querySelector('textarea, input, select'); if (first) first.focus({ preventScroll: true });
 };
 document.addEventListener('keydown', e => {
-    if (!state) return;
+    if (!meta.loaded || saving) return;
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !typing) { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); if (!document.getElementById('cfb-save').disabled) save(); }
-    if ((e.key === 'Delete' || e.key === 'Backspace') && !typing && sel.kind === 'field' && mode === 'edit' && document.activeElement.classList.contains('cfb-field')) { e.preventDefault(); deleteField(sel.id); }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !typing && mode === 'edit' && document.activeElement.classList.contains('cfb-field')) { e.preventDefault(); deleteField(document.activeElement.dataset.id); }
 });
 const topbar = document.querySelector('.cfb-topbar');
 new ResizeObserver(() => document.getElementById('cfb-app').style.setProperty('--cfb-top-h', topbar.offsetHeight + 'px')).observe(topbar);

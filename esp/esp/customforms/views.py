@@ -498,9 +498,14 @@ def getRebuildData(request):
         if request.method == 'GET':
             try:
                 form_id = int(request.GET['form_id'])
-            except ValueError:
+            except (KeyError, ValueError):
                 return HttpResponse(status=400)
-            form = Form.objects.get(pk=form_id)
+            try:
+                form = Form.objects.get(pk=form_id)
+            except Form.DoesNotExist:
+                return JsonResponse({'message': f'Form {form_id} not found.'}, status=404)
+            if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+                return JsonResponse({'message': 'You do not have permission to edit or copy this form.'}, status=403)
             fh = FormHandler(form=form, request=request)
             try:
                 return HttpResponse(json.dumps(fh.rebuildData()))

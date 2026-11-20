@@ -20,7 +20,7 @@ Undo and Redo (Ctrl+Z and Ctrl+Shift+Z) work for every change, and nothing is sa
 .. image:: images/customforms/builder-problems.png
    :alt: A question with an empty and a duplicated choice, flagged as problems
 
-"Preview" shows the form as respondents see it and checks answers the way the site will, including required questions, number ranges and correct answers. Nothing is submitted from the preview.
+"Preview" shows the form roughly as respondents see it, and checks the main rules: required questions, answer lengths, number ranges and correct answers. The site checks some things the preview doesn't, such as the length limits on email and phone answers, so try the saved form as well. Nothing is submitted from the preview.
 
 .. image:: images/customforms/builder-preview.png
    :alt: Previewing the form

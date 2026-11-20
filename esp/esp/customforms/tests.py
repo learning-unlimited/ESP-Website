@@ -549,6 +549,28 @@ class FormBuilderViewTest(TestCase):
         self.assertEqual(metadata['success_message'], 'Thanks for applying!')
         self.assertEqual(metadata['success_url'], '/learn/index.html')
 
+    def _get_metadata(self, form_id):
+        return self.client.get('/customforms/metadata/', {'form_id': form_id},
+                               HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+    def test_metadata_for_own_form(self):
+        self.client.login(username='builder_teacher', password='password')
+        response = self._get_metadata(self.teacher_form.id)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.content)['title'], 'Teacher Form')
+
+    def test_metadata_denied_for_other_users_form(self):
+        """A teacher can't load (and so can't edit or copy) another user's form."""
+        self.client.login(username='builder_teacher', password='password')
+        response = self._get_metadata(self.admin_form.id)
+        self.assertEqual(response.status_code, 403)
+        self.assertNotIn('Admin Form', response.content.decode())
+
+    def test_metadata_for_unknown_form(self):
+        self.client.login(username='builder_admin', password='password')
+        response = self._get_metadata(999999)
+        self.assertEqual(response.status_code, 404)
+
 class EmptyFormTitleValidationTest(TestCase):
     """Tests for validating that form title cannot be empty."""
 
