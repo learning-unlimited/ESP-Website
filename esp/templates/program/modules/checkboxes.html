@@ -1,4 +1,8 @@
 {% load render_qsd %}
+{% comment %}
+Pass lock_links=True to show the steps without links, e.g. while registration
+still forces the user through its required modules in order.
+{% endcomment %}
 
 <div class="row">
 <div class="col-md-10 offset-md-1">
@@ -7,7 +11,9 @@
 {% for module in modules %}
 {% if module.isStep %}
 <tr>
-<td>{% if module.useTemplate %}
+<td>{% if lock_links %}
+{{ module.get_link_title }}
+{% elif module.useTemplate %}
 {% if is_module_page %}
 <a href="{{ mainpage_url }}" title="{{ module.module.link_title }}">{{ module.module.link_title }}</a>
 {% else %}
@@ -20,7 +26,8 @@
     {% if not module.isRequired %}{% if not module.hideNotRequired %} <i>(not required)</i> {% endif %}{% endif %}
 {% endif %}
 </td>
-<td>{% if not module.useTemplate %}
+<td>{% if lock_links %}
+{% elif not module.useTemplate %}
 <a href="{{ module.get_full_path }}">
 {% elif is_module_page %}
 <a href="{{ mainpage_url }}">
@@ -32,7 +39,7 @@
 {% else %}
     <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
 {% endif %}
-</a>
+{% if not lock_links %}</a>{% endif %}
 
 </td>
 </tr>
