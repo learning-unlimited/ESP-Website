@@ -1,3 +1,4 @@
+from pathlib import Path
 
 from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -135,7 +136,7 @@ def gen_latex(texcode, file_type='pdf', stdout=_devnull_sentinel, stderr=subproc
 
 
 def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
-    file_base = os.path.join(TEX_TEMP, get_rand_file_base())
+    file_base = str(Path(TEX_TEMP) / get_rand_file_base())
 
     if file_type == 'tex':
         return texcode
@@ -195,7 +196,7 @@ def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
         raise ESPError("Postprocessing failed; try downloading as PDF.")
 
     out_file = file_base + '.' + file_type
-    if file_type == 'png' and not os.path.isfile(out_file):
+    if file_type == 'png' and not Path(out_file).is_file():
         # If the schedule is multiple pages (such as a schedule if the program
         # is using barcode check-in), ImageMagick will generate files of the
         # form file_base-n.png.  In this case, we will just return the first
@@ -203,7 +204,7 @@ def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
         # use PNG anyway; this is mostly for the benefit of the schedule
         # printing script.
         out_file = file_base + '-0.png'
-    if not os.path.isfile(out_file):
+    if not Path(out_file).is_file():
         # We probably shouldn't get here -- this means either LaTeX failed,
         # LaTeX generated no output, or a postprocessor failed, all of which we
         # handle above.  But we'll at least return a specific error.
@@ -216,7 +217,7 @@ def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
 def get_rand_file_base():
     rand = secrets.token_hex(16)
 
-    while os.path.exists(os.path.join(TEX_TEMP, rand + TEX_EXT)):
+    while (Path(TEX_TEMP) / f'{rand}{TEX_EXT}').exists():
         rand = secrets.token_hex(16)
 
     return rand
