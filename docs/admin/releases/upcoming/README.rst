@@ -76,14 +76,29 @@ The custom form builder at /customforms/ has been rebuilt. Question types are li
 
 Existing forms and their responses are unchanged: the builder saves forms in the same format as before. It also stops changes that used to break forms or lose answers. Choices can't contain ``|``, which used to split one choice into two. Character and number limits must be whole numbers in a valid range, and short answers can't exceed the 30 or 60 characters their answers are stored in. Saved questions can only change to types that keep their existing answers. Program group limits must name a group. Save errors, including an expired session, are now shown instead of leaving the Save button disabled.
 
+Profile Page Sections
+=====================
+
+Each section of the profile editor (contact information, role-specific
+information, parent/guardian contact and emergency contact) is now shown in its
+own card, so the parts of the form are easier to tell apart. The cards use the
+site theme's colors.
+
+For student and teacher profiles, the fields now use the site theme's input
+styling, related fields (first and last name, city/state/ZIP, home and cell
+phone) sit side by side on wider screens and stack on phones, every address
+field has its own label, and fields with errors are highlighted.
+
 Bug Fixes
 =========
 
 - Editing a custom form no longer clears its thank-you message and redirect address.
 - The teacher custom form, teacher quiz and student custom form module pages now check required fields and field formats in the browser before submitting, as standalone custom forms do. The date check on all custom forms now also accepts the format the site re-displays saved dates in (such as "2026-11-14"). Phone numbers are no longer checked in the browser, which rejected international numbers the site accepts; the server still checks them.
 - The "First Step" and "Prev Step" buttons on custom forms no longer require the current page to be filled in correctly, so users can go back without completing it first.
+- Custom form questions linked to contact info (name, email, phone, address or text message request) now show and save the user's own contact info.
 - Pressing Enter on a later page of a custom form (standalone, or a teacher or student registration step) now goes to the next page instead of back a page.
 - Director email addresses and outgoing "From" addresses now accept ``learningu.org`` at any subdomain depth. The rule previously allowed at most one subdomain label, so an address like ``info@a.b.learningu.org`` was rejected even though the director email help text has always described any valid subdomain as acceptable. This applies to the program creation and program settings forms, the ``director_email`` model validator, and the "From" address checks used by the comm panel and automated mail.
+- On the student profile, the "Use my parents as my emergency contact" button is now shown only when the parent/guardian section is on the page, and it copies only the parent/guardian and home address fields that are shown. Previously, with the parent/guardian section turned off (``student_profile_show_guardian_info``) or some of its fields hidden (``student_profile_hide_fields``), clicking the button cleared the matching emergency contact fields.
 - Teachers can now edit their class website pages inline. Inline editing controls and the "Edit this page" button were previously only shown to administrators, even though teachers of a class have permission to edit its pages. Logged-in non-admins now see the editing controls for any page or inline text block they have permission to edit, and nothing else.
 
 Developer Notes
