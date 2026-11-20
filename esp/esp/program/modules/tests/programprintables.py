@@ -36,6 +36,7 @@ from django.test.client import RequestFactory
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models  import ClassSubject
 from ..handlers.programprintables import *
+from ..handlers.programprintables import _parse_int, _parse_id_list
 
 class ProgramPrintablesModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
@@ -207,6 +208,60 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
             response.get('Content-Disposition'),
             "attachment; filename=all_classes.csv"
         )
+
+    def test_parse_helpers(self):
+        """Malformed integers and ID tokens are skipped rather than raising (#6017)."""
+        self.assertEqual(_parse_int('7'), 7)
+        self.assertEqual(_parse_int('abc', 3), 3)
+        self.assertIsNone(_parse_int(None))
+        self.assertEqual(_parse_id_list('1, 2,,abc,'), [1, 2])
+        self.assertEqual(_parse_id_list(''), [])
+
+    def test_catalog_invalid_sort_and_grade_params(self):
+        """catalog() falls back to default sorts and program grades on bad input (#6017)."""
+        self._login_admin()
+        url = f'/manage/{self.program.getUrlBase()}/catalog'
+
+        response = self.client.get(url, {'first_sort': 'invalid', 'second_sort': '', 'third_sort': 'bogus',
+                                         'grade_min': 'abc', 'grade_max': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['sort_name_list'], '')
+        self.assertEqual(response.context['grade_min_orig'], self.program.grade_min)
+        self.assertEqual(response.context['grade_max_orig'], self.program.grade_max)
+
+        response = self.client.get(url, {'first_sort': 'title', 'grade_min': str(self.program.grade_min + 1)})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['sort_name_list'], 'title')
+        self.assertEqual(response.context['grade_min_orig'], self.program.grade_min + 1)
+
+    def test_coursecatalog_invalid_grade_params(self):
+        """coursecatalog() ignores non-integer grade filters (#6017)."""
+        self._login_admin()
+        response = self.client.get(f'/manage/{self.program.getUrlBase()}/coursecatalog/tex',
+                                   {'mingrade': 'abc', 'maxgrade': '', 'sort_name_list': 'timeblock'})
+        self.assertEqual(response.status_code, 200)
+
+    def test_class_lists_skip_invalid_ids_and_grades(self):
+        """classflagdetails(), classesbyFOO() and sectionsbyFOO() drop malformed IDs and grades (#6017)."""
+        self._login_admin()
+        base = self.program.getUrlBase()
+        cls = self.program.classes()[0]
+        sec = cls.get_sections()[0]
+        clsids = f'{cls.id}, abc,,'
+
+        response = self.client.get(f'/manage/{base}/classflagdetails', {'clsids': clsids, 'all': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([c.id for c in response.context['classes']], [cls.id])
+
+        response = self.client.get(f'/manage/{base}/classesbyid',
+                                   {'clsids': clsids, 'grade_min': 'x', 'grade_max': '', 'all': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([c.id for c in response.context['classes']], [cls.id])
+
+        response = self.client.get(f'/manage/{base}/classesbyroom',
+                                   {'secids': f'{sec.id},x,', 'clsids': clsids, 'grade_min': 'x', 'all': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([s.id for s in response.context['sections']], [sec.id])
 
 
 class TestAllClassesSelectionForm(ProgramFrameworkTest):

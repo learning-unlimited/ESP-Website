@@ -83,6 +83,18 @@ from numpy import array_split
 # Throttling to 4 concurrent jobs to avoid exhausting server resources
 printable_job_executor = ThreadPoolExecutor(max_workers=4)
 
+def _parse_int(value, default=None):
+    """Return value as an int, or default if it cannot be parsed."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+def _parse_id_list(value):
+    """Parse a comma-separated ID string, skipping blank or non-integer tokens."""
+    ids = (_parse_int(token) for token in value.split(','))
+    return [i for i in ids if i is not None]
+
 class ProgramPrintables(ProgramModuleObj):
     doc = """A wide variety of printable documents that are useful for a program."""
 
@@ -201,30 +213,19 @@ class ProgramPrintables(ProgramModuleObj):
         category_options = prog.class_categories.all().values_list('category', flat=True)
         categories = category_options
 
-        if request.GET.get('first_sort', ''):
-            sort_list.append( cmp_fn[request.GET['first_sort']] )
-            sort_name_list.append( request.GET['first_sort'] )
-        else:
-            sort_list.append( cmp_fn["category"] )
-
-        if request.GET.get('second_sort', ''):
-            sort_list.append( cmp_fn[request.GET['second_sort']] )
-            sort_name_list.append( request.GET['second_sort'] )
-        else:
-            sort_list.append( cmp_fn["timeblock"] )
-
-        if request.GET.get('third_sort', ''):
-            sort_list.append( cmp_fn[request.GET['third_sort']] )
-            sort_name_list.append( request.GET['third_sort'] )
-        else:
-            sort_list.append( cmp_fn["title"] )
+        #   Blank or unrecognized sort keys fall back to the default for that position
+        for param, default_sort in [('first_sort', 'category'), ('second_sort', 'timeblock'), ('third_sort', 'title')]:
+            sort_key = request.GET.get(param, '')
+            if sort_key and sort_key in cmp_fn:
+                sort_list.append( cmp_fn[sort_key] )
+                sort_name_list.append( sort_key )
+            else:
+                sort_list.append( cmp_fn[default_sort] )
 
         if 'categories' in request.GET:
             categories = request.GET.getlist('categories')
-        if 'grade_min' in request.GET:
-            grade_min = int(request.GET['grade_min'])
-        if 'grade_max' in request.GET:
-            grade_max = int(request.GET['grade_max'])
+        grade_min = _parse_int(request.GET.get('grade_min'), grade_min)
+        grade_max = _parse_int(request.GET.get('grade_max'), grade_max)
 
         classes = ClassSubject.objects.filter(parent_program = self.program, status__gt=0)
         classes = classes.filter(grade_min__lte=grade_max)
@@ -254,12 +255,12 @@ class ProgramPrintables(ProgramModuleObj):
         from django.conf import settings
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
-        if 'mingrade' in request.GET:
-            mingrade=int(request.GET['mingrade'])
+        mingrade = _parse_int(request.GET.get('mingrade'))
+        if mingrade is not None:
             classes = classes.filter(grade_max__gte=mingrade)
 
-        if 'maxgrade' in request.GET:
-            maxgrade=int(request.GET['maxgrade'])
+        maxgrade = _parse_int(request.GET.get('maxgrade'))
+        if maxgrade is not None:
             classes = classes.filter(grade_min__lte=maxgrade)
 
         if 'open' in request.GET:
@@ -366,7 +367,7 @@ class ProgramPrintables(ProgramModuleObj):
         comments = 'comments' in request.GET
         classes = ClassSubject.objects.filter(parent_program = prog)
         if 'clsids' in request.GET:
-            clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
+            clsids = _parse_id_list(request.GET['clsids'])
             classes = [cls for cls in classes if cls.id in clsids]
         if 'accepted' in request.GET:
             classes = [cls for cls in classes if cls.status > 0]
@@ -409,14 +410,16 @@ class ProgramPrintables(ProgramModuleObj):
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
         if 'clsids' in request.GET:
-            clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
+            clsids = _parse_id_list(request.GET['clsids'])
             classes = [cls for cls in classes if cls.id in clsids]
 
-        if 'grade_min' in request.GET:
-            classes = [cls for cls in classes if cls.grade_max >= int(request.GET['grade_min'])]
+        grade_min = _parse_int(request.GET.get('grade_min'))
+        if grade_min is not None:
+            classes = [cls for cls in classes if cls.grade_max >= grade_min]
 
-        if 'grade_max' in request.GET:
-            classes = [cls for cls in classes if cls.grade_min <= int(request.GET['grade_max'])]
+        grade_max = _parse_int(request.GET.get('grade_max'))
+        if grade_max is not None:
+            classes = [cls for cls in classes if cls.grade_min <= grade_max]
 
         if 'accepted' in request.GET:
             classes = [cls for cls in classes if cls.status > 0]
@@ -457,18 +460,20 @@ class ProgramPrintables(ProgramModuleObj):
         sections = self.program.sections()
 
         if 'secids' in request.GET:
-            secids = [int(secid) for secid in request.GET['secids'].split(",")]
+            secids = _parse_id_list(request.GET['secids'])
             sections = [sec for sec in sections if sec.id in secids]
 
         if 'clsids' in request.GET:
-            clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
+            clsids = _parse_id_list(request.GET['clsids'])
             sections = [sec for sec in sections if sec.parent_class.id in clsids]
 
-        if 'grade_min' in request.GET:
-            sections = [sec for sec in sections if sec.parent_class.grade_max >= int(request.GET['grade_min'])]
+        grade_min = _parse_int(request.GET.get('grade_min'))
+        if grade_min is not None:
+            sections = [sec for sec in sections if sec.parent_class.grade_max >= grade_min]
 
-        if 'grade_max' in request.GET:
-            sections = [sec for sec in sections if sec.parent_class.grade_min <= int(request.GET['grade_max'])]
+        grade_max = _parse_int(request.GET.get('grade_max'))
+        if grade_max is not None:
+            sections = [sec for sec in sections if sec.parent_class.grade_min <= grade_max]
 
         if 'accepted' in request.GET:
             sections = [sec for sec in sections if sec.status > 0]
