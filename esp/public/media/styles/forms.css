@@ -4,6 +4,42 @@
     
 }
 
+
+
+/* Custom User Auth Template Alignments */
+.form-submit-centered {
+    text-align: center;
+}
+
+.auth-header {
+    text-align: center;
+}
+
+.auth-subheader {
+    text-align: center;
+    margin-bottom: 0px;
+}
+
+.auth-instruction {
+    text-align: center;
+    font-weight: normal;
+    margin-top: 0px;
+}
+
+.auth-warning-text {
+    text-align: center;
+    color: #FF0000;
+    margin-bottom: 0px;
+}
+
+.form-table-label-top {
+    vertical-align: top;
+}
+
+.auth-role-select {
+    width: 95%;
+}
+
 /* Profile editor */
 #id_receive_txt_message {
     list-style:none
@@ -190,6 +226,28 @@ input.fancybutton:active
    }
 }
 
+/* Class registration form, and other label/field tables marked .stack-on-phone, on
+   phones: stack each label above its field and let fields shrink to the screen,
+   instead of a two-column table wider than the screen. */
+@media (max-width: 575.98px) {
+    #clsform table, #clsform tbody, #clsform tr, #clsform th, #clsform td,
+    table.stack-on-phone, .stack-on-phone > tbody, .stack-on-phone > tbody > tr,
+    .stack-on-phone > tbody > tr > th, .stack-on-phone > tbody > tr > td {
+        display: block;
+        width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    #clsform input[type="text"], #clsform input[type="number"],
+    #clsform select, #clsform textarea,
+    .stack-on-phone input[type="text"], .stack-on-phone input[type="file"],
+    .stack-on-phone select, .stack-on-phone textarea {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+}
+
 #program_form td {
     font-family: Arial, Helvetica, sans-serif;
     vertical-align: middle;
@@ -197,16 +255,18 @@ input.fancybutton:active
     border: none;
     font-weight: normal;
     font-style: normal;
-    color: black;
+    color: inherit;
     font-size: 12px;
 }
 
 #program_form td.compulsory_event_time {
     background-color: #CCC;
+    color: black;
 }
 
 #program_form td.compulsory_event_desc {
     background-color: #CCC;
+    color: black;
 }
 
 td .program_form_small{
@@ -244,6 +304,7 @@ th .program_form_small{
 
 #program_form td.colorful {
    background-color: #c6def7;
+   color: black;
 }
 
 #program_form input {

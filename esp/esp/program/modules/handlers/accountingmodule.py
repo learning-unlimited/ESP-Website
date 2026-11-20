@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_FINANCIAL
 from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.utils.web import render_to_response
 from esp.accounting.views import user_accounting
@@ -60,6 +61,19 @@ class AccountingModule(ProgramModuleObj):
             "seq": 253,
             "choosable": 0,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "accounting":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_accounting",
+            url="/manage/%s/accounting" % base,
+            title="Accounting",
+            category=SEARCH_CATEGORY_FINANCIAL,
+            keywords=["accounting", "payments", "transactions", "finances", "money"],
+        )
 
     CC_FEE_RATE = 0.022
 
@@ -195,14 +209,16 @@ class AccountingModule(ProgramModuleObj):
     def accounting(self, request, tl, one, two, module, extra, prog):
         user = None
         context = {}
+        form = StudentSearchForm()
         if extra:
-            user = ESPUser.objects.get(id=extra)
+            try:
+                user = ESPUser.objects.get(id=extra)
+            except (ESPUser.DoesNotExist, ValueError):
+                user = None
         elif 'target_user' in request.POST:
             form = StudentSearchForm(request.POST)
             if form.is_valid():
                 user = form.cleaned_data['target_user']
-        else:
-            form = StudentSearchForm()
 
         if user:
             form = StudentSearchForm(initial={'target_user': user.id})

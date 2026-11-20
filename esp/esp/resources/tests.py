@@ -1,7 +1,5 @@
 from datetime import datetime, timedelta
 
-from django.db.models import ProtectedError
-
 from esp.cal.models import Event, EventType
 from esp.program.models import Program
 from esp.program.models.class_ import ClassSubject, ClassSection, ClassCategories
@@ -29,21 +27,24 @@ class ResourceTypeTest(TestCase):
         )
         self.section = ClassSection.objects.create(parent_class=self.subject)
 
-    def testCascadingDeleteDisabled(self):
+    def test_cascading_delete_deletes_related_resource_and_request(self):
+        """Deleting a ResourceType CASCADEs to related Resource and ResourceRequest."""
         res_type = ResourceType.objects.create(name='res_type', description='')
 
         resource = Resource.objects.create(name='resource', res_type=res_type, event=self.event)
-        with self.assertRaises(ProtectedError):
-            res_type.delete()
-        resource.delete()
+        resource_request = ResourceRequest.objects.create(
+            desired_value='desired_value', res_type=res_type, target=self.section
+        )
+        resource_id = resource.id
+        request_id = resource_request.id
+        res_type_id = res_type.id
 
-        resource_request = ResourceRequest.objects.create(desired_value='desired_value', res_type=res_type, target=self.section)
-        with self.assertRaises(ProtectedError):
-            res_type.delete()
-        resource_request.delete()
-
-        # This should now be okay.
         res_type.delete()
+
+        self.assertFalse(ResourceType.objects.filter(id=res_type_id).exists())
+        self.assertFalse(Resource.objects.filter(id=resource_id).exists())
+        self.assertFalse(ResourceRequest.objects.filter(id=request_id).exists())
+
 
 class FloatingResourceAvailabilityTest(TestCase):
 
@@ -198,3 +199,40 @@ class FloatingResourceAvailabilityTest(TestCase):
         # Assign to different section in timeslot2 — should raise
         with self.assertRaises(ESPError_Log):
             self.res_ts2.assign_to_section(other_section)
+
+    def test_is_unique_survives_resave(self):
+        """is_unique must not be flipped by an unrelated later save (issue #5976)."""
+        rt = ResourceType.get_or_create('Projector')
+        r = Resource.objects.create(
+            name='proj-resave', res_type=rt, event=self.timeslot1)
+        # Standalone resource: gets its own group and is marked unique.
+        self.assertTrue(r.is_unique)
+        group_id = r.res_group_id
+
+        # An unrelated edit must not change is_unique or the group.
+        r.name = 'proj-resave-renamed'
+        r.save()
+        self.assertTrue(r.is_unique,
+                        "is_unique was cleared by an unrelated re-save")
+        self.assertEqual(r.res_group_id, group_id)
+
+        # Confirm it persisted, not just the in-memory object.
+        self.assertTrue(Resource.objects.get(pk=r.pk).is_unique)
+
+    def test_is_unique_false_for_resource_in_existing_group(self):
+        """A resource attached to an existing group stays non-unique across saves."""
+        classroom_type = ResourceType.get_or_create('Classroom')
+        room = Resource.objects.create(
+            name='Room Z', res_type=classroom_type, event=self.timeslot1)
+        self.assertTrue(room.is_unique)
+
+        furn_type = ResourceType.get_or_create('Whiteboard')
+        furn = Resource(name='wb-z', res_type=furn_type, event=self.timeslot1)
+        furn.res_group = room.res_group
+        furn.save()
+        self.assertFalse(furn.is_unique)
+
+        # A later save must not spuriously flip it.
+        furn.name = 'wb-z-renamed'
+        furn.save()
+        self.assertFalse(furn.is_unique)

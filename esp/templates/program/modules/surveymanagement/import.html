@@ -6,6 +6,7 @@
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
     <link rel="stylesheet" href="/media/styles/survey_manage.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/survey.css" type="text/css" />
 {% endblock %}
 
 {% block content %}
@@ -72,7 +73,7 @@ You have chosen to import {{ survey.name }} ({{ survey.category }}) from {{ surv
 </form>
 </div>
 
-<a class="btn" href="/manage/{{ program.getUrlBase }}/surveys">Return to the main survey page</a>
+<a class="btn btn-secondary" href="/manage/{{ program.getUrlBase }}/surveys">Return to the main survey page</a>
 
 <script type="text/javascript" src="/media/scripts/program/modules/survey_manage.js"></script>
 

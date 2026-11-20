@@ -118,7 +118,7 @@ for fn in filenames:
                     print('  Copyright contents follow')
                     print(copyright_text)
 
-                    result = re.search('Copyright \(c\) ([-0-9]+)', copyright_text)
+                    result = re.search(r'Copyright \(c\) ([-0-9]+)', copyright_text)
                     if result:
                         print('  Copyright date search yielded %s' % result.groups()[0])
 

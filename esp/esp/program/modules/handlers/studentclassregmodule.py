@@ -39,19 +39,22 @@ from datetime import datetime
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models.query import Q, QuerySet
+from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, Http404
-from django.views.decorators.cache import cache_control
+from django.utils.decorators import method_decorator
 from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
 
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth, list_extensions, render_deadline_for_tl
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
-from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
+from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest, autocorrect_schedule, schedule_change_blockers, unmet_requirements
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError, ESPError_NoLog
+from django.contrib import messages
 from esp.users.models    import ESPUser, Permission
 from esp.tagdict.models  import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
@@ -59,6 +62,7 @@ from esp.cal.models import Event, EventType
 from esp.program.templatetags.class_render import render_class_direct
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.query_utils import nest_Q
+from esp.utils.ids import filter_by_id, parse_id
 
 def json_encode(obj):
     if isinstance(obj, ClassSubject):
@@ -122,9 +126,39 @@ def json_encode(obj):
     else:
         raise TypeError(repr(obj) + " is not JSON serializable")
 
+# How long the public catalog responses may be cached.  Closing the
+# Student/Catalog deadline only takes effect once these have expired in
+# browser and shared caches, so keep it short.
+CATALOG_CACHE_MAX_AGE = 120
+
 # student class picker module
+class ScheduleConstraintError(ESPError_NoLog):
+    """ A schedule change that an enforced constraint does not allow. """
+    pass
+
+def check_schedule_constraints(request, prog, add_sections=(), remove_sections=(), webapp=False):
+    """ Refuse a schedule change that an enforced constraint does not allow.
+    Taking a class on is judged on repairability. Onsite-morphed admins are exempt.
+    """
+    if getattr(request.user, 'onsite_local', False):
+        return
+    blocked = schedule_change_blockers(request.user, prog, add_sections=add_sections,
+                                       remove_sections=remove_sections, webapp=webapp)
+    if blocked:
+        raise ScheduleConstraintError("This change would leave your schedule in violation of "
+                                      f"the requirement that you {blocked[0]}.")
+
+def apply_schedule_autocorrect(request, prog, webapp=False):
+    """ Repair whatever an autocorrecting constraint is missing, remembering
+    what was added so the schedule can say so. """
+    added = autocorrect_schedule(request.user, prog, webapp=webapp)
+    if added:
+        request.autocorrected_sections = getattr(request, 'autocorrected_sections', []) + added
+    return added
+
 class StudentClassRegModule(ProgramModuleObj):
     doc = """Allows students to directly enroll in classes."""
+    permission_types = ('Student/Classes',)
 
     @classmethod
     def module_properties(cls):
@@ -147,7 +181,8 @@ class StudentClassRegModule(ProgramModuleObj):
             id="learn_catalog",
             url="/learn/%s/catalog" % base,
             title="Student Catalog",
-            category="Quick Links",
+            # Grouped under the dashboard section where the "Catalog" button appears in directory.html.
+            category=SEARCH_CATEGORY_CLASSES,
             keywords=["catalog", "classes", "student view"],
         )
 
@@ -238,14 +273,46 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.deadline_met(extension) or \
                    super().deadline_met('/Classes/Lottery')
 
-    def prepare(self, context={}):
+    def _catalog_deadline_closed(self, prog):
+        """Return True if a Student/Catalog deadline exists and is currently closed."""
+        deadlines = list(Permission.objects.filter(
+            permission_type='Student/Catalog',
+            program=prog,
+            user__isnull=True,
+        ))
+        # If no deadline is configured, keep catalog endpoints open.
+        if not deadlines:
+            return False
+        # If any deadline is valid, the catalog is open.
+        return not any(deadline.is_valid() for deadline in deadlines)
+
+    def _may_view_closed_catalog(self, request):
+        """Return True if this user may see the catalog while it is closed."""
+        # Only consulted once the deadline is known to be closed, so the open
+        # (publicly cached) path never reads request.user or the session.
+        return request.user.isAdmin(self.program)
+
+    @staticmethod
+    def _catalog_cache_control(closed):
+        """Return the Cache-Control header for a catalog response."""
+        # A closed catalog is only ever served to an admin, so it must not be
+        # stored in a shared cache and handed to students afterwards.
+        if closed:
+            return 'no-store'
+        return 'public, max-age=%d' % CATALOG_CACHE_MAX_AGE
+
+    def prepare(self, context=None):
+        if context is None:
+            context = {}
         user = get_current_request().user
         program = self.program
         scrmi = self.program.studentclassregmoduleinfo
         return self.prepare_static(user, program, context=context, scrm = self)
 
     @staticmethod
-    def prepare_static(user, program, context={}, scrm = ""):
+    def prepare_static(user, program, context=None, scrm = ""):
+        if context is None:
+            context = {}
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
         verbs = RTC.getVisibleRegistrationTypeNames(prog=program)
         regProf = RegistrationProfile.getLastForProgram(user, program)
@@ -263,6 +330,14 @@ class StudentClassRegModule(ProgramModuleObj):
 
         schedule = []
         timeslot_dict = {}
+        # Use program-specific tolerance for determining contiguous timeblocks,
+        # falling back to Event.contiguous default (20 minutes) if unavailable.
+        contiguous_tolerance = Tag.getProgramTag('timeblock_contiguous_tolerance', program=program, default=20)
+        try:
+            contiguous_tolerance = int(contiguous_tolerance)
+        except (ValueError, TypeError):
+            contiguous_tolerance = 20
+
         for sec in classList:
             #   Get the verbs all the time in order for the schedule to show
             #   the student's detailed enrollment status.  (Performance hit, I know.)
@@ -272,24 +347,28 @@ class StudentClassRegModule(ProgramModuleObj):
             sec.verb_names = [v.name for v in sec.verbs]
             sec.is_enrolled = True if "Enrolled" in sec.verb_names else False
 
-            # While iterating through the meeting times for a section,
-            # we use this variable to keep track of the first timeslot.
-            # In the section_dict appended to timeslot_dict,
-            # we save whether or not this is the first timeslot for this
-            # section. If it isn't, the student schedule will indicate
-            # this, and will not display the option to remove the
-            # section. This is to prevent students from removing what
-            # they have mistaken to be duplicated classes from their
-            # schedules.
-            first_meeting_time = True
+            # Track contiguous groups per section so we only mark later
+            # contiguous blocks as "continued". Non-contiguous recurring
+            # meetings (e.g. Mon+Wed) should each be treated as a first meeting.
+            previous_meeting_time = None
+            first_entry_in_group = None
 
             for mt in sec.get_meeting_times().order_by('start'):
-                section_dict = {'section': sec, 'first_meeting_time': first_meeting_time}
-                first_meeting_time = False
+                first_meeting_time = (
+                    previous_meeting_time is None or
+                    not Event.contiguous(previous_meeting_time, mt, tol=contiguous_tolerance)
+                )
+                if first_meeting_time:
+                    section_dict = {'section': sec, 'first_meeting_time': True, 'meeting_span': 1}
+                    first_entry_in_group = section_dict
+                else:
+                    section_dict = {'section': sec, 'first_meeting_time': False, 'meeting_span': 0}
+                    first_entry_in_group['meeting_span'] += 1
                 if mt.id in timeslot_dict:
                     timeslot_dict[mt.id].append(section_dict)
                 else:
                     timeslot_dict[mt.id] = [section_dict]
+                previous_meeting_time = mt
 
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
@@ -313,6 +392,8 @@ class StudentClassRegModule(ProgramModuleObj):
         context['num_classes'] = len(classList)
         context['timeslots'] = schedule
         context['use_priority'] = scrmi.use_priority
+        context['unmet_requirements'] = unmet_requirements(user, program)
+        context['autocorrected_sections'] = getattr(get_current_request(), 'autocorrected_sections', [])
         if scrm:
             context['allow_removal'] = scrm.deadline_met('/Removal')
 
@@ -330,8 +411,30 @@ class StudentClassRegModule(ProgramModuleObj):
         context['reg_open'] = bool(Permission.user_has_perm(request.user, {'learn':'Student','teach':'Teacher'}[tl]+"/Classes", prog))
 
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
-        script_str = render_to_string('users/student_schedule_inline.js', context)
-        json_data = {'student_schedule_html': schedule_str, 'script': script_str}
+
+        remove_links = []
+        if context.get('allow_removal'):
+            url_base = self.program.getUrlBase()
+            for entry in context['timeslots']:
+                timeslot, cls_list = entry[0], entry[1]
+                for cls in cls_list:
+                    remove_links.append({
+                        'id': 'remove_%d_%d' % (timeslot.id, cls['section'].id),
+                        'url': '/learn/%s/ajax_clearslot/%d?sec_id=%d' % (
+                            url_base, timeslot.id, cls['section'].id),
+                    })
+
+        json_data = {
+            'student_schedule_html': schedule_str,
+            'links': remove_links,
+            'callbacks': [{
+                'name': 'student_schedule',
+                'args': [{
+                    'reg_open': context['reg_open'],
+                    'onsite_local': bool(getattr(request.user, 'onsite_local', False)),
+                }],
+            }],
+        }
 
         #   Look at the 'extra' data and act appropriately:
         #   -   List, query set, or comma-separated ID list of class sections:
@@ -388,32 +491,52 @@ class StudentClassRegModule(ProgramModuleObj):
         if not hasattr(request.user, "onsite_local"):
             request.user.onsite_local = False
 
-        if 'class_id' in request.POST:
-            classid = request.POST['class_id']
-            sectionid = request.POST['section_id']
-        else:
+        try:
+            classid = int(request.POST['class_id'])
+            sectionid = int(request.POST['section_id'])
+        except (KeyError, ValueError, TypeError):
             raise ESPError("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled.", log=False)
 
-        section = ClassSection.objects.get(id=sectionid)
-        if not scrmi.use_priority:
-            error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
-        if scrmi.use_priority or not error:
-            cobj = ClassSubject.objects.get(id=classid)
-            error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+        with transaction.atomic():
+            #   Validate that the section belongs to the expected class and program
+            #   while still taking a row lock, so concurrent registrations serialize
+            #   on the capacity checks below.
+            section = get_object_or_404(
+                ClassSection.objects.select_for_update(),
+                id=sectionid,
+                parent_class__id=classid,
+                parent_class__parent_program=prog,
+            )
+            section_error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+            if not scrmi.use_priority:
+                error = section_error
+            if scrmi.use_priority or not section_error:
+                cobj = ClassSubject.objects.select_for_update().get(id=classid)
+                cobj_error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+                error = cobj_error or section_error
 
-        if scrmi.use_priority:
-            priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
-        else:
-            priority = 1
+            if not error and not request.user.onsite_local:
+                blocked = schedule_change_blockers(request.user, prog, add_sections=[section],
+                                                   webapp=webapp)
+                if blocked:
+                    raise ScheduleConstraintError(
+                        f"Adding {section.title()} to your schedule would leave you no way to "
+                        f"{blocked[0]}.")
 
-        if error and not request.user.onsite_local:
-            raise ESPError(error, log=False)
+            if scrmi.use_priority:
+                priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
+            else:
+                priority = 1
 
-        #   Desired priority level is 1 above current max
-        if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
-            return True
-        else:
-            raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
+            if error and not request.user.onsite_local:
+                raise ESPError(error, log=False)
+
+            #   Desired priority level is 1 above current max
+            if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
+                apply_schedule_autocorrect(request, prog, webapp=webapp)
+                return True
+            else:
+                raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
 
     @aux_call
     @needs_student_in_grade
@@ -421,8 +544,58 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_cap
     def addclass(self, request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
-        if self.addclass_logic(request, tl, one, two, module, extra, prog):
+        from django.db import transaction
+        try:
+            if request.POST.get('force_replace') == 'true':
+                with transaction.atomic():
+                    sectionid = request.POST.get('section_id')
+                    if sectionid:
+                        section = ClassSection.objects.filter(id=sectionid, parent_class__parent_program=prog).first()
+                        if section:
+                            conflicts = section.get_conflicts(request.user)
+                            verbs = RTC.getVisibleRegistrationTypeNames(prog)
+                            check_schedule_constraints(request, prog, add_sections=[section],
+                                                       remove_sections=conflicts)
+                            for conflict in conflicts:
+                                conflict.unpreregister_student(request.user, verbs)
+                    success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+                    if not success:
+                        transaction.set_rollback(True)
+            else:
+                success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+
+            if success:
+                return self.goToCore(tl)
+
+        except ScheduleConstraintError as inst:
+            messages.error(request, str(inst))
             return self.goToCore(tl)
+
+        except ESPError_NoLog as inst:
+            # Check for schedule conflicts
+            error_msg = str(inst)
+            if 'conflict' in error_msg.lower():
+                sectionid = request.POST.get('section_id')
+                classid = request.POST.get('class_id')
+                if sectionid:
+                    try:
+                        section = ClassSection.objects.get(id=sectionid, parent_class__parent_program=prog)
+                        conflicts = section.get_conflicts(request.user)
+                        if conflicts:
+                            conflict_titles = ", ".join([str(c.title()) for c in conflicts])
+                            confirm_msg = "This class conflicts with your schedule! If you add this class, you will be removed from %s. Do you want to proceed?" % conflict_titles
+
+                            context = {'program': prog, 'user': request.user, 'one': one, 'two': two}
+                            context['confirm_msg'] = confirm_msg
+                            context['section_id'] = sectionid
+                            context['class_id'] = classid
+                            context['prereg_url'] = prog.get_learn_url() + 'addclass'
+                            from django.template.context_processors import csrf
+                            context.update(csrf(request))
+                            return render_to_response(self.baseDir()+'conflict_confirm.html', request, context)
+                    except (ClassSection.DoesNotExist, ValueError):
+                        pass
+            raise
 
     @aux_call
     @needs_student_in_grade
@@ -433,7 +606,27 @@ class StudentClassRegModule(ProgramModuleObj):
         if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return self.addclass(request, tl, one, two, module, extra, prog)
         try:
-            success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+            from django.db import transaction
+            # Handle force replace atomically so conflicting classes are only dropped
+            # if the replacement registration succeeds.
+            if request.POST.get('force_replace') == 'true':
+                with transaction.atomic():
+                    sectionid = request.POST.get('section_id')
+                    if sectionid:
+                        section = ClassSection.objects.filter(id=sectionid, parent_class__parent_program=prog).first()
+                        if section:
+                            conflicts = section.get_conflicts(request.user)
+                            verbs = RTC.getVisibleRegistrationTypeNames(prog)
+                            check_schedule_constraints(request, prog, add_sections=[section],
+                                                       remove_sections=conflicts)
+                            for conflict in conflicts:
+                                conflict.unpreregister_student(request.user, verbs)
+                    success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+                    if not success:
+                        transaction.set_rollback(True)
+            else:
+                success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+
             if 'no_schedule' in request.POST:
                 resp = HttpResponse(content_type='application/json')
                 json.dump({'status': success}, resp)
@@ -612,13 +805,20 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @no_auth
-    @cache_control(public=True, max_age=3600)
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
+        # If a Student/Catalog deadline exists and is closed, return a non-cacheable error.
+        closed = self._catalog_deadline_closed(prog)
+        if closed and not self._may_view_closed_catalog(request):
+            response = HttpResponse(json.dumps({'error': 'Catalog is closed'}),
+                                    content_type='application/json', status=403)
+            response['Cache-Control'] = 'no-store'
+            return response
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)
 
         resp = HttpResponse(content_type='application/json')
+        resp['Cache-Control'] = self._catalog_cache_control(closed)
 
         json.dump(list(classes), resp, default=json_encode)
 
@@ -632,7 +832,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @needs_student_in_grade
-    @vary_on_cookie
+    @method_decorator(vary_on_cookie)
     def catalog_registered_classes_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         reg_bits = StudentRegistration.valid_objects().filter(user=request.user, section__parent_class__parent_program=prog).select_related()
 
@@ -650,21 +850,35 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @no_auth
     @disable_csrf_cookie_update
-    @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
+        closed = self._catalog_deadline_closed(prog)
+        if closed and not self._may_view_closed_catalog(request):
+            response = render_deadline_for_tl('learn', request,
+                    {'extension': list_extensions('learn', ['/Catalog']), 'moduleObj': self})
+            response['Cache-Control'] = 'no-store'
+            return response
+        response = self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
+        response['Cache-Control'] = self._catalog_cache_control(closed)
+        return response
 
     @aux_call
     @no_auth
     @disable_csrf_cookie_update
-    @cache_control(public=True, max_age=120)
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
+        closed = self._catalog_deadline_closed(prog)
+        if closed and not self._may_view_closed_catalog(request):
+            response = render_deadline_for_tl('learn', request,
+                    {'extension': list_extensions('learn', ['/Catalog']), 'moduleObj': self})
+            response['Cache-Control'] = 'no-store'
+            return response
         #   Get the ProgramPrintables module for the program
         from esp.program.modules.handlers.programprintables import ProgramPrintables
         for module in prog.getModules():
             if isinstance(module, ProgramPrintables):
                 #   Use it to generate a PDF catalog with the default settings
-                return module.coursecatalog(request, tl, one, two, module, extra, prog)
+                response = module.coursecatalog(request, tl, one, two, module, extra, prog)
+                response['Cache-Control'] = self._catalog_cache_control(closed)
+                return response
         raise ESPError('Unable to generate a PDF catalog because the ProgramPrintables module is not installed for this program.', log=False)
 
     @aux_call
@@ -676,7 +890,7 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             clsid = extra
 
-        classes = ClassSubject.objects.filter(id = clsid)
+        classes = filter_by_id(ClassSubject.objects, clsid)
 
         if not classes.exists():
             raise Http404("Class not found")
@@ -689,33 +903,39 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @staticmethod
     def clearslot_logic(request, tl, one, two, module, extra, prog):
-        """ Clear the specified timeslot from a student registration and return True if there are no errors """
+        """ Clear the specified timeslot from a student registration and return the IDs of the removed sections """
         verbs = RTC.getVisibleRegistrationTypeNames(prog)
+        slot_id = parse_id(extra)
+        if slot_id is None:
+            raise Http404("Invalid timeslot ID")
         #   Get the sections that the student is registered for in the specified timeslot.
-        oldclasses = request.user.getSections(prog).filter(meeting_times=extra)
+        oldclasses = request.user.getSections(prog).filter(meeting_times=slot_id)
         #   Narrow this down to one class if we're using the priority system.
         if 'sec_id' in request.GET:
-            oldclasses = oldclasses.filter(id=request.GET['sec_id'])
-        #   Take the student out if constraints allow
+            sec_id = parse_id(request.GET['sec_id'])
+            if sec_id is None:
+                raise Http404("Invalid section ID")
+            oldclasses = oldclasses.filter(id=sec_id)
+        #   Collect the IDs as a list in case the queryset changes.
+        oldclasses = list(oldclasses)
+        removed_ids = [sec.id for sec in oldclasses]
+        check_schedule_constraints(request, prog, remove_sections=oldclasses)
+        #   Take the student out.
         for sec in oldclasses:
-            result = sec.cannotRemove(request.user)
-            if result and not hasattr(request.user, "onsite_local"):
-                return result
-            else:
-                sec.unpreregister_student(request.user, verbs)
-        #   Return the ID of classes that were removed.
-        return oldclasses.values_list('id', flat=True)
+            sec.unpreregister_student(request.user, verbs)
+        #   Return the IDs of the classes that were removed.
+        return removed_ids
 
     @aux_call
     @needs_student_in_grade
     @meets_any_deadline(['/Classes', '/Removal'])
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
-        result = self.clearslot_logic(request, tl, one, two, module, extra, prog)
-        if isinstance(result, str):
-            raise ESPError(result, log=False)
-        else:
-            return self.goToCore(tl)
+        try:
+            self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        except ScheduleConstraintError as inst:
+            messages.error(request, str(inst))
+        return self.goToCore(tl)
 
     @aux_call
     @needs_student_in_grade
@@ -725,7 +945,12 @@ class StudentClassRegModule(ProgramModuleObj):
         if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return self.clearslot(request, tl, one, two, module, extra, prog)
 
-        cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        try:
+            cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        except ScheduleConstraintError as inst:
+            #   Matches the shape ajax_addclass uses, so the page can show it inline.
+            return HttpResponse(json.dumps({'status': 200, 'error': str(inst)}),
+                                content_type='application/json')
 
         if 'no_schedule' in request.POST:
             resp = HttpResponse(content_type='application/json')
@@ -763,12 +988,14 @@ class StudentClassRegModule(ProgramModuleObj):
         if not sections.exists():
             raise ESPError("No registrations found for this day.", log=False)
 
+        try:
+            check_schedule_constraints(request, prog, remove_sections=sections)
+        except ScheduleConstraintError as inst:
+            messages.error(request, str(inst))
+            return self.goToCore(tl)
+
         for sec in sections:
-            result = sec.cannotRemove(request.user)
-            if result and not hasattr(request.user, "onsite_local"):
-                raise ESPError("Cannot remove class %s: %s" % (sec.emailcode(), result), log=False)
-            else:
-                sec.unpreregister_student(request.user, verbs)
+            sec.unpreregister_student(request.user, verbs)
 
         return self.goToCore(tl)
 
@@ -781,7 +1008,13 @@ class StudentClassRegModule(ProgramModuleObj):
 
         module = prog.getModule('OnSiteClassList')
         if module:
-            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options={}, template_name='allclass_fragment.html')
+            # Forward only supported public filtering params to avoid exposing
+            # internal classList options.
+            options = {}
+            for key in ('start', 'end', 'sorting'):
+                if key in request.GET:
+                    options[key] = request.GET.get(key)
+            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options=options, template_name='openclasses.html')
 
         #  Otherwise this will be a 404
         return None

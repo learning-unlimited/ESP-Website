@@ -49,7 +49,7 @@ class TimeslotForm(forms.Form):
     def clean(self):
         cleaned_data = super().clean()
         if cleaned_data.get('openclass') and cleaned_data.get('compulsory'):
-           raise forms.ValidationError("A timeslot cannot be both 'Open Class' and 'Compulsory' at the same time.")
+            raise forms.ValidationError("A timeslot cannot be both 'Open Class' and 'Compulsory' at the same time.")
         return cleaned_data
 
     def save_timeslot(self, program, slot):

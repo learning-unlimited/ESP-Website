@@ -1,0 +1,15 @@
+/* Keep the menu button on the same row as the brand on phones; a long
+   brand wraps onto a second line instead of pushing the button down. */
+@media (max-width: 767.98px) {
+  .navbar-brand {
+    max-width: calc(100% - 5rem);
+    white-space: normal;
+  }
+}
+
+/* Give the sidebar nav list a top margin so the first item
+   (e.g. the program link) doesn't render flush against the
+   navbar / admin bar and get visually clipped. */
+#sidebar .nav {
+  margin-top: 15px;
+}

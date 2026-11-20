@@ -1,7 +1,11 @@
+import logging
+
 from django import forms
 from esp.users.forms import _states
 from esp.tagdict.models import Tag
-from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser, FormWithTagInitialValues, StrippedCharField
+
+logger = logging.getLogger(__name__)
+from esp.utils.forms import BootstrapFormMixin, SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser, FormWithTagInitialValues, StrippedCharField
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget
 from esp.users.models import ESPUser, K12School, StudentInfo, AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC, AFFILIATION_OTHER, AFFILIATION_NONE
@@ -183,7 +187,6 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     studentrep_error = True
 
     def __init__(self, user=None, *args, **kwargs):
-        from esp.users.models import ESPUser
         super().__init__(user, *args, **kwargs)
 
         self.fields['shirt_size'].choices = [('', '')]+[(x.strip(), x.strip()) for x in Tag.getTag('student_shirt_sizes').split(',')]
@@ -278,7 +281,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             return gy
         try:
             gy = str(abs(int(gy)))
-        except ValueError:
+        except (ValueError, TypeError):
             if gy != 'G':
                 raise forms.ValidationError("Invalid grade value.")
         return gy
@@ -423,15 +426,25 @@ _undeletable_fields_all = ['e_mail']
 
 # A list of student fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_students = ['graduation_year']
-class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
+class StudentProfileForm(BootstrapFormMixin, UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
     """ Form for student profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('student_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_students:
+        for field_name in [x.strip().lower() for x in Tag.getTag('student_profile_hide_fields').split(',') if x.strip()]:
+            if field_name not in self.fields:
+                logger.warning(
+                    "student_profile_hide_fields: '%s' is not a recognized "
+                    "field name and will be ignored. Valid field names are: %s",
+                    field_name, ', '.join(sorted(self.fields.keys())),
+                )
+                continue
+            if field_name not in _undeletable_fields_all + _undeletable_fields_students:
                 del self.fields[field_name]
             if field_name == 'phone_cell' and 'receive_txt_message' in self.fields:
                 del self.fields['receive_txt_message']
+        if not Tag.getBooleanTag('student_profile_show_guardian_info'):
+            for field_name in GuardContactForm.declared_fields:
+                self.fields.pop(field_name, None)
     def clean(self):
         cleaned_data = super(StudentProfileForm, self).clean()
 
@@ -453,41 +466,69 @@ class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, St
 
 # A list of teacher fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_teachers = []
-class TeacherProfileForm(UserContactForm, TeacherInfoForm):
+class TeacherProfileForm(BootstrapFormMixin, UserContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('teacher_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_teachers:
+        for field_name in [x.strip().lower() for x in Tag.getTag('teacher_profile_hide_fields').split(',') if x.strip()]:
+            if field_name not in self.fields:
+                logger.warning(
+                    "teacher_profile_hide_fields: '%s' is not a recognized "
+                    "field name and will be ignored. Valid field names are: %s",
+                    field_name, ', '.join(sorted(self.fields.keys())),
+                )
+                continue
+            if field_name not in _undeletable_fields_all + _undeletable_fields_teachers:
                 del self.fields[field_name]
 
 # A list of guardian fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_guardians = []
-class GuardianProfileForm(UserContactForm, GuardianInfoForm):
+class GuardianProfileForm(BootstrapFormMixin, UserContactForm, GuardianInfoForm):
     """ Form for guardian profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('guardian_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_guardians:
+        for field_name in [x.strip().lower() for x in Tag.getTag('guardian_profile_hide_fields').split(',') if x.strip()]:
+            if field_name not in self.fields:
+                logger.warning(
+                    "guardian_profile_hide_fields: '%s' is not a recognized "
+                    "field name and will be ignored. Valid field names are: %s",
+                    field_name, ', '.join(sorted(self.fields.keys())),
+                )
+                continue
+            if field_name not in _undeletable_fields_all + _undeletable_fields_guardians:
                 del self.fields[field_name]
 
 # A list of educator fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_educators = []
-class EducatorProfileForm(UserContactForm, EducatorInfoForm):
+class EducatorProfileForm(BootstrapFormMixin, UserContactForm, EducatorInfoForm):
     """ Form for educator profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('educator_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_educators:
+        for field_name in [x.strip().lower() for x in Tag.getTag('educator_profile_hide_fields').split(',') if x.strip()]:
+            if field_name not in self.fields:
+                logger.warning(
+                    "educator_profile_hide_fields: '%s' is not a recognized "
+                    "field name and will be ignored. Valid field names are: %s",
+                    field_name, ', '.join(sorted(self.fields.keys())),
+                )
+                continue
+            if field_name not in _undeletable_fields_all + _undeletable_fields_educators:
                 del self.fields[field_name]
 
 # A list of volunteer fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_volunteers = []
-class VolunteerProfileForm(UserContactForm):
+class VolunteerProfileForm(BootstrapFormMixin, UserContactForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('volunteer_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_volunteers:
+        for field_name in [x.strip().lower() for x in Tag.getTag('volunteer_profile_hide_fields').split(',') if x.strip()]:
+            if field_name not in self.fields:
+                logger.warning(
+                    "volunteer_profile_hide_fields: '%s' is not a recognized "
+                    "field name and will be ignored. Valid field names are: %s",
+                    field_name, ', '.join(sorted(self.fields.keys())),
+                )
+                continue
+            if field_name not in _undeletable_fields_all + _undeletable_fields_volunteers:
                 del self.fields[field_name]
 
 class VisitingUserInfo(FormUnrestrictedOtherUser):

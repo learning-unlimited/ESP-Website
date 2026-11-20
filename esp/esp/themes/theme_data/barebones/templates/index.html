@@ -4,10 +4,10 @@
 
 {% block content %}
 
-{% block heading %}  
-<div class="row-fluid">
-  <div class="span12">
-    <div class="hero-unit">
+{% block heading %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="jumbotron">
       <h1>Welcome to {{ settings.ORGANIZATION_SHORT_NAME }}</h1>
     </div>
   </div>
@@ -17,18 +17,18 @@
 {% load render_qsd %}
 
 {% inline_qsd_block "homepage_qsdpart" %}
-<div class="row-fluid">
-  <div class="span4">
+<div class="row">
+  <div class="col-md-4">
     <a href="/learn/index.html"><h2>Learn</h2></a>
     <p>Edit this page to serve as a starting point for your students.</p>
   </div>
-  <div class="span4">
+  <div class="col-md-4">
     <a href="/teach/index.html"><h2>Teach</h2></a>
-        <p>Edit this page to serve as a starting point for your teachers.</p>
+    <p>Edit this page to serve as a starting point for your teachers.</p>
   </div>
-  <div class="span4">
+  <div class="col-md-4">
     <a href="/volunteer/index.html"><h2>Volunteer</h2></a>
-        <p>Edit this page to serve as a starting point for your volunteers.</p>
+    <p>Edit this page to serve as a starting point for your volunteers.</p>
   </div>
 </div>
 {% end_inline_qsd_block %}

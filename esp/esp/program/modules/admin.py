@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from django.contrib import admin
 from esp.admin import admin_site
-from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo
+from esp.program.modules.program_settings import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo
 from esp.program.modules.base import ProgramModuleObj
 
 class Admin_DBReceipt(admin.ModelAdmin):

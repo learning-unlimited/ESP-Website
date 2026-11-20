@@ -2,6 +2,17 @@ from collections import Counter
 from dataclasses import dataclass, asdict
 from typing import List, Optional
 
+# Admin search category labels. These must match the section headers shown on
+# the admin dashboard (directory.html) so the search dropdown groups results
+# under the same names the admin sees on the page. Defined here so every
+# module's get_admin_search_entry() references one shared taxonomy.
+SEARCH_CATEGORY_SETTINGS = "Program Management and Settings"
+SEARCH_CATEGORY_CLASSES = "Class Management and Scheduling"
+SEARCH_CATEGORY_REGISTRATION = "Registration"
+SEARCH_CATEGORY_PARTICIPANTS = "Participants and Communication"
+SEARCH_CATEGORY_PRINTABLES = "Printables"
+SEARCH_CATEGORY_FINANCIAL = "Financial and Accounting"
+
 # Views that require a class ID or extra path segment; linking to /tl/prog/view
 # would not open a valid page. Excluded from admin search so users don't get
 # broken links.

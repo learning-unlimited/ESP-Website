@@ -93,11 +93,12 @@ You will need to use the main settings page for a specific program to modify whi
     <br />
 
     <table align="center" cellpadding="0" cellspacing="0" width="100%">
-        <tr><th colspan="4">Class Categories</th></tr>
+        <tr><th colspan="5">Class Categories</th></tr>
         <tr>
             <td><b>Category</b></td>
             <td><b>Symbol</b></td>
             <td><b>Seq</b></td>
+            <td><b>Is Lunch?</b></td>
             <td><b>Options</b></td>
         </tr>
         {% for cat in categories %}
@@ -105,6 +106,7 @@ You will need to use the main settings page for a specific program to modify whi
             <td>{{ cat.category }}</td>
             <td>{{ cat.symbol }}</td>
             <td>{{ cat.seq }}</td>
+            <td>{% if cat.is_lunch %}Yes{% else %}No{% endif %}</td>
             <td>
                 <center>
                     <form method="post">
