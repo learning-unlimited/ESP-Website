@@ -1,14 +1,15 @@
 from django.http import HttpResponse
-from esp.program.models import ClassCategories, ModeratorRecord
+from esp.program.models import ClassCategories, ClassSection, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
-from esp.resources.models import ResourceRequest, ResourceType
+from esp.resources.models import Resource, ResourceRequest
 from copy import deepcopy
 from esp.cal.models import *
 from datetime import date
 from collections import defaultdict
 from esp.utils.web import render_to_response
 from esp.tagdict.models import Tag
+from esp.cal.models import Event
 
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -132,99 +133,12 @@ class SchedulingCheckRunner:
 
         self.lunch_blocks = self._getLunchByDay()
 
-        # Build section snapshots once to keep diagnostics consistent even if
-        # schedule data changes while checks are running.
-        self._build_section_snapshots()
-        self._build_moderator_record_snapshot()
-
         #things that we'll calculate lazilly
+        self.built_snapshot = False
         self.calculated_classes_missing_resources = False
         self.d_categories = []
         self.d_grades = []
-
-    def _build_section_snapshots(self):
-        sections = self.p.sections()
-        if self.incl_unreview:
-            # Filter out rejected/cancelled sections.
-            sections = sections.exclude(status__lt=0)
-        else:
-            # Filter out non-approved sections.
-            sections = sections.exclude(status__lte=0)
-
-        # Filter out unscheduled classes and lunch blocks.
-        sections = sections.exclude(resourceassignment__isnull=True)
-        sections = sections.exclude(parent_class__category__is_lunch=True)
-
-        sections = sections.select_related(
-            'parent_class',
-            'parent_class__parent_program',
-            'parent_class__category',
-        )
-        sections = sections.prefetch_related(
-            'meeting_times',
-            'resourceassignment_set',
-            'resourceassignment_set__resource',
-            'resourceassignment_set__resource__event',
-            'resourceassignment_set__resource__res_type',
-            'parent_class__teachers',
-            'moderators',
-        )
-
-        # Evaluate immediately to freeze the result set for this run.
-        self.all_sections = list(sections)
-        open_category_id = self.p.open_class_category.id
-        self.all_nonwalkins = [
-            section for section in self.all_sections
-            if section.parent_class.category_id != open_category_id
-        ]
-
-        # Build fast in-memory indices from prefetched relations so diagnostics
-        # do not perform additional section/meeting/resource queries.
-        self._meeting_times_by_section = {}
-        self._resources_by_section = {}
-        self._classrooms_by_section = {}
-        self._teachers_by_section = {}
-        self._moderators_by_section = {}
-        self._teacher_by_id = {}
-        self._sections_by_teacher = defaultdict(list)
-        self._sections_by_class = defaultdict(list)
-
-        for section in self.all_sections:
-            meeting_times = sorted(section.meeting_times.all(), key=lambda ev: ev.start)
-            resources = [assignment.resource for assignment in section.resourceassignment_set.all()]
-            classrooms = [resource for resource in resources if resource and resource.res_type and resource.res_type.name == 'Classroom']
-            teachers = list(section.parent_class.teachers.all())
-            moderators = list(section.moderators.all())
-
-            self._meeting_times_by_section[section.id] = meeting_times
-            self._resources_by_section[section.id] = resources
-            self._classrooms_by_section[section.id] = classrooms
-            self._teachers_by_section[section.id] = teachers
-            self._moderators_by_section[section.id] = moderators
-
-            for teacher in teachers:
-                self._teacher_by_id[teacher.id] = teacher
-                self._sections_by_teacher[teacher.id].append(section)
-            self._sections_by_class[section.parent_class_id].append(section)
-
-    def _build_moderator_record_snapshot(self):
-        moderator_records = list(ModeratorRecord.objects.filter(program=self.p).prefetch_related('class_categories'))
-        self._moderator_records_by_user = {record.user_id: record for record in moderator_records}
-
-    def _section_meeting_times(self, section):
-        return self._meeting_times_by_section.get(section.id, [])
-
-    def _section_resources(self, section):
-        return self._resources_by_section.get(section.id, [])
-
-    def _section_classrooms(self, section):
-        return self._classrooms_by_section.get(section.id, [])
-
-    def _section_teachers(self, section):
-        return self._teachers_by_section.get(section.id, [])
-
-    def _section_moderators(self, section):
-        return self._moderators_by_section.get(section.id, [])
+        self._available_times_by_user = {}
 
     def _getLunchByDay(self):
         #   Get IDs of timeslots allocated to lunch by day
@@ -302,11 +216,134 @@ class SchedulingCheckRunner:
             d[i] = slot()
         return d
 
-    #memoize the list of all class sections in this program
+    def _build_snapshot(self):
+        """Load the schedule once so every check in this run sees the same data."""
+        if self.built_snapshot:
+            return
+
+        qs = self.p.sections()
+        if self.incl_unreview:
+            #filter out rejected/cancelled sections
+            qs = qs.exclude(status__lt=0)
+        else:
+            #filter out non-approved
+            qs = qs.exclude(status__lte=0)
+        #filter out unscheduled classes
+        qs = qs.exclude(resourceassignment__isnull=True)
+        #filter out lunch
+        qs = qs.exclude(parent_class__category__is_lunch=True)
+        qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
+        qs = qs.prefetch_related('meeting_times', 'resourceassignment_set',
+                                 'resourceassignment_set__resource',
+                                 'resourceassignment_set__resource__res_type',
+                                 'resourceassignment_set__resource__event',
+                                 'resourcerequest_set', 'resourcerequest_set__res_type',
+                                 'parent_class__teachers', 'moderators')
+
+        self.all_sections = list(qs)
+        open_class_category_id = self.p.open_class_category.id
+        self.all_nonwalkins = [s for s in self.all_sections
+                               if s.parent_class.category_id != open_class_category_id]
+
+        self._meeting_times = {}
+        self._resources = {}
+        self._classrooms = {}
+        self._classroom_by_time = {}
+        self._teachers = {}
+        self._moderators = {}
+        self._requests = {}
+        self._sections_by_teacher = defaultdict(list)
+        self._sections_by_class = defaultdict(list)
+
+        for section in self.all_sections:
+            meeting_times = sorted(section.meeting_times.all(), key=lambda event: event.start)
+            resources = [a.resource for a in section.resourceassignment_set.all()]
+            #   Ordered by timeslot so classrooms[0] is the room the section starts in.
+            classrooms = sorted((r for r in resources if r.res_type.name == 'Classroom'),
+                                key=lambda room: (room.event.start, room.id))
+            teachers = list(section.parent_class.teachers.all())
+
+            self._meeting_times[section.id] = meeting_times
+            self._resources[section.id] = resources
+            self._classrooms[section.id] = classrooms
+            self._classroom_by_time[section.id] = {room.event_id: room for room in classrooms}
+            self._teachers[section.id] = teachers
+            self._moderators[section.id] = list(section.moderators.all())
+            self._requests[section.id] = list(section.resourcerequest_set.all())
+
+            for teacher in teachers:
+                self._sections_by_teacher[teacher].append(section)
+            self._sections_by_class[section.parent_class_id].append(section)
+
+        self._build_furnishings_snapshot()
+        self._moderator_categories = {
+            record.user_id: list(record.class_categories.all())
+            for record in ModeratorRecord.objects.filter(program=self.p)
+                                                 .prefetch_related('class_categories')
+        }
+        self.built_snapshot = True
+
+    def _build_furnishings_snapshot(self):
+        """Index each classroom group's resource types, mirroring Resource.associated_resources()."""
+        res_group_ids = {room.res_group_id
+                         for rooms in self._classrooms.values()
+                         for room in rooms
+                         if room.res_group_id is not None}
+        furnishing_types = defaultdict(set)
+        if res_group_ids:
+            grouped = Resource.objects.filter(res_group__in=res_group_ids) \
+                                      .exclude(res_type__name='Classroom') \
+                                      .values_list('res_group_id', 'res_type_id')
+            for res_group_id, res_type_id in grouped:
+                furnishing_types[res_group_id].add(res_type_id)
+        #   Plain dict so reads cannot add keys to the snapshot.
+        self._furnishing_types_by_group = dict(furnishing_types)
+
+    def _unsatisfied_requests(self, section):
+        """The snapshot equivalent of ClassSection.unsatisfied_requests()."""
+        requests = self._requests[section.id]
+        classrooms = self._classrooms[section.id]
+        if not classrooms:
+            return requests
+        satisfied = self._furnishing_types_by_group.get(classrooms[0].res_group_id, frozenset())
+        return [request for request in requests if request.res_type_id not in satisfied]
+
     def _all_class_sections(self, include_walkins=True):
-        if include_walkins:
-            return self.all_sections
-        return self.all_nonwalkins
+        self._build_snapshot()
+        return self.all_sections if include_walkins else self.all_nonwalkins
+
+    def _section_meeting_times(self, section):
+        return self._meeting_times[section.id]
+
+    def _section_resources(self, section):
+        return self._resources[section.id]
+
+    def _section_classrooms(self, section):
+        return self._classrooms[section.id]
+
+    def _section_room_at(self, section, timeslot):
+        return self._classroom_by_time[section.id].get(timeslot.id)
+
+    def _section_teachers(self, section):
+        return self._teachers[section.id]
+
+    def _section_moderators(self, section):
+        return self._moderators[section.id]
+
+    def _sections_by_teacher_index(self):
+        self._build_snapshot()
+        return self._sections_by_teacher
+
+    def _sections_for_class(self, class_id):
+        self._build_snapshot()
+        #   Tag JSON may spell ids as strings, as the old queryset accepted.
+        return self._sections_by_class.get(int(class_id), [])
+
+    def _available_times(self, user):
+        if user not in self._available_times_by_user:
+            self._available_times_by_user[user] = set(
+                user.getAvailableTimes(self.p, ignore_classes=True, ignore_moderation=True))
+        return self._available_times_by_user[user]
 
     #################################################
     #
@@ -367,10 +404,12 @@ class SchedulingCheckRunner:
         return self.formatter.format_list(output, ["Classes"])
 
     def unapproved_scheduled_classes(self):
-        output = []
-        for sec in self._all_class_sections():
-            if sec.status < 10 and (self._section_meeting_times(sec) or self._section_resources(sec)):
-                output.append(sec)
+        #   Looks outside the snapshot, which holds only approved sections.
+        sections = ClassSection.objects.filter(status__lt=10, parent_class__parent_program=self.p) \
+                                       .select_related('parent_class') \
+                                       .prefetch_related('meeting_times', 'resourceassignment_set')
+        output = [sec for sec in sections
+                  if sec.meeting_times.all() or sec.resourceassignment_set.all()]
         return self.formatter.format_list(output, ["Classes"])
 
     def teachers_teaching_two_classes_same_time(self):
@@ -423,40 +462,37 @@ class SchedulingCheckRunner:
         return self.formatter.format_table(l, {'headings': ["Section", "Class Max", "Room Max"]})
 
     def hungry_teachers(self, ignore_open_classes=True):
-        lunches = self.lunch_blocks
-        if ignore_open_classes:
-            open_class_cat = self.p.open_class_category
-        all_sections = self._all_class_sections()
+        open_class_cat_id = self.p.open_class_category.id if ignore_open_classes else None
+
+        #   Every section per (timeslot, teacher), so a double-booked teacher's
+        #   open class cannot hide behind the regular one scheduled beside it.
+        sections_by_block = defaultdict(lambda: defaultdict(list))
+        for s in self._all_class_sections():
+            for t in self._section_meeting_times(s):
+                for teacher in self._section_teachers(s):
+                    sections_by_block[t][teacher].append(s)
+
         bads = []
-        for lunch in lunches:
-            if lunch:
-                candidate_teachers = set()
-                for block in lunch:
-                    for section in all_sections:
-                        if block in self._section_meeting_times(section):
-                            for teacher in self._section_teachers(section):
-                                candidate_teachers.add(teacher)
-                for t in candidate_teachers:
-                    classes = []
-                    for block in lunch:
-                        matching = None
-                        for section in self._sections_by_teacher.get(t.id, []):
-                            if block in self._section_meeting_times(section):
-                                matching = section
-                                break
-                        if matching is None:
-                            classes = []
-                            break
-                        classes.append(matching)
-                    if classes and (not ignore_open_classes or open_class_cat.id not in [c.category.id for c in classes]):
-                        #converts the list of class section objects to a single string
-                        str1 = ', '
-                        classes = str1.join([str(c) for c in classes])
-                        bads.append({
-                            'Username': t,
-                            'Teacher Name': t.name(),
-                            'Classes over lunch': classes,
-                            })
+        for lunch in self.lunch_blocks:
+            if not lunch:
+                continue
+            #   Teachers busy for every block of this day's lunch.
+            teachers = set(sections_by_block[lunch[0]])
+            for block in lunch[1:]:
+                teachers &= set(sections_by_block[block])
+            for t in sorted(teachers, key=lambda teacher: teacher.username):
+                blocks = [sections_by_block[block][t] for block in lunch]
+                if ignore_open_classes and any(c.category.id == open_class_cat_id
+                                               for block in blocks for c in block):
+                    continue
+                #converts the list of class section objects to a single string
+                str1 = ', '
+                classes = str1.join([str(block[0]) for block in blocks])
+                bads.append({
+                    'Username': t,
+                    'Teacher Name': t.name(),
+                    'Classes over lunch': classes,
+                    })
         return self.formatter.format_table(bads,
                         {'headings': ['Username', 'Teacher Name', 'Classes over lunch']},
                         help_text="A list of teachers scheduled to teach " +
@@ -584,7 +620,7 @@ class SchedulingCheckRunner:
             first_hour = meeting_times[0] if meeting_times else None
             classrooms = self._section_classrooms(s)
             classroom = classrooms[0] if classrooms else None
-            unsatisfied_requests = s.unsatisfied_requests()
+            unsatisfied_requests = self._unsatisfied_requests(s)
             if len(unsatisfied_requests) > 0:
                 for u in unsatisfied_requests:
                     #I'm not sure how MIT specific is.  I don't have access to other databases to know whether this will work
@@ -595,26 +631,10 @@ class SchedulingCheckRunner:
                     else:
                         l_resources.append({ "Section": s, "First Hour": first_hour, "Unfulfilled Request": u, "Classroom": classroom })
             for moderator in self._section_moderators(s):
-                mod_rec = self._moderator_records_by_user.get(moderator.id)
-                if mod_rec is None:
-                    needs_entry = True
-                    categories = None
-                else:
-                    # Cache class_categories on the ModeratorRecord instance to avoid
-                    # repeated database queries and use an in-memory collection instead.
-                    categories = getattr(mod_rec, '_class_categories_cache', None)
-                    if categories is None:
-                        categories = list(mod_rec.class_categories.all())
-                        mod_rec._class_categories_cache = categories
-                    needs_entry = s.parent_class.category not in categories
-                if needs_entry:
-                    if mod_rec is None:
-                        mod_recs_text = []
-                    else:
-                        mod_recs_text = [cat.category for cat in list(mod_rec.class_categories.all())]
-                    if not mod_recs_text:
-                        mod_recs_text = ["No selection"]
-                    mod_recs_list = ", ".join(mod_recs_text)
+                #   None means the moderator has no ModeratorRecord at all.
+                categories = self._moderator_categories.get(moderator.id)
+                if categories is None or s.parent_class.category not in categories:
+                    mod_recs_list = ", ".join(cat.category for cat in categories or []) or "No selection"
                     l_mod.append({ "Section": s, "Section Time": first_hour, "Requested Category": mod_recs_list, self.p.getModeratorTitle(): moderator })
         self.l_wrong_classroom_type = l_classrooms
         self.l_missing_resources = l_resources
@@ -657,46 +677,30 @@ class SchedulingCheckRunner:
         l = []
         for s in self._all_class_sections():
             for t in self._section_teachers(s):
-                available = t.getAvailableTimes(s.parent_program, ignore_classes=True, ignore_moderation=True)
+                available = self._available_times(t)
                 for e in self._section_meeting_times(s):
                     if e not in available:
                         l.append({"Teacher": t, "Time": e, "Section": s})
         return self.formatter.format_table(l, {"headings": ["Section", "Teacher", "Time"]})
 
     def teachers_who_like_running(self):
-        def first_start_time(section):
-            meeting_times = self._section_meeting_times(section)
-            return meeting_times[0].start if meeting_times else None
-
         l = []
-        for teacher_id, sections in self._sections_by_teacher.items():
-            teacher = self._teacher_by_id.get(teacher_id)
-            if teacher is None:
-                continue
-            sections_sorted = sorted(
-                sections,
-                key=lambda section: (first_start_time(section) is None, first_start_time(section)),
-            )
-            for i in range(len(sections_sorted) - 1):
-                try:
-                    first_section = sections_sorted[i]
-                    second_section = sections_sorted[i + 1]
-                    second_meeting_times = self._section_meeting_times(second_section)
-                    first_meeting_times = self._section_meeting_times(first_section)
-                    if not second_meeting_times or not first_meeting_times:
-                        continue
-                    time1 = second_meeting_times[0]
-                    time0 = max(first_meeting_times, key=lambda meeting_time: meeting_time.end)
-                    rooms0 = self._section_classrooms(first_section)
-                    rooms1 = self._section_classrooms(second_section)
-                    room0 = rooms0[0] if rooms0 else None
-                    room1 = rooms1[0] if rooms1 else None
-                    if (room0 and room1 and
-                        (time1.start-time0.end).total_seconds() < 1200 and
-                        room0.name != room1.name):
-                        l.append({"Username": teacher, "Teacher Name": teacher.name(), "Section 1": first_section, "Section 2": second_section, "Room 1": room0, "Room 2": room1})
-                except BaseException:
+        sections_by_teacher = self._sections_by_teacher_index()
+        for teacher in sorted(sections_by_teacher, key=lambda user: user.username):
+            #   Sections without meeting times cannot be run between.
+            sections = sorted((s for s in sections_by_teacher[teacher]
+                               if self._section_meeting_times(s)),
+                              key=lambda s: (self._section_meeting_times(s)[0].start, s.id))
+            for first, second in zip(sections, sections[1:]):
+                time0 = max(self._section_meeting_times(first), key=lambda event: event.end)
+                time1 = self._section_meeting_times(second)[0]
+                #   The room they finish in versus the room they start in.
+                room0 = self._section_room_at(first, time0)
+                room1 = self._section_room_at(second, time1)
+                if room0 is None or room1 is None:
                     continue
+                if (time1.start-time0.end).total_seconds() < 1200 and room0.name != room1.name:
+                    l.append({"Username": teacher, "Teacher Name": teacher.name(), "Section 1": first, "Section 2": second, "Room 1": room0, "Room 2": room1})
         return self.formatter.format_table(l,
                         {"headings": ["Username", "Teacher Name", "Section 1", "Section 2",
                                       "Room 1", "Room 2"]},
@@ -709,26 +713,23 @@ class SchedulingCheckRunner:
     def no_overlap_classes(self):
         '''Gets a list of classes from the tag no_overlap_classes, and checks that they don't overlap.  The tag should contain a dict of {'comment': [list,of,class,ids]}.'''
         classes = json.loads(Tag.getProgramTag('no_overlap_classes',program=self.p))
-        classes_lookup = {}
-        for section in self._all_class_sections():
-            classes_lookup[section.parent_class_id] = section.parent_class
         bad_classes = []
         for key, class_ids in classes.items():
-            overlaps = {}
+            #   A class with several sections in one block counts once; it
+            #   cannot overlap itself.  Keyed by id, as descriptions can repeat.
+            overlaps = defaultdict(set)
+            descriptions = {}
             for class_id in class_ids:
-                for section in self._sections_by_class.get(class_id, []):
+                for section in self._sections_for_class(class_id):
                     for meeting_time in self._section_meeting_times(section):
-                        event = meeting_time.description
-                        if event in overlaps and class_id in classes_lookup:
-                            overlaps[event].append(classes_lookup[class_id])
-                        elif class_id in classes_lookup:
-                            overlaps[event] = [classes_lookup[class_id]]
-            for event in overlaps:
-                if len(overlaps[event])>1:
+                        overlaps[meeting_time.id].add(section.parent_class)
+                        descriptions[meeting_time.id] = meeting_time.description
+            for event_id, overlapping in sorted(overlaps.items()):
+                if len(overlapping)>1:
                     bad_classes.append({
                         'Comment': key,
-                        'Timeblock': event,
-                        'Classes': overlaps[event]
+                        'Timeblock': descriptions[event_id],
+                        'Classes': sorted(overlapping, key=lambda cls: cls.id)
                         })
         return self.formatter.format_table(bad_classes,
                 {'headings': ['Comment', 'Timeblock', 'Classes']},
@@ -758,15 +759,18 @@ class SchedulingCheckRunner:
                 res_type__program=self.p, desired_value__iregex=type_regex)
 
             for rr in resource_requests:
+                #   Read the rooms once; querying twice can see a reschedule
+                #   land in between and index into an empty result.
+                rooms = list(rr.target.classrooms()) if rr.target_id else []
                 if all(room.id in matching_rooms or
                        re.match(type_regex, room.name, re.IGNORECASE)
-                       for room in rr.target.classrooms()):
+                       for room in rooms):
                     continue
 
                 mismatches.append({
                         HEADINGS[0]: rr.target,
                         HEADINGS[1]: rr.desired_value,
-                        HEADINGS[2]: rr.target.classrooms()[0].name
+                        HEADINGS[2]: rooms[0].name
                         })
 
         return self.formatter.format_table(mismatches,
@@ -818,7 +822,7 @@ class SchedulingCheckRunner:
         l = []
         for s in self._all_class_sections():
             for m in self._section_moderators(s):
-                available = m.getAvailableTimes(s.parent_program, ignore_classes=True, ignore_moderation=True)
+                available = self._available_times(m)
                 for e in self._section_meeting_times(s):
                     if e not in available:
                         l.append({self.p.getModeratorTitle(): m, "Time": e, "Section": s})
@@ -842,7 +846,6 @@ class SchedulingCheckRunner:
         """Build moderator->room and room->moderators maps for each timeslot."""
         by_moderator = defaultdict(dict)
         by_room = defaultdict(lambda: defaultdict(set))
-        classroom_type = ResourceType.get_or_create('Classroom')
 
         for section in self._all_class_sections():
             meeting_times = set(self._section_meeting_times(section))
@@ -850,10 +853,9 @@ class SchedulingCheckRunner:
                 continue
 
             room_by_timeslot = {}
-            for assignment in section.resourceassignment_set.all():
-                resource = assignment.resource
-                if resource.event in meeting_times and resource.res_type_id == classroom_type.id:
-                    room_by_timeslot[resource.event] = resource.name
+            for room in self._section_classrooms(section):
+                if room.event in meeting_times:
+                    room_by_timeslot[room.event] = room.name
 
             for timeslot, room_name in room_by_timeslot.items():
                 for moderator in self._section_moderators(section):
