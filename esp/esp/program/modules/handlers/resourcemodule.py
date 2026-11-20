@@ -310,8 +310,8 @@ class ResourceModule(ProgramModuleObj):
                     start = orig_timeslot.start + time_delta,
                     end   = orig_timeslot.end + time_delta,
                 )
-                #   Save the new timeslot only if it doesn't duplicate an existing one
-                if import_mode == 'save' and not Event.objects.filter(program=new_timeslot.program, start=new_timeslot.start, end=new_timeslot.end).exists() and str(orig_timeslot.id) in to_import:
+                #   Save the new timeslot only if it doesn't duplicate an existing one of the same type
+                if import_mode == 'save' and not Event.objects.filter(program=new_timeslot.program, start=new_timeslot.start, end=new_timeslot.end, event_type=new_timeslot.event_type).exists() and str(orig_timeslot.id) in to_import:
                     new_timeslot.save()
                 else:
                     new_timeslot.old_id = orig_timeslot.id

@@ -34,10 +34,11 @@ Learning Unlimited, Inc.
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
-from esp.cal.models import Event
+from esp.cal.models import Event, EventType
 from esp.resources.models import Resource, ResourceType
 
 import re
+from datetime import datetime
 
 class ResourceModuleTest(ProgramFrameworkTest):
     ## This test is very incomplete.
@@ -413,3 +414,28 @@ class ResourceModuleTest(ProgramFrameworkTest):
         self.assertIn('already exists', response.content.decode('UTF-8'))
         slot_b.refresh_from_db()
         self.assertEqual(slot_b.start.hour, 11)
+
+    def testTimeslotImportIgnoresOtherEventTypes(self):
+        """An imported class timeslot is not skipped because a non-class Event shares its times."""
+        self.create_past_program()
+        past_program = self.new_prog
+        # create_past_program's first slot is 07:05-07:55 on 7/7/1901
+        start, end = datetime(2030, 1, 5, 7, 5), datetime(2030, 1, 5, 7, 55)
+        Event.objects.create(
+            program=self.program, start=start, end=end,
+            short_description='Volunteer shift', description='Volunteer shift',
+            event_type=EventType.get_from_desc('Volunteer'))
+        post_data = {
+            'program': str(past_program.id),
+            'start_date': '01/05/2030',
+            'import_confirm': 'yes',
+            'to_import': [str(ts.id) for ts in past_program.getTimeSlots()],
+        }
+
+        response = self.client.post(self._resource_import_url('timeslot'), post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.program.getTimeSlots().filter(start=start, end=end).count(), 1)
+
+        # A retry should still not duplicate the imported class timeslot.
+        self.client.post(self._resource_import_url('timeslot'), post_data)
+        self.assertEqual(self.program.getTimeSlots().filter(start=start, end=end).count(), 1)
