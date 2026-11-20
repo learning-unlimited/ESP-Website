@@ -92,6 +92,7 @@ Bug Fixes
 - Director email addresses and outgoing "From" addresses now accept ``learningu.org`` at any subdomain depth. The rule previously allowed at most one subdomain label, so an address like ``info@a.b.learningu.org`` was rejected even though the director email help text has always described any valid subdomain as acceptable. This applies to the program creation and program settings forms, the ``director_email`` model validator, and the "From" address checks used by the comm panel and automated mail.
 - On the student profile, the "Use my parents as my emergency contact" button is now shown only when the parent/guardian section is on the page, and it copies only the parent/guardian and home address fields that are shown. Previously, with the parent/guardian section turned off (``student_profile_show_guardian_info``) or some of its fields hidden (``student_profile_hide_fields``), clicking the button cleared the matching emergency contact fields.
 - Teachers can now edit their class website pages inline. Inline editing controls and the "Edit this page" button were previously only shown to administrators, even though teachers of a class have permission to edit its pages. Logged-in non-admins now see the editing controls for any page or inline text block they have permission to edit, and nothing else.
+- Creating a survey question type in the admin panel now fails with a validation error if there is no matching question template, instead of creating a question type that crashes any survey that uses it.
 
 Developer Notes
 ===============

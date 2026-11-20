@@ -6,10 +6,14 @@ Tests for esp.survey
 - View tests: Cross-program teacher survey responses page
 """
 import datetime
+from importlib import import_module
+from types import SimpleNamespace
 
+from django.apps import apps as django_apps
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+from django.db import connection
 from django.http import HttpResponse
 from django.test import RequestFactory
 from unittest.mock import MagicMock, patch
@@ -36,11 +40,11 @@ def _setup_roles():
 
 
 # ===== Model Tests =====
-@patch('esp.survey.models.QuestionType.clean')
+
 class ListFieldTest(TestCase):
     """Test the ListField descriptor used in QuestionType."""
 
-    def test_get_returns_tuple(self, mock_clean):
+    def test_get_returns_tuple(self):
         qt = QuestionType.objects.create(
             name='Test Type',
             _param_names='a|b|c',
@@ -49,7 +53,7 @@ class ListFieldTest(TestCase):
         )
         self.assertEqual(qt.param_names, ('a', 'b', 'c'))
 
-    def test_get_empty_string(self, mock_clean):
+    def test_get_empty_string(self):
         qt = QuestionType.objects.create(
             name='Empty Params',
             _param_names='',
@@ -59,7 +63,7 @@ class ListFieldTest(TestCase):
         result = qt.param_names
         self.assertIsInstance(result, tuple)
 
-    def test_set(self, mock_clean):
+    def test_set(self):
         qt = QuestionType.objects.create(
             name='Settable',
             _param_names='',
@@ -114,9 +118,9 @@ class SurveyResponseTest(TestCase):
     def test_time_filled_auto(self):
         self.assertIsNotNone(self.response.time_filled)
 
-@patch('esp.survey.models.QuestionType.clean')
+
 class QuestionTypeTest(TestCase):
-    def test_str_with_params(self, mock_clean):
+    def test_str_with_params(self):
         qt = QuestionType.objects.create(
             name='Rating',
             _param_names='min|max|step',
@@ -126,7 +130,7 @@ class QuestionTypeTest(TestCase):
         result = str(qt)
         self.assertIn('Rating', result)
 
-    def test_is_numeric(self, mock_clean):
+    def test_is_numeric(self):
         qt = QuestionType.objects.create(
             name='Numeric',
             _param_names='',
@@ -135,7 +139,7 @@ class QuestionTypeTest(TestCase):
         )
         self.assertTrue(qt.is_numeric)
 
-    def test_is_countable(self, mock_clean):
+    def test_is_countable(self):
         qt = QuestionType.objects.create(
             name='Countable',
             _param_names='',
@@ -144,24 +148,28 @@ class QuestionTypeTest(TestCase):
         )
         self.assertTrue(qt.is_countable)
 
-    def test_invalid_template_raises_validation_error(self, mock_clean):
-        mock_clean.side_effect = ValidationError({'name': 'No template found'})
-        qt = QuestionType(name='Invalid Type', is_numeric=False, is_countable=False)
-        with self.assertRaises(ValidationError):
-            qt.save()
+    def test_clean_rejects_name_without_template(self):
+        qt = QuestionType(name='open response')
+        with self.assertRaises(ValidationError) as cm:
+            qt.full_clean()
+        self.assertIn('name', cm.exception.message_dict)
 
-    def test_valid_template_saves_successfully(self, mock_clean):
-        mock_clean.side_effect = None
-        qt = QuestionType(name='Long Answer', is_numeric=False, is_countable=False)
-        qt.save()
-        self.assertIsNotNone(qt.pk)
+    def test_clean_accepts_name_with_template(self):
+        QuestionType(name='Long Answer', _param_names='Rows').full_clean()
+
+    def test_migration_question_types_have_templates(self):
+        create_question_types = import_module(
+            'esp.survey.migrations.0002_auto_20200301_1048').create_question_types
+        # Re-run in case a TransactionTestCase flushed the migrated rows.
+        create_question_types(django_apps, SimpleNamespace(connection=connection))
+        for qt in QuestionType.objects.all():
+            with self.subTest(name=qt.name):
+                qt.full_clean()
+
 
 class QuestionTest(TestCase):
     def setUp(self):
         super().setUp()
-        self.patcher = patch('esp.survey.models.QuestionType.clean')
-        self.patcher.start()
-        self.addCleanup(self.patcher.stop)
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.survey = Survey.objects.create(
@@ -260,9 +268,6 @@ class LongAnswerQuestionValidationTest(TestCase):
 class AnswerTest(TestCase):
     def setUp(self):
         super().setUp()
-        self.patcher = patch('esp.survey.models.QuestionType.clean')
-        self.patcher.start()
-        self.addCleanup(self.patcher.stop)
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.survey = Survey.objects.create(

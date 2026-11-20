@@ -193,20 +193,13 @@ class QuestionType(models.Model):
 
     def clean(self):
         super().clean()
+        # Questions are rendered from template_file, so it must exist.
         try:
             loader.get_template(self.template_file)
         except TemplateDoesNotExist:
             raise ValidationError({
-                'name': (
-                    f"No template found for question type '{self.name}'. "
-                    f"Expected template at: {self.template_file}"
-                )
+                'name': f'No question template found at {self.template_file}.',
             })
-
-    def save(self, *args, **kwargs):
-        if not kwargs.get('raw'):
-            self.full_clean()
-        super().save(*args, **kwargs)
 
 class Question(models.Model):
     survey = models.ForeignKey(Survey, related_name="questions", on_delete=models.CASCADE)
