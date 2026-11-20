@@ -63,6 +63,7 @@ logger = logging.getLogger(__name__)
 from decimal import Decimal
 from copy import copy
 from collections import OrderedDict
+from esp.utils.ids import filter_by_id, get_by_id_or_404
 
 
 TZINFO = timezone.get_current_timezone()  # get timezone set in local_settings.py
@@ -395,7 +396,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         message_bad = ''
 
         if 'filter_perm_created' in request.GET:
-            perms = Permission.objects.filter(id=request.GET['filter_perm_created'], program=prog)
+            perms = filter_by_id(Permission.objects, request.GET['filter_perm_created'], program=prog)
             if perms.count() == 1:
                 perm = perms[0]
                 if perm.user_filter:
@@ -407,7 +408,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             #   If there are no permissions for this permission type, create one and open it now (open ended)
             #   If there are permission(s) for this type, take the most recent(?) and open it (open ended)
             if 'group' in request.GET and 'perm' in request.GET:
-                group = Group.objects.get(id = request.GET['group'])
+                group = get_by_id_or_404(Group, request.GET['group'])
                 perms = Permission.objects.filter(role = group, permission_type = request.GET['perm'], program = prog).order_by('-end_date')
                 if perms.count() > 0:
                     perms[0].unexpire()
@@ -415,7 +416,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     Permission.objects.create(role = group, permission_type = request.GET['perm'], start_date = datetime.now(), program = prog)
                 message_good = f'Deadline opened for {group}s: {Permission.nice_name_lookup(request.GET["perm"])}.'
             elif 'perm_id' in request.GET:
-                perms = Permission.objects.filter(id=request.GET['perm_id'])
+                perms = filter_by_id(Permission.objects, request.GET['perm_id'])
                 if perms.count() == 1:
                     perm = perms[0]
                     perm.unexpire()
@@ -427,12 +428,12 @@ class AdminCore(ProgramModuleObj, CoreModule):
         elif extra == 'close':
             #   If there are open permission(s) for this type, close them all
             if 'group' in request.GET and 'perm' in request.GET:
-                group = Group.objects.get(id = request.GET['group'])
+                group = get_by_id_or_404(Group, request.GET['group'])
                 perms = Permission.valid_objects().filter(permission_type = request.GET['perm'], program = prog, role = group)
                 perms.update(end_date = datetime.now())
                 message_good = f'Deadline closed for {group}s: {Permission.nice_name_lookup(request.GET["perm"])}.'
             if 'perm_id' in request.GET:
-                perms = Permission.objects.filter(id=request.GET['perm_id'])
+                perms = filter_by_id(Permission.objects, request.GET['perm_id'])
                 if perms.count() == 1:
                     perm = perms[0]
                     perm.expire()
@@ -443,7 +444,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         elif extra == 'delete' and 'perm_id' in request.GET:
             #   Delete the specified permission if it exists
-            perms = Permission.objects.filter(id=request.GET['perm_id'])
+            perms = filter_by_id(Permission.objects, request.GET['perm_id'])
             if perms.count() == 1:
                 perm = perms[0]
                 if 'deadline' in request.GET:

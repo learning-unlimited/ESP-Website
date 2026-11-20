@@ -52,6 +52,7 @@ from esp.users.models import Record, RecordType, ESPUser
 from esp.dbmail.models import send_mail
 from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
+from esp.utils.ids import filter_by_id
 from esp.utils.query_utils import nest_Q
 
 class StudentRegTwoPhase(ProgramModuleObj):
@@ -386,7 +387,20 @@ class StudentRegTwoPhase(ProgramModuleObj):
         if not isinstance(json_data[timeslot_id], dict):
             return HttpResponseBadRequest('JSON data mis-formatted.')
 
-        timeslot = Event.objects.get(pk=timeslot_id)
+        timeslot = filter_by_id(
+            Event.objects.all(), timeslot_id, program=prog).first()
+        if timeslot is None:
+            return HttpResponseBadRequest('JSON data mis-formatted.')
+        # Check every class id before saving anything, so a bad one
+        # doesn't leave the earlier ranks half-saved.
+        for cls_id in json_data[timeslot_id].values():
+            if cls_id == '':
+                continue
+            try:
+                int(cls_id)
+            except (TypeError, ValueError, OverflowError):
+                return HttpResponseBadRequest('JSON data mis-formatted.')
+
         priorities = json_data[timeslot_id]
         for rel_index, cls_id in priorities.items():
             rel_name = 'Priority/%s' % rel_index
@@ -436,10 +450,12 @@ class StudentRegTwoPhase(ProgramModuleObj):
                     user=request.user,
                     relationship=rel)
             else:
-                # Pull the first StudentRegistration, expire the others
-                for sr in srs[1:]:
-                    sr.expire()
-                sr = srs[0]
+                # Keep the oldest StudentRegistration, expire the others.
+                # Order and evaluate the queryset once so the row we keep
+                # can't also be one of the rows we expire.
+                sr, *duplicates = srs.order_by('id')
+                for duplicate in duplicates:
+                    duplicate.expire()
 
             # Modify as needed to ensure the section is correct and
             # expiration date is valid
