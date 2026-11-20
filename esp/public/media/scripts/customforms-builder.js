@@ -168,7 +168,9 @@ const linkTargets = model => fetchList('links', model, URLS.links, { link_model:
 const programModules = prog => fetchList('modules', prog, URLS.modules, { program: prog });
 
 // ---------- State ----------
-const meta = { formId: null, savedLinkType: null, savedSuccessUrl: '', loaded: false, fatal: false };
+const meta = { formId: null, savedLinkType: null, savedSuccessUrl: '', loaded: false, fatal: false, unsure: false };
+//   Nothing can be edited while a save is in flight, after a fatal error, or while a save's outcome is unknown
+const locked = () => saving || meta.fatal || meta.unsure;
 let linkedByField = {};
 let state, sel = { kind: 'form' }, pageIx = 0, mode = 'edit', saving = false, savedJSON = null;
 let hist = [], fut = [], lastKey = null, lastT = 0, problemIx = 0;
@@ -267,8 +269,8 @@ function undoThis() {
     const mark = hist[hist.length - 1];
     return () => { if (hist[hist.length - 1] === mark) undo(); else toast('Later changes were made; use Undo in the top bar instead.'); };
 }
-function undo() { if (!hist.length || saving) return; fut.push(snapshot()); restore(hist.pop()); toast('Undone'); }
-function redo() { if (!fut.length || saving) return; hist.push(snapshot()); restore(fut.pop()); toast('Redone'); }
+function undo() { if (!hist.length || locked()) return; fut.push(snapshot()); restore(hist.pop()); toast('Undone'); }
+function redo() { if (!fut.length || locked()) return; hist.push(snapshot()); restore(fut.pop()); toast('Redone'); }
 
 function find(id) {
     for (let pi = 0; pi < state.pages.length; pi++) {
@@ -465,21 +467,21 @@ function renderTop() {
     st.append(h('span', { class: 'cfb-dot', 'aria-hidden': 'true' }),
         saving ? 'Saving…' : changed ? 'Unsaved changes' : meta.formId ? 'No unsaved changes' : 'Not saved yet');
     if (probs.length) st.append(' · ', h('button', { type: 'button', title: 'Go to the next problem', text: plural(probs.length, 'problem'), onclick: () => goToProblem(probs) }));
-    document.getElementById('cfb-undo').disabled = !hist.length || saving;
-    document.getElementById('cfb-redo').disabled = !fut.length || saving;
+    document.getElementById('cfb-undo').disabled = !hist.length || locked();
+    document.getElementById('cfb-redo').disabled = !fut.length || locked();
     const save = document.getElementById('cfb-save');
     save.textContent = saving ? 'Saving…' : meta.formId ? 'Save changes' : 'Create form';
-    save.disabled = saving || meta.fatal || probs.length > 0 || (meta.formId && !changed);
+    save.disabled = locked() || probs.length > 0 || (meta.formId && !changed);
     save.title = probs.length ? 'Fix the problems first' : '';
     document.getElementById('cfb-m-edit').setAttribute('aria-pressed', mode === 'edit');
     document.getElementById('cfb-m-preview').setAttribute('aria-pressed', mode === 'preview');
     document.getElementById('cfb-panes').classList.toggle('cfb-previewing', mode === 'preview');
     document.getElementById('cfb-settings').setAttribute('aria-pressed', mode === 'edit' && sel.kind === 'form');
-    //   The page loads with these disabled; nothing can be edited while a save is in flight
-    const locked = saving || meta.fatal;
-    document.getElementById('cfb-title').disabled = locked;
-    ['cfb-m-edit', 'cfb-m-preview', 'cfb-settings'].forEach(id => { document.getElementById(id).disabled = locked; });
-    document.getElementById('cfb-panes').inert = locked;
+    //   The page loads with these disabled
+    const lock = locked();
+    document.getElementById('cfb-title').disabled = lock;
+    ['cfb-m-edit', 'cfb-m-preview', 'cfb-settings'].forEach(id => { document.getElementById(id).disabled = lock; });
+    document.getElementById('cfb-panes').inert = lock;
 }
 function goToProblem(probs) {
     const p = probs[problemIx++ % probs.length];
@@ -1231,12 +1233,17 @@ async function save() {
         const r = await request(editing ? URLS.modify : URLS.submit, { method: 'POST', body: JSON.stringify(toServer()),
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() } });
         if (!(r.res.ok && r.text === 'OK')) message = serverMessage(r.res, r.data);
+        //   Saves run in a transaction, so a Django error rolled back; a gateway error may have come after the commit
+        unknown = r.res.status >= 502;
     } catch (e) {
         unknown = true;
-        message = 'The server didn’t respond, so this may or may not have been saved. Your changes are still here. Check the custom forms list in another tab before saving again, since saving twice can create duplicates.';
     }
-    if (message) {
-        saving = false; showAlert(unknown ? message : 'Not saved: ' + message); renderTop(); return;
+    if (unknown && editing) { await settleUnknown(); return; }
+    if (message || unknown) {
+        saving = false;
+        showAlert(unknown ? 'The server didn’t confirm the save, so this may or may not have been saved. Your changes are still here. Check the custom forms list in another tab before saving again, since saving twice can create duplicates.'
+            : 'Not saved: ' + message);
+        renderTop(); return;
     }
     if (!editing) {
         markSaved();
@@ -1254,6 +1261,30 @@ async function save() {
         meta.fatal = true;
     }
     saving = false; render();
+}
+//   An edit with no answer is checked against the server before it can be retried: resending new questions would replace them
+async function settleUnknown() {
+    saving = true; meta.unsure = true; showAlert(''); renderTop();
+    let md = null, err = '';
+    try { md = await getJSON(URLS.metadata, { form_id: meta.formId }); } catch (e) { err = e.message; }
+    saving = false;
+    if (!md) {
+        showAlert('The server didn’t confirm the save, and the form couldn’t be checked: ' + err + ' Your changes are still here; editing and saving stay off until the check succeeds. ');
+        document.getElementById('cfb-alert').append(h('button', { type: 'button', class: 'cfb-btn', onclick: settleUnknown }, 'Check again'));
+        render(); return;
+    }
+    meta.unsure = false;
+    const draft = state;
+    state = fromMetadata(md, false);
+    const untouched = JSON.stringify(toServer()) === savedJSON;
+    state = draft;
+    if (untouched) {
+        showAlert('Not saved: the server didn’t confirm the save, and the saved form hasn’t changed. Your changes are still here; try saving again.');
+    } else {
+        loadSaved(md, meta.formId);
+        showAlert('The server didn’t confirm the save, but the saved form has changed, so it was most likely saved. The builder now shows the saved form; check it before making more changes.');
+    }
+    render();
 }
 
 async function init() {
@@ -1279,7 +1310,7 @@ function fatal(msg) {
 }
 
 // ---------- Wiring ----------
-document.getElementById('cfb-title').addEventListener('input', e => { if (meta.loaded && !saving) live(s => { s.title = e.target.value; }, 'title'); });
+document.getElementById('cfb-title').addEventListener('input', e => { if (meta.loaded && !locked()) live(s => { s.title = e.target.value; }, 'title'); });
 document.getElementById('cfb-undo').onclick = undo;
 document.getElementById('cfb-redo').onclick = redo;
 document.getElementById('cfb-save').onclick = save;
@@ -1293,7 +1324,7 @@ document.getElementById('cfb-settings').onclick = () => {
     const first = insp.querySelector('textarea, input, select'); if (first) first.focus({ preventScroll: true });
 };
 document.addEventListener('keydown', e => {
-    if (!meta.loaded || saving) return;
+    if (!meta.loaded || locked()) return;
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !typing) { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); if (!document.getElementById('cfb-save').disabled) save(); }
