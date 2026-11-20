@@ -11,6 +11,7 @@ permissions:
 jobs:
   check-assignment:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check issue assignment
         uses: actions/github-script@v9

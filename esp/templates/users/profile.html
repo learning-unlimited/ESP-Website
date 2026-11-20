@@ -58,6 +58,11 @@ div.required label.control-label:after,
   color: inherit;
   border-color: currentColor;
 }
+/* Fields sized by character count (e.g. the 40-character street address) would
+   otherwise be wider than a phone screen. */
+.profile-card .controls :is(input, select, textarea) {
+  max-width: 100%;
+}
 </style>
 {% endblock %}
 

@@ -489,7 +489,7 @@ class ResourceModule(ProgramModuleObj):
                     autocreated = res_type.autocreated,
                     hidden = res_type.hidden
                 )
-            if import_mode == 'save':
+            if import_mode == 'save' and str(old_res.id) in to_import:
                 new_res_type.save()
             #   Create associated furnishing
             new_furnishing = Resource(
@@ -594,7 +594,7 @@ class ResourceModule(ProgramModuleObj):
                                 autocreated = res_type.autocreated,
                                 hidden = res_type.hidden
                             )
-                        if import_mode == 'save':
+                        if import_mode == 'save' and str(equipment.id) in to_import:
                             new_res_type.save()
                         new_equip = Resource(
                             name = equipment.name,
