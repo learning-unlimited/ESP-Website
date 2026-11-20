@@ -79,6 +79,57 @@
     width: 9%;
 }
 
+/* Phones: four columns are too narrow to read, so each class becomes a block:
+   its title, then each other cell labelled from its data-label attribute. */
+@media (max-width: 575.98px) {
+    .teacher-preview-classes,
+    .teacher-preview-classes > tbody,
+    .teacher-preview-classes > tbody > tr,
+    .teacher-preview-classes > tbody > tr > td {
+        display: block;
+        width: auto;
+    }
+
+    /* Span the panel's full width, even in themes that size every content
+       table by ID (floaty: #content_area table { width: 70%; margin: 8px }). */
+    .teacher-preview-classes {
+        width: auto !important;
+        margin: 0 !important;
+    }
+
+    /* Kept for screen readers; the labels replace it visually. */
+    .teacher-preview-classes > thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+
+    .teacher-preview-classes > tbody > tr {
+        border-top: 1px solid var(--bs-border-color, #dee2e6);
+        padding: 0.5rem 1rem;
+    }
+
+    .teacher-preview-classes > tbody > tr > td,
+    .teacher-preview-classes > tbody > tr > td:first-child,
+    .teacher-preview-classes > tbody > tr > td:last-child {
+        border-bottom-width: 0;
+        padding: 0.1rem 0;
+    }
+
+    /* A class with no teachers gets no label, so drop its empty line. */
+    .teacher-preview-classes > tbody > tr > td:not(:first-child):not([data-label]) {
+        display: none;
+    }
+
+    .teacher-preview-classes td[data-label]::before {
+        content: attr(data-label) ": ";
+        font-weight: 600;
+    }
+}
+
 .teacher-preview-empty {
     margin-bottom: 0;
     opacity: 0.75;
