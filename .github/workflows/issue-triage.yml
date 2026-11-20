@@ -38,66 +38,68 @@ jobs:
             --repo "${{ github.repository }}" \
             --add-label "needs-triage"
 
-      - name: Check if first-time contributor
+      - name: Check if first-time issue author
         id: first-time
         if: steps.check-perms.outputs.skip == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          AUTHOR: ${{ github.event.issue.user.login }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          # Query the number of issues created by the author in this repo
-          PREV_ISSUES=$(gh api graphql -f query='
+          # First issue if the author's earliest issue (PRs excluded) is this one, or none is indexed yet
+          if EARLIEST=$(gh api graphql -f query='
             query($owner: String!, $repo: String!, $author: String!) {
               repository(owner: $owner, name: $repo) {
-                issues(filterBy: {createdBy: $author, states: [OPEN, CLOSED]}, first: 2) {
-                  totalCount
+                issues(first: 1, orderBy: {field: CREATED_AT, direction: ASC}, filterBy: {createdBy: $author}) {
+                  nodes { number }
                 }
               }
-            }' -F owner="${{ github.repository_owner }}" -F repo="${{ github.event.repository.name }}" -F author="${{ github.event.issue.user.login }}" --jq '.data.repository.issues.totalCount' 2>/dev/null || echo "2")
-          
-          # If totalCount is exactly 1 (the one they just opened), it is their first issue
-          if [ "$PREV_ISSUES" -eq 1 ]; then
-            echo "is_first=true" >> "$GITHUB_OUTPUT"
+            }' -F owner="$OWNER" -F repo="$REPO_NAME" -F author="$AUTHOR" \
+            --jq '.data.repository.issues.nodes[0].number // empty'); then
+            if [ -z "$EARLIEST" ] || [ "$EARLIEST" = "$ISSUE_NUMBER" ]; then
+              echo "is_first=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "is_first=false" >> "$GITHUB_OUTPUT"
+            fi
           else
+            # On API failure, fall back to the standard notice rather than failing the job
+            echo "::warning::Could not determine whether this is the author's first issue"
             echo "is_first=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Post unified triage notice (First-time)
-        if: steps.check-perms.outputs.skip == 'false' && steps.first-time.outputs.is_first == 'true'
+      - name: Post triage notice
+        if: steps.check-perms.outputs.skip == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          IS_FIRST: ${{ steps.first-time.outputs.is_first }}
         run: |
-          gh issue comment "${{ github.event.issue.number }}" \
-            --repo "${{ github.repository }}" \
-            --body "👋 Thanks for opening your first issue here! We appreciate you taking the time to report this.
+          # First-time authors get the welcome folded into this notice, since the issue is locked right after
+          if [ "$IS_FIRST" = "true" ]; then
+            GREETING="👋 Thanks for opening your first issue here! We appreciate you taking the time to report this."
+            EXTRA="
+          - Please check the [existing issues](https://github.com/$REPO/issues) to see if this has been reported before.
+          - For setup help, see our [documentation](https://github.com/$REPO/tree/main/docs)."
+          else
+            GREETING="👋 Thanks for opening this issue!"
+            EXTRA=""
+          fi
+
+          gh issue comment "$ISSUE_NUMBER" \
+            --repo "$REPO" \
+            --body "$GREETING
 
           To keep the tracker focused, new issues are **locked for conversation** until a maintainer has reviewed them. This helps us avoid duplicates and ensure issues are actionable.
 
           **What happens next:**
           - A maintainer will review this issue shortly and may ask follow-up questions.
           - If approved, the conversation will be unlocked and the \`needs-triage\` label removed.
-          - Please check the [existing issues](https://github.com/learning-unlimited/ESP-Website/issues) to see if this has been reported before.
-          - For setup help, see our [documentation](https://github.com/learning-unlimited/ESP-Website/tree/main/docs).
+          - If this is a duplicate or out of scope, a maintainer will close it with an explanation.$EXTRA
 
           Please don't worry — your issue hasn't been rejected, it's just waiting for review. 🙏"
-
-      - name: Post triage notice (Repeat contributor)
-        if: steps.check-perms.outputs.skip == 'false' && steps.first-time.outputs.is_first == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh issue comment "${{ github.event.issue.number }}" \
-            --repo "${{ github.repository }}" \
-            --body "👋 Thanks for opening this issue!
-
-          To keep the tracker focused, new issues are **locked for conversation** until a maintainer has reviewed them. This helps us avoid duplicates and ensure issues are actionable.
-
-          **What happens next:**
-          - A maintainer will review this issue shortly.
-          - If approved, the conversation will be unlocked and the \`needs-triage\` label removed.
-          - If this is a duplicate or out of scope, a maintainer will close it with an explanation.
-
-          Please don't worry — your issue hasn't been rejected, it's just waiting for review. 🙏"
-
 
       - name: Lock conversation
         if: steps.check-perms.outputs.skip == 'false'
