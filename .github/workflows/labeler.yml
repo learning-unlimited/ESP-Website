@@ -11,6 +11,7 @@ permissions:
 jobs:
   labeler:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: github.repository == 'learning-unlimited/ESP-Website'
     steps:
       - uses: actions/labeler@v7.0.0

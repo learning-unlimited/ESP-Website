@@ -39,6 +39,7 @@ from esp.program.models          import ClassSubject
 from esp.users.models            import ESPUser
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.web               import render_to_response
+from esp.utils.ids import get_by_id_or_404
 
 class TeacherPreviewModule(ProgramModuleObj):
     doc = """This program module allows teachers to view classes already added to the program.
@@ -63,7 +64,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
+                teacher = get_by_id_or_404(ESPUser, request.GET['user'])
             else:
                 teacher = request.user
             scheditems = []
@@ -98,7 +99,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
+                teacher = get_by_id_or_404(ESPUser, request.GET['user'])
             else:
                 teacher = request.user
             scheditems = []
@@ -138,7 +139,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
+                teacher = get_by_id_or_404(ESPUser, request.GET['user'])
             else:
                 teacher = request.user
             scheditems = []

@@ -50,7 +50,7 @@ from esp.program.models import RegistrationProfile
 from esp.program.class_status import ClassStatus
 
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_onsite_no_switchback, needs_student_in_grade, main_call, aux_call
-from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
+from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program, schedule_change_blockers, unmet_requirements
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function
@@ -60,6 +60,15 @@ from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+from esp.utils.ids import get_by_id_or_404
+
+def requirement_messages(student, prog):
+    """ Warnings about the schedule constraints this student's schedule fails.
+
+    Advisory only: the grid applies the admin's changes either way.
+    """
+    return [f'Warning: {student.name()} ({student.id}) needs to {requirement}.'
+            for requirement in unmet_requirements(student, prog)]
 
 MAX_SCHEDULE_SECTIONS = 200
 
@@ -149,7 +158,7 @@ class OnSiteClassList(ProgramModuleObj):
             #   Todo: section current capacity ? (see ClassSection.get_capacity())
             'classes': list(ClassSubject.objects.filter(parent_program=prog, status__gt=0).extra({'teacher_names': """array_to_string(ARRAY(SELECT auth_user.first_name || ' ' || auth_user.last_name FROM auth_user,program_class_teachers WHERE program_class_teachers.classsubject_id=program_class.id AND auth_user.id=program_class_teachers.espuser_id), ', ')""", 'class_size_max_optimal': """SELECT program_classsizerange.range_max FROM program_classsizerange WHERE program_classsizerange.id = optimal_class_size_range_id"""}).values('id', 'class_size_max', 'class_size_max_optimal', 'class_info', 'prereqs', 'hardness_rating', 'grade_min', 'grade_max', 'title', 'teacher_names', 'category__symbol', 'category__id')),
             'sections': sections,
-            'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label', 'start_millis').order_by("start")),
+            'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI AM -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label', 'start_millis').order_by("start")),
             'categories': list(prog.class_categories.all().order_by('-symbol').values('id', 'symbol', 'category')),
         }
         json.dump(data, resp, cls=DjangoJSONEncoder)
@@ -217,7 +226,7 @@ class OnSiteClassList(ProgramModuleObj):
         resp = HttpResponse(content_type='application/json')
         program = self.program
         success = False
-        student = get_object_or_404(ESPUser, pk=request.POST.get("student_id"))
+        student = get_by_id_or_404(ESPUser, request.POST.get("student_id"))
 
         registration_profile = RegistrationProfile.getLastForProgram(student,
                                                                 program)
@@ -280,8 +289,10 @@ class OnSiteClassList(ProgramModuleObj):
         except (ValueError, TypeError, KeyError):
             result['messages'].append('Error: no user specified.')
         if result['user']:
-            result['user_grade'] = ESPUser.objects.get(id=result['user']).getGrade(program=prog)
+            student = ESPUser.objects.get(id=result['user'])
+            result['user_grade'] = student.getGrade(program=prog)
             result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
+            result['messages'].extend(requirement_messages(student, prog))
         json.dump(result, resp)
         return resp
 
@@ -338,6 +349,7 @@ class OnSiteClassList(ProgramModuleObj):
 
         if user and desired_sections is not None:
             override_full = (request.GET.get("override", "") == "true")
+            override_constraints = override_full or (request.GET.get("override_constraints", "") == "true")
 
             current_sections = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=user.id).values_list('id', flat=True).order_by('id').distinct())
             sections_to_remove = ClassSection.objects.filter(id__in=list(set(current_sections) - set(desired_sections)))
@@ -349,7 +361,12 @@ class OnSiteClassList(ProgramModuleObj):
                     result['messages'].append(f'Failed to add {user.name()} ({user.id}) to {sec.emailcode()}: {sec.title()} ({sec.id}).  Error was: Class is currently full.')
                     failed_add_sections.append(sec.id)
 
-            if len(failed_add_sections) == 0:
+            blocked = [] if override_constraints else schedule_change_blockers(
+                user, prog, add_sections=sections_to_add, remove_sections=sections_to_remove)
+            for requirement in blocked:
+                result['messages'].append(f'Made no changes for {user.name()} ({user.id}): this schedule would violate the requirement that they {requirement}.  Check "Override size limits and schedule constraints" to apply it anyway.')
+
+            if len(failed_add_sections) == 0 and not blocked:
                 verbs = RTC.getVisibleRegistrationTypeNames(prog)
                 #   Remove sections the student wants out of
                 for sec in sections_to_remove:
@@ -389,6 +406,7 @@ class OnSiteClassList(ProgramModuleObj):
 
             result['user'] = user.id
             result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
+            result['messages'].extend(requirement_messages(user, prog))
 
         json.dump(result, resp)
         return resp

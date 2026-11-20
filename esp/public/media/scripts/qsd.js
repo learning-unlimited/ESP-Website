@@ -257,7 +257,7 @@ function qsd_restore_version(qsd_url, edit_id, version_id, version_date)
       + '    <p class="muted">This will create a new revision with the old content.</p>'
       + '  </div>'
       + '  <div class="modal-footer">'
-      + '    <button type="button" class="btn" data-dismiss="modal">Cancel</button>'
+      + '    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>'
       + '    <button type="button" class="btn btn-warning" id="qsd-restore-confirm-btn">'
       + '      <span class="bi bi-arrow-repeat"></span> Restore'
       + '    </button>'
