@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 from esp.accounting.models import LineItemType
 from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
+from esp.application.models import StudentClassApp, StudentProgramApp
 from esp.qsd.models import QuasiStaticData
 from esp.resources.models import Resource, ResourceRequest, ResourceType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
@@ -47,12 +48,13 @@ from esp.tagdict.models import Tag
 from django.core import mail
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import Group
-
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.db.models import ProtectedError
 
 from django.core.management import call_command
 
-from django.test import LiveServerTestCase
+from django.test import LiveServerTestCase, RequestFactory
 from django.test.client import Client
 from django.urls import reverse
 from django import forms
@@ -68,6 +70,9 @@ from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 
 from datetime import datetime, timedelta
 from decimal import Decimal
+import json
+from django.http import HttpResponseRedirect
+from unittest import mock
 from random import sample
 import numpy
 import random
@@ -2498,6 +2503,360 @@ class ClassSubjectCacheTest(ProgramFrameworkTest):
         self.assertIsNotNone(updated_teacher)
         self.assertNotEqual(updated_teacher.email, original_email)
         self.assertEqual(updated_teacher.email, new_email)
+
+class AdmissionsDashboardTest(TestCase):
+    """Tests for selective admissions logic in AdmissionsDashboard."""
+
+    def setUp(self):
+        self.admin = make_user('Administrator', username='admissions_admin')
+        self.teacher = make_user('Teacher', username='admissions_teacher')
+        self.other_teacher = make_user('Teacher',username='admissions_other_teacher',)
+        self.student = make_user('Student', username='admissions_student')
+        self.pending_student = make_user('Student',username='admissions_pending_student',)
+        self.other_student = make_user('Student',username='admissions_other_student',)
+
+        teach_module = ProgramModule.objects.filter(
+            handler='AdmissionsDashboard',
+            module_type='teach',
+        ).first()
+        manage_module = ProgramModule.objects.filter(
+            handler='AdmissionsDashboard',
+            module_type='manage',
+        ).first()
+
+        if teach_module is None or manage_module is None:
+            self.skipTest(
+                'AdmissionsDashboard ProgramModule rows are not available'
+            )
+
+        self.program = make_program(
+            admin=self.admin,
+            modules=[teach_module, manage_module],
+        )
+
+        self.teacher_class = _make_class(
+            self.program,
+            self.teacher,
+            title='Teacher Class',
+        )
+        self.other_class = _make_class(
+            self.program,
+            self.other_teacher,
+            title='Other Teacher Class',
+        )
+
+        self.student_app = StudentProgramApp.objects.create(
+            user=self.student,
+            program=self.program,
+            admin_status=StudentProgramApp.APPROVED,
+        )
+        self.pending_app = StudentProgramApp.objects.create(
+            user=self.pending_student,
+            program=self.program,
+            admin_status=StudentProgramApp.UNREVIEWED,
+        )
+        self.other_student_app = StudentProgramApp.objects.create(
+            user=self.other_student,
+            program=self.program,
+            admin_status=StudentProgramApp.APPROVED,
+        )
+
+        self.teacher_class_app = StudentClassApp.objects.create(
+            app=self.student_app,
+            subject=self.teacher_class,
+            student_preference=1,
+        )
+        self.pending_class_app = StudentClassApp.objects.create(
+            app=self.pending_app,
+            subject=self.teacher_class,
+            student_preference=1,
+        )
+        self.other_class_app = StudentClassApp.objects.create(
+            app=self.other_student_app,
+            subject=self.other_class,
+            student_preference=1,
+        )
+
+        self.factory = RequestFactory()
+
+    def _dashboard(self, module_type='teach'):
+        module = ProgramModule.objects.get(
+            handler='AdmissionsDashboard',
+            module_type=module_type,
+        )
+        return ProgramModuleObj.getFromProgModule(
+            self.program,
+            module,
+        )
+
+    def test_teacher_apps_only_returns_approved_apps_for_taught_classes(self):
+        """Teacher dashboard only exposes approved apps for taught classes."""
+        dashboard = self._dashboard('teach')
+        request = self.factory.get('/')
+        request.user = self.teacher
+        response = dashboard.apps(
+            request,
+            'teach',
+            None,
+            None,
+            None,
+            None,
+            self.program,
+        )
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        app_ids = [app['id'] for app in data['apps']]
+        self.assertEqual(app_ids, [self.teacher_class_app.id])
+        self.assertNotIn(self.pending_class_app.id, app_ids)
+        self.assertNotIn(self.other_class_app.id, app_ids)
+        app = data['apps'][0]
+        self.assertEqual(app['user']['id'], self.student.id)
+        self.assertEqual(app['user']['name'], self.student.name())
+        self.assertEqual(app['subject']['id'], self.teacher_class.id)
+        self.assertEqual(app['subject']['title'], self.teacher_class.title)
+        self.assertNotIn('decision_status', app)
+        self.assertNotIn('admin_status', app)
+
+    def test_admin_manage_apps_includes_unapproved_apps(self):
+        """Admin manage dashboard includes unapproved applications."""
+        dashboard = self._dashboard('manage')
+        request = self.factory.get('/')
+        request.user = self.admin
+        self.assertTrue(self.admin.isAdmin(self.program))
+        response = dashboard.apps(
+            request,
+            'manage',
+            None,
+            None,
+            None,
+            None,
+            self.program,
+        )
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        app_ids = [app['id'] for app in data['apps']]
+        self.assertIn(self.teacher_class_app.id, app_ids)
+        self.assertIn(self.pending_class_app.id, app_ids)
+        self.assertIn(self.other_class_app.id, app_ids)
+
+    def test_admin_manage_apps_includes_decision_status_titles(self):
+        """Admin JSON groups admitted and waitlisted class titles by application."""
+        self.teacher_class_app.admission_status = StudentClassApp.ADMITTED
+        self.teacher_class_app.save()
+
+        second_class_app = StudentClassApp.objects.create(
+            app=self.student_app,
+            subject=self.other_class,
+            student_preference=2,
+        )
+        second_class_app.admission_status = StudentClassApp.WAITLIST
+        second_class_app.save()
+
+        dashboard = self._dashboard('manage')
+        request = self.factory.get('/')
+        request.user = self.admin
+
+        response = dashboard.apps(
+            request,
+            'manage',
+            None,
+            None,
+            None,
+            None,
+            self.program,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        apps_by_id = {app['id']: app for app in data['apps']}
+
+        expected_status = (
+            'Admitted: Teacher Class\n'
+            'Waitlisted: Other Teacher Class'
+        )
+
+        self.assertEqual(
+            apps_by_id[self.teacher_class_app.id]['decision_status'],
+            expected_status,
+        )
+        self.assertEqual(
+            apps_by_id[second_class_app.id]['decision_status'],
+            expected_status,
+        )
+        self.assertEqual(
+            apps_by_id[self.pending_class_app.id]['decision_status'],
+            '',
+        )
+        self.assertEqual(
+            apps_by_id[self.teacher_class_app.id]['admin_status'],
+            StudentProgramApp.APPROVED,
+        )
+        self.assertEqual(
+            apps_by_id[self.pending_class_app.id]['admin_status'],
+            StudentProgramApp.UNREVIEWED,
+        )
+
+    def _apps_query_count(self, user, tl):
+        dashboard = self._dashboard('manage' if tl == 'manage' else 'teach')
+        request = self.factory.get('/')
+        request.user = user
+        with CaptureQueriesContext(connection) as ctx:
+            response = dashboard.apps(
+                request,
+                tl,
+                None,
+                None,
+                None,
+                None,
+                self.program,
+            )
+        self.assertEqual(response.status_code, 200)
+        return len(ctx.captured_queries)
+
+    def _add_approved_class_apps(self, count, subject):
+        for i in range(count):
+            student = make_user(
+                'Student',
+                username='admissions_query_student_%s' % i,
+            )
+            program_app = StudentProgramApp.objects.create(
+                user=student,
+                program=self.program,
+                admin_status=StudentProgramApp.APPROVED,
+            )
+            StudentClassApp.objects.create(
+                app=program_app,
+                subject=subject,
+                student_preference=1,
+            )
+
+    def test_teacher_apps_query_count_does_not_scale_with_applications(self):
+        """Teacher apps() must not query once per StudentClassApp row."""
+        self._apps_query_count(self.teacher, 'teach')
+        baseline = self._apps_query_count(self.teacher, 'teach')
+        self._add_approved_class_apps(8, self.teacher_class)
+        scaled = self._apps_query_count(self.teacher, 'teach')
+        self.assertEqual(baseline, scaled)
+
+    def test_admin_apps_query_count_does_not_scale_with_applications(self):
+        """Admin apps() must not query once per StudentClassApp row."""
+        self.teacher_class_app.admission_status = StudentClassApp.ADMITTED
+        self.teacher_class_app.save()
+        self.other_class_app.admission_status = StudentClassApp.WAITLIST
+        self.other_class_app.save()
+        self._apps_query_count(self.admin, 'manage')
+        baseline = self._apps_query_count(self.admin, 'manage')
+        self._add_approved_class_apps(8, self.teacher_class)
+        scaled = self._apps_query_count(self.admin, 'manage')
+        self.assertEqual(baseline, scaled)
+
+    def test_teacher_update_skips_unauthorized_application(self):
+        """Teacher updates are ignored for classes they do not teach."""
+        dashboard = self._dashboard('teach')
+        original_comment = self.other_class_app.teacher_comment
+        original_rating = self.other_class_app.teacher_rating
+        request = self.factory.post(
+            '/',
+            data={
+                'changes': json.dumps({
+                    str(self.other_class_app.id): {
+                        'teacher_comment': 'Unauthorized change',
+                        'teacher_rating': 5,
+                    },
+                }),
+            },
+        )
+        request.user = self.teacher
+        response = dashboard.update_apps(
+            request,
+            'teach',
+            None,
+            None,
+            None,
+            None,
+            self.program,
+        )
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data['success'], 1)
+        self.assertEqual(data['updated'], [])
+        self.other_class_app.refresh_from_db()
+        self.assertEqual(
+            self.other_class_app.teacher_comment,
+            original_comment,
+        )
+        self.assertEqual(
+            self.other_class_app.teacher_rating,
+            original_rating,
+        )
+
+    def test_teacher_update_only_changes_authorized_application(self):
+        """Authorized updates succeed while unauthorized updates are skipped."""
+        dashboard = self._dashboard('teach')
+        request = self.factory.post(
+            '/',
+            data={
+                'changes': json.dumps({
+                    str(self.teacher_class_app.id): {
+                        'teacher_comment': 'Authorized change',
+                    },
+                    str(self.other_class_app.id): {
+                        'teacher_comment': 'Unauthorized change',
+                    },
+                }),
+            },
+        )
+        request.user = self.teacher
+        response = dashboard.update_apps(
+            request,
+            'teach',
+            None,
+            None,
+            None,
+            None,
+            self.program,
+        )
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data['success'], 1)
+        self.assertEqual(
+            data['updated'],
+            [str(self.teacher_class_app.id)],
+        )
+        self.teacher_class_app.refresh_from_db()
+        self.other_class_app.refresh_from_db()
+        self.assertEqual(
+            self.teacher_class_app.teacher_comment,
+            'Authorized change',
+        )
+        self.assertNotEqual(
+            self.other_class_app.teacher_comment,
+            'Unauthorized change',
+        )
+
+    def test_missing_app_redirects_to_core(self):
+        """Missing StudentClassApp redirects back to program core."""
+        dashboard = self._dashboard('teach')
+        request = self.factory.get('/')
+        request.user = self.teacher
+        with mock.patch.object(
+            dashboard,
+            'goToCore',
+            return_value=HttpResponseRedirect('/'),
+        ):
+            response = dashboard.app(
+                request,
+                'teach',
+                None,
+                None,
+                None,
+                '999999',
+                self.program,
+            )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/')
+
+
 class ProgramCreationFormHandlerLookupTest(TestCase):
     """
     Verify that ProgramCreationForm.program_module_question_ids is built using
@@ -2546,8 +2905,7 @@ class ProgramCreationFormHandlerLookupTest(TestCase):
         self.assertIn(pm.id, ids)
 
 class ProgramCreationFormDateValidationTest(TestCase):
-    """Tests that ProgramCreationForm rejects registration date ranges where
-    end is not strictly after start."""
+    """Tests that ProgramCreationForm rejects registration date ranges whereend is not strictly after start."""
 
     def _base_form_data(self, teacher_start, teacher_end, student_start, student_end):
         """Return a minimal set of form fields sufficient to trigger the date
