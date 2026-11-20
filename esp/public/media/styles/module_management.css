@@ -596,6 +596,26 @@
     background-color: #f8fafc;
 }
 
+/* Disabled buttons keep their resting colours (no hover feedback) and their
+   title tooltip, so pointer-events is left enabled. */
+.tl-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.tl-btn-primary:disabled:hover,
+.theme-student .tl-btn-primary:disabled:hover {
+    background-color: var(--brand-student);
+}
+
+.theme-teacher .tl-btn-primary:disabled:hover {
+    background-color: var(--brand-teacher);
+}
+
+.tl-btn-secondary:disabled:hover {
+    background-color: #fff;
+}
+
 /* Add Drawer (Side Panel) */
 .tl-add-drawer {
     position: absolute;

@@ -153,6 +153,7 @@ class ProgramModuleObj(ExpirableModel):
     required_label = models.CharField(max_length=80, blank=True, null=False, default="")
     link_title = models.CharField(max_length=64, blank=True, null=False, default="",
                                   help_text="Override the default link title for this program. Leave blank to use the module's default.")
+    version = models.PositiveIntegerField(default=1)
 
     def docs(self):
         if hasattr(self, 'doc') and self.doc is not None and str(self.doc).strip() != '':
