@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
+from esp.cal.models import Event
 from esp.resources.models import Resource, ResourceType
 
 import re
@@ -343,4 +344,72 @@ class ResourceModuleTest(ProgramFrameworkTest):
             event__program=self.program, name='Laptop cart').count(),
             self.program.getTimeSlots().count())
 
+    def _timeslot_url(self):
+        return '/manage/%s/resources/timeslot' % self.program.getUrlBase()
 
+    def _timeslot_data(self, name, start, **overrides):
+        data = {
+            'command': 'addedit',
+            'id': '',
+            'name': name,
+            'description': 'desc',
+            'start': start,
+            'hours': '1',
+            'minutes': '0',
+            'group': '',
+        }
+        data.update(overrides)
+        return data
+
+    def testTimeslotDuplicateRejected(self):
+        """Submitting an identical timeslot twice is rejected with a form error."""
+        data = self._timeslot_data('Duplicate Test Slot', '10/14/2027 09:00:00')
+
+        response = self.client.post(self._timeslot_url(), data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Event.objects.filter(
+            program=self.program, short_description='Duplicate Test Slot').count(), 1)
+
+        response = self.client.post(self._timeslot_url(), data)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('already exists', response.content.decode('UTF-8'))
+        self.assertEqual(Event.objects.filter(
+            program=self.program, short_description='Duplicate Test Slot').count(), 1)
+
+    def testTimeslotDuplicateAllowsOtherType(self):
+        """A timeslot of a different type at the same times is not a duplicate."""
+        self.client.post(self._timeslot_url(),
+                         self._timeslot_data('Regular Slot', '10/16/2027 09:00:00'))
+        response = self.client.post(self._timeslot_url(),
+                                    self._timeslot_data('Open Slot', '10/16/2027 09:00:00', openclass='on'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('already exists', response.content.decode('UTF-8'))
+        self.assertTrue(Event.objects.filter(
+            program=self.program, short_description='Open Slot').exists())
+
+    def testTimeslotEditWithoutChangeDoesNotSelfFlag(self):
+        """Re-saving an existing timeslot unchanged is not flagged as a duplicate of itself."""
+        data = self._timeslot_data('Edit Test Slot', '10/15/2027 09:00:00')
+        self.client.post(self._timeslot_url(), data)
+        created = Event.objects.get(program=self.program, short_description='Edit Test Slot')
+
+        response = self.client.post(self._timeslot_url(), dict(data, id=str(created.id)))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('already exists', response.content.decode('UTF-8'))
+        self.assertEqual(Event.objects.filter(
+            program=self.program, short_description='Edit Test Slot').count(), 1)
+
+    def testTimeslotEditIntoDuplicateRejected(self):
+        """Editing a timeslot so it matches another existing timeslot is rejected."""
+        self.client.post(self._timeslot_url(),
+                         self._timeslot_data('Slot A', '10/17/2027 09:00:00'))
+        self.client.post(self._timeslot_url(),
+                         self._timeslot_data('Slot B', '10/17/2027 11:00:00'))
+        slot_b = Event.objects.get(program=self.program, short_description='Slot B')
+
+        response = self.client.post(self._timeslot_url(), self._timeslot_data(
+            'Slot B', '10/17/2027 09:00:00', id=str(slot_b.id)))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('already exists', response.content.decode('UTF-8'))
+        slot_b.refresh_from_db()
+        self.assertEqual(slot_b.start.hour, 11)
