@@ -172,11 +172,22 @@ div.navbar-collapse {
     background-position: 0;
 }
 
-@media (min-width: 768px) and (max-width: $navbarCollapseWidth) {
+//  Below the collapse width the navbar and footer sit in the page flow instead of
+//  staying fixed, so they can't cover the page.  main.html only adds the body
+//  padding that clears fixed bars above this width.
+@media (max-width: $navbarCollapseWidth) {
+
+    .navbar-container .navbar.fixed-top,
+    .footer-container .navbar.fixed-bottom {
+        position: static;
+    }
 
     .navbar-container,
     .footer-container {
         width: 100%;
+        max-width: none;
+        padding-left: 0;
+        padding-right: 0;
     }
 }
 

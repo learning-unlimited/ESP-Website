@@ -14,12 +14,43 @@ Teachers can now save an incomplete class registration form as a draft and come 
 
 A draft is held as a class with the new "draft" status. Drafts are invisible to students, are not counted as submitted classes for admin teacher lists or teacher registration progress, and do not take part in teacher conflict or time-commitment calculations. Each teacher gets one draft per registration flow (regular classes and open classes are tracked separately); submitting the form promotes that draft into a normal unreviewed class.
 
+New Customization Tags
+======================
+
+Several previously hard-coded behaviors are now configurable by tag. Each tag
+defaults to the existing behavior.
+
+- ``student_profile_show_guardian_info`` (global, student registration): set to ``False`` to drop the parent/guardian contact section from the student profile form.
+- ``onsite_show_paid_field`` (global, onsite): set to ``False`` to hide the "Paid" checkbox on the onsite registration form.
+- ``volunteer_label_comments`` (per-program, volunteer): overrides the label of the volunteer form's comments field (the ``volunteer_help_text_comments`` tag already exists).
+- ``volunteer_help_text_requests`` (per-program, volunteer): overrides the help text of the volunteer form's timeslots field.
+- ``volunteer_help_text_confirm`` (per-program, volunteer): overrides the help text of the volunteer form's confirmation checkbox.
+- ``bigboard_graph_drop_beg``, ``bigboard_graph_drop_end``, and ``bigboard_graph_min_points`` (per-program, general management): control where the big board's registration graph starts, where it stops, and how many data points a series needs before it is plotted at all.
+
 Teacher Schedule Deadline
 =========================
 
 A new ``Teacher/Classes/Schedule`` deadline controls whether teachers and moderators can see the room and time assigned to their sections on the teacher class registration page. While the deadline is closed, those assignments (along with the "Detailed Status" time blocks and the attendance links that go with them) are replaced with a note that the schedule is not yet available; everything else on the page is unchanged.
 
 The deadline is created default-open for new programs, and is backfilled default-open for existing programs, so nothing changes until an administrator closes it. Close it while scheduling is in progress to keep teachers from seeing assignments that may still change, and re-open it when the schedule is final. Note that ``Teacher/All`` and ``Teacher/Classes/All`` imply this permission, so they must not be open at the same time for it to have any effect.
+
+Lunch Constraints: Warn or Enforce
+==================================
+
+Schedule constraints (e.g., lunch constraints generated from the "Lunch Constraints" management page) can now either warn students or block them when they try to add a class that **newly** violates a constraint. Previously existing overrides (e.g., an enrollment by an admin) no longer block a student from making new changes.
+
+The "Lunch Constraints" page has a new "enforce" checkbox:
+
+- **Unchecked (warn).** Students see a note at the top of their schedule listing what it is missing (e.g., "You need to choose a lunch period on Saturday"), on the main student registration page and in the onsite webapp. The note updates as soon as they add or remove a class. Nothing is ever blocked.
+- **Checked (enforce).** The same note appears, and in addition a student is refused any schedule change that would *newly* break a constraint (e.g., dropping their only lunch period while they still have classes before and after it). A student whose schedule already violates a constraint is never blocked, so they can always work their way back to a valid schedule instead of being stuck.
+
+Old programs will continue to enforce existing constraints. New programs will default to warnings unless configured otherwise.
+
+The onsite class changes grid now reports the same notifications but can be overridden using the "Override size limits and schedule constraints" checkbox.
+
+The "autocorrect" checkbox on that page works again. When a student would otherwise be warned or blocked, they are enrolled in a lunch period in a block they still have free. If they have no free lunch block they are warned or blocked as usual.
+
+In terms of blocking, adding a class is refused only when it would use up their last opportunity to comply (e.g., filling their final free lunch block) and giving up a class is refused only when it breaks a requirement they were already meeting.
 
 Form Field Selectors
 ====================
