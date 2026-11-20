@@ -16,6 +16,7 @@ def studentacknowledgementform_factory(prog):
 
 class StudentAcknowledgementModule(ProgramModuleObj):
     doc = """Serves a form asking students to acknowledge some agreement."""
+    permission_types = ('Student/Acknowledgement',)
 
     @classmethod
     def module_properties(cls):

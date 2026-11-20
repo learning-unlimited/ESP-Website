@@ -33,7 +33,7 @@ class CustomIndexDashboard(Dashboard):
             collapsible=False,
             children=[
                 [_('Return to site'), '/'],
-                [_('Filebrowser'), '/admin/filebrowser/browse'],
+                [_('Filebrowser'), '/admin/filebrowser/browse/'],
                 [_('Theme Settings'), '/themes']
             ]
         ))

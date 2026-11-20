@@ -31,7 +31,10 @@ Tags come in two flavors:
   global default for that program only.
 
 Both pages show all tags that are marked as user-facing settings, grouped
-by category, with help text for each one.
+by category, with help text for each one.  A few settings only apply in
+certain situations and are left off the page otherwise — for example the
+Fruitsalad theme's options, which appear only while that theme is in use.
+Their stored values are left untouched while they are hidden.
 
 How to Set a Tag
 ================

@@ -73,7 +73,7 @@ class ResizeImageField(forms.ImageField):
 
             try:
                 im = Image.open(file)
-                im.thumbnail(self.size, Image.ANTIALIAS)
+                im.thumbnail(self.size, Image.Resampling.LANCZOS)
                 im.save(picturefile, im.format)
             except IOError:
                 raise forms.ValidationError('Image resize failed.')

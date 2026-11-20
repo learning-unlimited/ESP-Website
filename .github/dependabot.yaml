@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+    groups:
+      ci:
+        patterns:
+          - '*'
+    ignore:
+      - dependency-name: "actions/first-interaction"

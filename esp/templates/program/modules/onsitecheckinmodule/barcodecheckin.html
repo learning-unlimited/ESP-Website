@@ -57,7 +57,7 @@
 
     {% if results %}
     <div role="alert" class="alert alert-info">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
         <span>
         Checked in {{ results.new|length }} students. {{ results.existing|length }} students were already checked in. {{ results.not_found|length }} students were not found, and {{ results.not_student|length }} IDs did not correspond to students.
         </span>
@@ -125,7 +125,7 @@
             <option value="i2of5_reader">Interleaved 2 of 5</option>
         </select>
         <br><br>
-        <input type="checkbox" class="btn" id="autocheckinbox" value="autocheckin" checked><label for="autocheckinbox">Auto-checkin scanned barcodes</label><br>
+        <div class="form-check"><input type="checkbox" class="form-check-input" id="autocheckinbox" value="autocheckin" checked><label class="form-check-label" for="autocheckinbox">Auto-checkin scanned barcodes</label></div>
     </div>
     <div class="overlay overlay--inline">
         <div class="overlay__content viewport" id="interactive">

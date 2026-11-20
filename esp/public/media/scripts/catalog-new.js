@@ -13,6 +13,10 @@ var ClassSubject = function (data) {
     self.grade_max   = data.grade_max;
     self.class_style = data.class_style;
     self.difficulty  = data.difficulty;
+    self.difficulty_description = data.difficulty_description;
+    self.difficulty_display = data.difficulty_description
+        ? (data.difficulty + " – " + data.difficulty_description)
+        : (data.difficulty || "");
     self.prereqs     = data.prereqs;
     self.interested  = ko.observable(false);
     self.interested_saved = ko.observable(false);
@@ -487,8 +491,11 @@ var CatalogViewModel = function () {
                 JSON.stringify(updates));
             $form.attr('action', learn_url + 'mark_classes_interested');
             $form.attr('method', 'post');
+            $form.find('input[name=csrfmiddlewaretoken]').prop('disabled', false);
         }
         else {
+            // Plain navigation, so keep the CSRF token out of the URL.
+            $form.find('input[name=csrfmiddlewaretoken]').prop('disabled', true);
             $form.attr('action', learn_url + 'studentreg');
             $form.attr('method', 'get');
         }
@@ -520,8 +527,11 @@ var CatalogViewModel = function () {
             $form.find("input[name=json_data]").val(json_data);
             $form.attr('action', learn_url + 'save_priorities');
             $form.attr('method', 'post');
+            $form.find('input[name=csrfmiddlewaretoken]').prop('disabled', false);
         }
         else {
+            // Plain navigation, so keep the CSRF token out of the URL.
+            $form.find('input[name=csrfmiddlewaretoken]').prop('disabled', true);
             $form.attr('action', learn_url + 'studentreg');
             $form.attr('method', 'get');
         }

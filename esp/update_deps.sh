@@ -90,3 +90,6 @@ fi
 python -m pip install -U pip
 python -m pip install -U -r "$BASEDIR/esp/requirements.txt"
 
+# Install npm theme dependencies (Bootstrap 3 + Bootswatch LESS sources).
+(cd "$BASEDIR/esp/public/media/theme_editor" && npm ci)
+

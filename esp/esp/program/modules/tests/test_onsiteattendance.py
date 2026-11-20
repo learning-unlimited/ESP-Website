@@ -345,7 +345,7 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
     def test_cross_midnight_section_shifts_end_time_forward_one_day(self):
         """
         Regression for the cross-midnight branch:
-            if section_end_dt.time() < start_time.time():
+            if end_time < start_time:
                 end_time += timedelta(days=1)
 
         Section 23:00–01:00, SR at 23:30 → buckets 23:00, 00:00, 01:00.
@@ -404,6 +404,46 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
             datetime.datetime(2026, 3, 20, 10, 0, 0),
             datetime.datetime(2026, 3, 20, 11, 0, 0),
         ], result)
+
+    def test_attendance_in_the_sections_final_hour_yields_one_bucket(self):
+        """
+        start_time == end_time — the boundary named in #5004.
+
+        A student marked at 11:20 in a section that ends at 11:00 collapses
+        both ends of the walk onto the same 11:00 bucket.  The loop must run
+        exactly once and stop: one bucket, one student.
+        """
+        student = self.students[0]
+        self._make_sr(student, datetime.datetime(2026, 3, 20, 11, 20, 0))
+
+        result = self.module.times_attending_class(self.program)
+
+        self.assertEqual(
+            list(result.keys()), [datetime.datetime(2026, 3, 20, 11, 0, 0)])
+        self.assertEqual(result[datetime.datetime(2026, 3, 20, 11, 0, 0)],
+                         [student])
+
+    def test_query_count_is_independent_of_registration_count(self):
+        """
+        The handler must not query per registration.
+
+        self.section spans two timeslots, so the meeting_times join also used
+        to hand back two copies of every registration.  Three students across
+        that section should still cost a flat two queries: one for the
+        registrations, one for the section end times.
+        """
+        for student in self.students:
+            self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 15, 0))
+
+        with self.assertNumQueries(2):
+            result = self.module.times_attending_class(self.program)
+
+        # The query budget is only meaningful if the answer is still right.
+        self.assertNoDuplicatesInBuckets(result)
+        for bucket in self._expected_buckets(
+                datetime.datetime(2026, 3, 20, 9, 15, 0)):
+            self.assertEqual({u.id for u in result[bucket]},
+                             {s.id for s in self.students})
 
 
 class TestTimesCheckedIn(_OnSiteAttendanceBase):

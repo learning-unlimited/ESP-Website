@@ -54,7 +54,7 @@ class ExpirableModel(models.Model):
 
     def unexpire(self, save=True):
         self.end_date = None
-        if self.start_date > datetime.now():
+        if self.start_date is not None and self.start_date > datetime.now():
             self.start_date = datetime.now()
         if save:
             self.save()
@@ -62,8 +62,8 @@ class ExpirableModel(models.Model):
     def is_valid(self, when=None):
         if when is None:
             when = datetime.now()
-        return (self.start_date is None or self.start_date < when) and \
-               (self.end_date is None or self.end_date > when)
+        return (self.start_date is None or self.start_date <= when) and \
+               (self.end_date is None or self.end_date >= when)
 
     @classmethod
     def valid_objects(cls, when=None):

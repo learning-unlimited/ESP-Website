@@ -72,31 +72,31 @@ td {
 <hr>
 {% if error %}
     <div role="alert" class="alert alert-danger">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
             {{ error }}
     </div>
 {% endif %}
 {% if success %}
     <div role="alert" class="alert alert-success">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
             {{ success }}
     </div>
 {% endif %}
 {% if invalid_grades %}
     <div role="alert" class="alert alert-danger">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
             The following students have invalid grades:<br />{% for student in invalid_grades %}{{ student }}<br />{% endfor %}
     </div>
 {% endif %}
 {% autoescape off %}
 {% if lottery_succ_msg %}
     <div role="alert" class="alert alert-success">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
             {{ lottery_succ_msg|join:"<br/>" }}
     </div>
 {% elif lottery_err_msg %}
     <div role="alert" class="alert alert-danger">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
             {{ lottery_err_msg|join:"<br/>" }}
     </div>
 {% endif %}

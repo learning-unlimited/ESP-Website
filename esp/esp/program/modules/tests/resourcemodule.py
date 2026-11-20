@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
+from esp.resources.models import Resource, ResourceType
 
 import re
 
@@ -129,6 +130,53 @@ class ResourceModuleTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.assertNotIn('Edited Room', self.checkDisplayedClassroomList())   #   checks consistency and presence of room
 
+    def _assert_bad_request(self, url, params):
+        response = self.client.get(url, params)
+        self.assertEqual(response.status_code, 400)
+
+    def _assert_post_bad_request(self, url, data):
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 400)
+
+    def testStaleOrInvalidIds(self):
+        base = '/manage/%s/resources' % self.program.getUrlBase()
+        nonexistent_id = '999999999'
+        invalid_id = 'not-an-int'
+
+        for section in ('timeslot', 'restype', 'classroom', 'equipment'):
+            section_url = '%s/%s' % (base, section)
+
+            for op in ('edit', 'delete'):
+                # missing id
+                self._assert_bad_request(section_url, {'op': op})
+                # non-integer id
+                self._assert_bad_request(section_url, {'op': op, 'id': invalid_id})
+                # nonexistent (stale) id
+                self._assert_bad_request(section_url, {'op': op, 'id': nonexistent_id})
+
+    def testStaleOrInvalidPostIds(self):
+        base = '/manage/%s/resources' % self.program.getUrlBase()
+        nonexistent_id = '999999999'
+        invalid_id = 'not-an-int'
+
+        for section in ('timeslot', 'restype', 'classroom', 'equipment'):
+            section_url = '%s/%s' % (base, section)
+            for bad_id in (nonexistent_id, invalid_id):
+                # reallyremove with tampered/stale id
+                self._assert_post_bad_request(section_url, {
+                    'command': 'reallyremove',
+                    'id': bad_id,
+                })
+                # addedit with tampered/stale id
+                self._assert_post_bad_request(section_url, {
+                    'command': 'addedit',
+                    'id': bad_id,
+                })
+            # reallyremove with missing id entirely
+            self._assert_post_bad_request(section_url, {
+                'command': 'reallyremove',
+            })
+
     def testResourceTypes(self):
         #   Check that resource types started out consistent
         self.checkDisplayedResourceTypeList()
@@ -180,5 +228,119 @@ class ResourceModuleTest(ProgramFrameworkTest):
         response = self.client.post('/manage/%s/resources/restype' % self.program.getUrlBase(), delete_restype_data)
         self.assertEqual(response.status_code, 200)
         self.assertNotIn('Edited Resource Type', self.checkDisplayedResourceTypeList())
+
+    def _create_import_resources(self):
+        """Create two source classrooms and two floating resources, each
+        with a distinct resource type, in a past program."""
+        self.create_past_program()
+        past_program = self.new_prog
+        past_timeslot = past_program.getTimeSlots().first()
+
+        classroom_type = ResourceType.get_or_create('Classroom')
+        selected_room = Resource.objects.create(
+            name='Past A', res_type=classroom_type, num_students=20,
+            event=past_timeslot)
+        unselected_room = Resource.objects.create(
+            name='Past B', res_type=classroom_type, num_students=20,
+            event=past_timeslot)
+
+        projector_type = ResourceType.objects.create(
+            name='Projector', description='Projector', program=past_program)
+        whiteboard_type = ResourceType.objects.create(
+            name='Whiteboard', description='Whiteboard', program=past_program)
+        Resource.objects.create(
+            name='Projector', res_type=projector_type, event=past_timeslot,
+            res_group=selected_room.res_group)
+        Resource.objects.create(
+            name='Whiteboard', res_type=whiteboard_type, event=past_timeslot,
+            res_group=unselected_room.res_group)
+
+        laptop_type = ResourceType.objects.create(
+            name='Laptop', description='Laptop', program=past_program)
+        camera_type = ResourceType.objects.create(
+            name='Camera', description='Camera', program=past_program)
+        selected_equipment = Resource.objects.create(
+            name='Laptop cart', res_type=laptop_type, event=past_timeslot)
+        Resource.objects.create(
+            name='Camera kit', res_type=camera_type, event=past_timeslot)
+        return (past_program, selected_room, unselected_room,
+                selected_equipment)
+
+    def _resource_import_url(self, kind):
+        return '/manage/%s/resources/%s_import' % (
+            self.program.getUrlBase(), kind)
+
+    def test_classroom_import_creates_types_only_for_selected_rooms(self):
+        """Furnishing types for unchecked classrooms are not imported."""
+        (past_program, selected_room, _, _) = \
+            self._create_import_resources()
+        post_data = {
+            'program': str(past_program.id),
+            'complete_availability': 'on',
+            'import_furnishings': 'on',
+            'import_confirm': 'yes',
+            'to_import': [str(selected_room.id)],
+        }
+
+        response = self.client.post(
+            self._resource_import_url('classroom'), post_data)
+
+        self.assertEqual(response.status_code, 200)
+        imported_types = set(ResourceType.objects.filter(
+            program=self.program).values_list('name', flat=True))
+        self.assertIn('Projector', imported_types)
+        self.assertNotIn('Whiteboard', imported_types)
+        self.assertTrue(Resource.objects.filter(
+            event__program=self.program, name='Past A',
+            res_type__name='Classroom').exists())
+        self.assertFalse(Resource.objects.filter(
+            event__program=self.program, name='Past B',
+            res_type__name='Classroom').exists())
+        self.assertFalse(Resource.objects.filter(
+            event__program=self.program, res_type__name='Whiteboard').exists())
+        self.assertEqual(Resource.objects.filter(
+            event__program=self.program, res_type__name='Projector').count(),
+            self.program.getTimeSlots().count())
+
+        # A retry should not duplicate the selected room or furnishing type.
+        self.client.post(self._resource_import_url('classroom'), post_data)
+        self.assertEqual(ResourceType.objects.filter(
+            program=self.program, name='Projector').count(), 1)
+        self.assertEqual(Resource.objects.filter(
+            event__program=self.program, name='Past A',
+            res_type__name='Classroom').count(),
+            self.program.getTimeSlots().count())
+
+    def test_complete_equipment_import_creates_types_only_for_selected_items(self):
+        """Complete-availability imports do not create unchecked equipment types."""
+        (past_program, _, _, selected_equipment) = \
+            self._create_import_resources()
+        post_data = {
+            'program': str(past_program.id),
+            'complete_availability': 'on',
+            'import_confirm': 'yes',
+            'to_import': [str(selected_equipment.id)],
+        }
+
+        response = self.client.post(
+            self._resource_import_url('equipment'), post_data)
+
+        self.assertEqual(response.status_code, 200)
+        imported_types = set(ResourceType.objects.filter(
+            program=self.program).values_list('name', flat=True))
+        self.assertIn('Laptop', imported_types)
+        self.assertNotIn('Camera', imported_types)
+        self.assertTrue(Resource.objects.filter(
+            event__program=self.program, name='Laptop cart').exists())
+        self.assertFalse(Resource.objects.filter(
+            event__program=self.program, name='Camera kit').exists())
+
+        # A retry should not duplicate the resource type or per-timeslot items.
+        self.client.post(self._resource_import_url('equipment'), post_data)
+        self.assertEqual(ResourceType.objects.filter(
+            program=self.program, name='Laptop').count(), 1)
+        self.assertEqual(Resource.objects.filter(
+            event__program=self.program, name='Laptop cart').count(),
+            self.program.getTimeSlots().count())
 
 

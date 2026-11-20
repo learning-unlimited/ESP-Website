@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
@@ -55,6 +56,20 @@ class DeactivationModule(ProgramModuleObj):
             "choosable": 1,
         }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface mass user deactivation in the admin dashboard search dropdown.
+        # Only the main view is searchable; aux endpoints (deactivatefinal) return None.
+        if view_name != "deactivate":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Mass Deactivate Users",
+            category=SEARCH_CATEGORY_PARTICIPANTS,
+            keywords=["deactivate", "disable", "users", "accounts", "mass"],
+        )
+
     @aux_call
     @needs_admin
     def deactivatefinal(self, request, tl, one, two, module, extra, prog):
@@ -63,8 +78,11 @@ class DeactivationModule(ProgramModuleObj):
         elif request.POST.get('confirm', '') == '':
             raise ESPError()('You must confirm that you want to deactivate these users.')
 
-        # get the filter to use and text message to send from the request; this is set in grouptextpanel form
-        filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        # Get the filter to use from the request; this is set earlier in the mass deactivation flow.
+        try:
+            filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        except (PersistentQueryFilter.DoesNotExist, ValueError):
+            raise ESPError()('The selected filter no longer exists or is invalid. Please restart the deactivation process.')
         users = filterObj.getList(ESPUser)
 
         if not users:

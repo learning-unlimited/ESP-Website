@@ -40,7 +40,7 @@ from django.db.models.query import Q
 
 from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PRINTABLES
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.program.models import RegistrationProfile
 from esp.users.controllers.usersearch import UserSearchController
@@ -70,7 +70,7 @@ class NameTagModule(ProgramModuleObj):
             id="manage_selectidoptions",
             url="/manage/%s/selectidoptions" % base,
             title="Nametags",
-            category="Printables",
+            category=SEARCH_CATEGORY_PRINTABLES,
             keywords=["nametags", "name tags", "ids", "badges"],
         )
 
@@ -202,7 +202,7 @@ class NameTagModule(ProgramModuleObj):
 
         elif idtype == 'other':
             user_title = request.POST['blanktitle']
-            if request.POST['group'] == '':
+            if request.POST.get('group', '') == '':
                 raise ESPError("You need to select a group", log=False)
             group = request.POST['group']
             user_Q = Q(groups=group)
@@ -232,7 +232,11 @@ class NameTagModule(ProgramModuleObj):
         elif idtype == 'blank':
             users = []
             user_title = request.POST['blanktitle']
-            for i in range(int(request.POST['number'])):
+            try:
+                number = int(request.POST.get('number', ''))
+            except ValueError:
+                raise ESPError("You need to enter a valid number of blank name tags", log=False)
+            for i in range(number):
                 users.append({'title': user_title,
                               'name' : '',
                               'id'   : ''})
