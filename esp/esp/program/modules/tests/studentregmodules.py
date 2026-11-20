@@ -356,16 +356,16 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
         super().setUp(num_students=3, num_teachers=2, classes_per_teacher=1)
         self.add_student_profiles()
         self.student = self.students[0]
-        self.lunch_category, _ = ClassCategories.objects.get_or_create(category='Lunch', symbol='L')
+        self.lunch_category, _ = ClassCategories.objects.get_or_create(category='Lunch', is_lunch=True, symbol='L')
         self.lunch_class, _ = ClassSubject.objects.get_or_create(
             title='Lunch Period', category=self.lunch_category, grade_min=7, grade_max=12,
             parent_program=self.program, class_size_max=100, class_info='Lunch break')
         self.lunch_class.accept()
-        
+
         RecordType.objects.get_or_create(name='lunch_selected')
 
     def test_lunch_selection_cross_month_date(self):
-    
+
         from esp.program.modules.handlers.studentlunchselection import StudentLunchSelectionForm
 
         # Create two sections
@@ -404,10 +404,10 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
         # Assertions
         self.assertIn(event1.id, choices)
         self.assertNotIn(event2.id, choices)
-        
+
         self.assertEqual(form.initial.get('timeslot'), event1.id)
 
-    
+
 
     def test_is_completed(self):
         module = self.program.getModule('StudentLunchSelection')
@@ -499,3 +499,66 @@ class StudentClassRegModuleTest(ProgramFrameworkTest):
         module = self.program.getModule('StudentClassRegModule')
         desc = module.studentDesc()
         self.assertIn('enrolled', desc)
+
+    def test_prepare_default_context_independent_across_calls(self):
+        """Separate calls to prepare() without context must not share dictionary state."""
+        from unittest.mock import patch
+        module = self.program.getModule('StudentClassRegModule')
+        module.user = self.student
+        with patch('esp.program.modules.handlers.studentclassregmodule.get_current_request') as mock_req:
+            mock_req.return_value.user = self.student
+            res1 = module.prepare()
+            res2 = module.prepare()
+
+            self.assertIsNot(res1, res2)
+            res1['injected_leak'] = 'leaked_data'
+            res3 = module.prepare()
+            self.assertNotIn('injected_leak', res3)
+
+    def test_prepare_explicit_context_preserved(self):
+        """Explicit context dictionary must be mutated and returned without re-instantiation."""
+        from unittest.mock import patch
+        module = self.program.getModule('StudentClassRegModule')
+        module.user = self.student
+        with patch('esp.program.modules.handlers.studentclassregmodule.get_current_request') as mock_req:
+            mock_req.return_value.user = self.student
+            explicit_ctx = {'initial_key': 'initial_val'}
+            result = module.prepare(explicit_ctx)
+            self.assertIs(result, explicit_ctx)
+            self.assertEqual(result['initial_key'], 'initial_val')
+            self.assertIn('timeslots', result)
+
+    def test_prepare_explicit_empty_dict_preserved(self):
+        """An explicit empty dictionary {} must not be replaced by a new dictionary."""
+        from unittest.mock import patch
+        module = self.program.getModule('StudentClassRegModule')
+        module.user = self.student
+        with patch('esp.program.modules.handlers.studentclassregmodule.get_current_request') as mock_req:
+            mock_req.return_value.user = self.student
+            empty_ctx = {}
+            result = module.prepare(empty_ctx)
+            self.assertIs(result, empty_ctx)
+            self.assertIn('timeslots', result)
+
+    def test_prepare_static_default_context_independent_across_calls(self):
+        """Separate calls to prepare_static() without context must receive independent dictionaries."""
+        from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
+        res1 = StudentClassRegModule.prepare_static(self.student, self.program)
+        res2 = StudentClassRegModule.prepare_static(self.student, self.program)
+
+        self.assertIsNot(res1, res2)
+        res1['injected_leak'] = 'leaked_data'
+        res3 = StudentClassRegModule.prepare_static(self.student, self.program)
+        self.assertNotIn('injected_leak', res3)
+
+    def test_prepare_static_explicit_context_preserved(self):
+        """Explicit context dictionary to prepare_static must be preserved and mutated."""
+        from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
+        explicit_ctx = {'existing_key': 42}
+        result = StudentClassRegModule.prepare_static(self.student, self.program, context=explicit_ctx)
+        self.assertIs(result, explicit_ctx)
+        self.assertEqual(result['existing_key'], 42)
+
+        empty_ctx = {}
+        result_empty = StudentClassRegModule.prepare_static(self.student, self.program, context=empty_ctx)
+        self.assertIs(result_empty, empty_ctx)

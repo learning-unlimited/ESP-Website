@@ -192,7 +192,7 @@ function toggleCheck(element) {
                         For any attending students not enrolled in this section:
                         <br /><i class="material-icons-outlined md-3 pointer" onclick="toggleCheck(this);" style="vertical-align: text-bottom;">check_box</i><input type="checkbox" name="enroll" checked hidden> Enroll them in this section
                         <br /><i class="material-icons-outlined md-3 pointer" onclick="toggleCheck(this);" style="vertical-align: text-bottom;">check_box</i><input type="checkbox" name="unenroll" checked hidden> Unenroll them from their conflicting sections
-                        <br /><input style="font-size: 4vh !important;" type="Submit" class="btn" value="Submit Attendance" />
+                        <br /><input style="font-size: 4vh !important;" type="Submit" class="btn btn-primary" value="Submit Attendance" />
                     </div>
                 </td>
             </tr>
@@ -206,16 +206,16 @@ function toggleCheck(element) {
     <table style="height:8vh; border:none;"><tr style="border:none;"><td style="border:none;"></td></tr></table>
   </div>
 </center>
-<div class="navbar bottom">
-  <table>
-    <tr>
-      <td><a class="no-dec" href="/teach/{{one}}/{{two}}/onsitedetails/{% if sections|length == 1 %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">list</i>
-        <br>Section Info{% if not sections|length == 1 %}s{% endif %}</td>
-      <td class="selected"><a class="no-dec" href="/teach/{{one}}/{{two}}/onsiteroster/{% if sections|length == 1 %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">assignment</i>
-        <br>Section Roster{% if not sections|length == 1 %}s{% endif %}</td>
-    </tr>
-  </table>
-</div>
+<nav class="navbar bottom" aria-label="Section pages">
+  <a class="navbar-item" href="/teach/{{one}}/{{two}}/onsitedetails/{% if sections|length == 1 %}{{ sections.0.id }}{% endif %}">
+    <i class="material-icons md-5" aria-hidden="true">list</i>
+    <span>Section Info{% if not sections|length == 1 %}s{% endif %}</span>
+  </a>
+  <a class="navbar-item selected" href="/teach/{{one}}/{{two}}/onsiteroster/{% if sections|length == 1 %}{{ sections.0.id }}{% endif %}" aria-current="page">
+    <i class="material-icons md-5" aria-hidden="true">assignment</i>
+    <span>Section Roster{% if not sections|length == 1 %}s{% endif %}</span>
+  </a>
+</nav>
 
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 

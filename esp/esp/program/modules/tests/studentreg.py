@@ -33,14 +33,15 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.models import FinancialAidRequest, SplashInfo, RegistrationType, StudentRegistration, ProgramModule
-from esp.accounting.models import FinancialAidGrant, LineItemType
+from esp.accounting.models import FinancialAidGrant, LineItemType, LineItemOptions, Transfer
+from esp.users.models import Permission
 
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.tagdict.models import Tag
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, GradeChangeRequest
 
 from decimal import Decimal
 import json
@@ -49,7 +50,7 @@ import re
 
 class StudentRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        from esp.program.modules.base import ProgramModule, ProgramModuleObj
+        from esp.program.modules.base import ProgramModule
 
         # Set up the program -- we want to be sure of these parameters
         kwargs.update( {
@@ -95,6 +96,15 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertContains(response, sec.title(), status_code=200)
         for ts in sec.meeting_times.all():
             self.assertContains(response, ts.short_description, status_code=200)
+
+    def test_mainpage_no_raw_template_comments(self):
+        """Template comments must not leak into the rendered main page (#6067)."""
+        student = random.choice(self.students)
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+
+        response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
+        self.assertContains(response, 'id="paper-schedule-optout"', status_code=200)
+        self.assertNotContains(response, '{#')
 
     def test_catalog(self):
 
@@ -484,6 +494,99 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 7)
 
+        #   Check that selecting multiple options for a multi-select extra item works (including custom amount)
+        lit4 = LineItemType.objects.create(
+            program=self.program,
+            text='Workshops',
+            required=False,
+            max_quantity=1,
+            amount_dec=Decimal('0.00'),
+            selection_type='multiple',
+            for_finaid=True,
+        )
+        opt_a = LineItemOptions.objects.create(lineitem_type=lit4, description='AI', amount_dec=Decimal('12.00'), is_custom=False)
+        opt_b = LineItemOptions.objects.create(lineitem_type=lit4, description='Robotics', amount_dec=Decimal('8.00'), is_custom=False)
+        opt_c = LineItemOptions.objects.create(lineitem_type=lit4, description='Other', amount_dec=None, is_custom=True)
+
+        post_data = {
+            '%d-count' % lit2.id: '0',
+            'multi%d-option' % lit3.id: str(lio[0]),
+            'multi%s-options' % lit4.id: [str(opt_a.id), str(opt_c.id)],
+            'multi%s-custom_amount_%s' % (lit4.id, opt_c.id): '5.50',
+            '%d-siblingdiscount' % sd_lit.id: 'False',
+        }
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
+
+        #   Ensure that two Transfers exist for the multi-select item (one per selected option)
+        workshop_transfers = Transfer.objects.filter(user=student, line_item=lit4).order_by('id')
+        self.assertEqual(workshop_transfers.count(), 2)
+        self.assertEqual(set(workshop_transfers.values_list('option_id', flat=True)), {opt_a.id, opt_c.id})
+
+        #   Check that the saved selections are restored when the form is reloaded,
+        #   including the amount that was entered for the custom option
+        response = self.client.get('/learn/%s/extracosts' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        forms_by_lineitem = {f['LineItem'].id: f['form'] for f in response.context['forms']}
+        workshops_form = forms_by_lineitem[lit4.id]
+        self.assertEqual(set(workshops_form.initial['options']), {opt_a.id, opt_c.id})
+        self.assertEqual(workshops_form.initial['custom_amount_%d' % opt_c.id], Decimal('5.50'))
+
+        #   Every checkbox needs the data- attributes that extracosts.js reads to keep
+        #   the displayed total in sync, and only custom options get an amount input
+        option_rows = {str(checkbox.data['value']): (checkbox, amount_field)
+                       for checkbox, amount_field in workshops_form.option_rows()}
+        self.assertEqual(set(option_rows), {str(opt_a.id), str(opt_b.id), str(opt_c.id)})
+        self.assertIsNone(option_rows[str(opt_a.id)][1])
+        self.assertIsNotNone(option_rows[str(opt_c.id)][1])
+        self.assertIn('data-cost="12.00"', str(option_rows[str(opt_a.id)][0]))
+        self.assertIn('data-for_finaid="true"', str(option_rows[str(opt_b.id)][0]))
+        self.assertIn('data-is_custom="true"', str(option_rows[str(opt_c.id)][0]))
+
+        #   The same data- attributes are needed by the single-select radio buttons
+        self.assertIn('data-cost="7.00"', str(forms_by_lineitem[lit3.id]['option']))
+
+        #   Check that selecting a custom option without entering an amount is an
+        #   error, and does not discard the options that were already saved
+        post_data = {
+            '%d-count' % lit2.id: '0',
+            'multi%d-option' % lit3.id: str(lio[0]),
+            'multi%d-options' % lit4.id: [str(opt_b.id), str(opt_c.id)],
+            'multi%d-custom_amount_%d' % (lit4.id, opt_c.id): '',
+            '%d-siblingdiscount' % sd_lit.id: 'False',
+        }
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['error_custom'])
+        self.assertEqual(set(Transfer.objects.filter(user=student, line_item=lit4).values_list('option_id', flat=True)),
+                         {opt_a.id, opt_c.id})
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
+
+        #   Check that changing the selection replaces the previous options
+        post_data['multi%d-options' % lit4.id] = [str(opt_b.id)]
+        del post_data['multi%d-custom_amount_%d' % (lit4.id, opt_c.id)]
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(list(Transfer.objects.filter(user=student, line_item=lit4).values_list('option_id', flat=True)),
+                         [opt_b.id])
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 8)
+
+        #   Check that clearing the selection removes all of the options
+        del post_data['multi%d-options' % lit4.id]
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Transfer.objects.filter(user=student, line_item=lit4).exists())
+        self.assertEqual(iac.amount_due(), program_cost + 7)
+
+        #   Restore the multi-select options for the financial aid checks below
+        post_data['multi%d-options' % lit4.id] = [str(opt_a.id), str(opt_c.id)]
+        post_data['multi%d-custom_amount_%d' % (lit4.id, opt_c.id)] = '5.50'
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
+
         #   Check that financial aid applies to the "full" cost including the extra items
         #   (e.g. we are not forcing financial aid students to pay for food)
         request = FinancialAidRequest.objects.create(user=student, program=self.program)
@@ -510,6 +613,152 @@ class StudentRegTest(ProgramFrameworkTest):
         spi = SplashInfo.getForUser(student, self.program)
         self.assertEqual(spi.siblingname, 'Test Name')
 
+    def test_catalog_deadline(self):
+        """Test that catalog respects Student/Catalog deadline."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        # No deadline configured - catalog should work
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+        # Active deadline - catalog should work
+        perm = Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=1),
+            end_date=timezone.now() + timedelta(days=1)
+        )
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Cache-Control'], 'public, max-age=120')
+
+        # Expired deadline - should show error
+        perm.end_date = timezone.now() - timedelta(hours=1)
+        perm.save()
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+        # Future deadline (configured but not yet started) - should also be closed
+        perm.start_date = timezone.now() + timedelta(hours=1)
+        perm.end_date = timezone.now() + timedelta(days=1)
+        perm.save()
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+    def test_catalog_deadline_admin_bypass(self):
+        """Admins can see the catalog while it is closed; students cannot."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=2),
+            end_date=timezone.now() - timedelta(hours=1),
+        )
+
+        # A student still gets the deadline page
+        student = random.choice(self.students)
+        self.assertTrue(self.client.login(username=student.username, password='password'))
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+        # An admin gets the real catalog, marked no-store so that a shared cache
+        # cannot keep it and hand it to students afterwards
+        admin = random.choice(self.admins)
+        self.assertTrue(self.client.login(username=admin.username, password='password'))
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.expect_template(response, 'program/modules/studentclassregmodule/catalog.html')
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Cache-Control'], 'no-store')
+        self.assertIsInstance(json.loads(response.content), list)
+
+    def test_catalog_deadline_is_configurable(self):
+        """Admins must be able to create the Student/Catalog deadline."""
+        from esp.program.modules.handlers.admincore import NewDeadlineForm
+
+        self.assertIn('Student/Catalog', Permission.PERMISSION_CHOICES_FLAT)
+        self.assertIn('Student/Catalog', Permission.deadline_types)
+
+        form = NewDeadlineForm({'deadline_type': 'Student/Catalog', 'role': 'Student'})
+        self.assertTrue(form.is_valid(), form.errors)
+
+        Permission(permission_type='Student/Catalog', program=self.program,
+                   user=None).full_clean()
+
+    def test_catalog_json_open(self):
+        """catalog_json returns 200 with JSON when catalog is open."""
+        import json
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        # No deadline at all — should be open
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        self.assertEqual(response['Cache-Control'], 'public, max-age=120')
+        data = json.loads(response.content)
+        self.assertIsInstance(data, list)
+
+        # Active deadline — should still be open
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=1),
+            end_date=timezone.now() + timedelta(days=1),
+        )
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertIsInstance(data, list)
+
+    def test_catalog_json_closed(self):
+        """catalog_json returns 403 with no-store cache header when catalog is closed."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        # Expired deadline — catalog should be closed
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=2),
+            end_date=timezone.now() - timedelta(hours=1),
+        )
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+    def test_catalog_pdf_closed(self):
+        """catalog_pdf returns deadline page with no-store cache header when catalog is closed."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=2),
+            end_date=timezone.now() - timedelta(hours=1),
+        )
+        response = self.client.get('/learn/%s/catalog_pdf' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+        self.assertEqual(response['Cache-Control'], 'no-store')
 
 class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
     """
@@ -731,14 +980,12 @@ class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
         """
         visible = RegistrationTypeController.getVisibleRegistrationTypeNames(999999999)
         self.assertEqual(set(visible), set(RegistrationTypeController.default_names))
+
 class UserviewGradeUpdateTest(ProgramFrameworkTest):
     """
-    Tests for the grade-update functionality introduced in PR #208 (commit
-    7db5367) that resolves Issue #26.  The feature allows an admin to visit
-    /manage/userview?username=<student>&graduation_year=<year> and have the
-    student's graduation year updated immediately.
-
-    Covers Issue #226: "Test for updating student grades".
+    Tests for the grade-update functionality.  The feature allows an admin to visit
+    /manage/userview and have the student's graduation year updated
+    immediately. Grade changes must be submitted via POST.
     """
 
     def setUp(self, *args, **kwargs):
@@ -779,12 +1026,12 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
 
     def test_admin_can_update_grade(self):
         """A logged-in admin should be able to change a student's graduation
-        year via the graduation_year GET parameter."""
+        year via the graduation_year POST parameter."""
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
-        })
+        }, follow=True)
         self.assertEqual(response.status_code, 200)
 
         # Re-fetch from DB to confirm persistence.
@@ -803,7 +1050,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         """A student is not an administrator, so the view should return 403
         and leave the graduation year unchanged."""
         self.client.login(username=self.student.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
         })
@@ -828,7 +1075,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         unchanged."""
         teacher = self.teachers[0]
         self.client.login(username=teacher.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
         })
@@ -852,7 +1099,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         the graduation year must remain untouched."""
         # Ensure no session cookie is active.
         self.client.logout()
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
         })
@@ -878,10 +1125,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         the view returns 200 without crashing, and the graduation year in the
         DB remains unchanged."""
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': 'not_a_number',
-        })
+        }, follow=True)
         self.assertEqual(
             response.status_code, 200,
             "Expected 200 for invalid graduation_year input, got %s"
@@ -906,10 +1153,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         profile.save()
 
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
-        })
+        }, follow=True)
         self.assertEqual(response.status_code, 200)
 
         updated_info = self.student.getLastProfile().student_info
@@ -925,10 +1172,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         self.client.login(username=self.admin.username, password='password')
 
         for invalid_year in ('-100', '999999'):
-            response = self.client.get(self.userview_base, data={
+            response = self.client.post(self.userview_base, data={
                 'username': self.student.username,
                 'graduation_year': invalid_year,
-            })
+            }, follow=True)
             self.assertEqual(response.status_code, 200)
 
             info = self.student.getLastProfile().student_info
@@ -945,10 +1192,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         profile.save()
 
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': 'not_a_number',
-        })
+        }, follow=True)
         self.assertEqual(response.status_code, 200)
 
         profile.refresh_from_db()
@@ -974,3 +1221,81 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
             'change_grade_form', response.context,
             "'change_grade_form' was not found in the userview template context.",
         )
+
+    # ------------------------------------------------------------------
+    # Test 8: State-changing actions are ignored on GET (CSRF hardening)
+    # ------------------------------------------------------------------
+
+    def test_get_does_not_change_grade(self):
+        """A GET carrying graduation_year (e.g. a forged link) must render the
+        page without modifying the graduation year."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
+        self.assertEqual(response.status_code, 200)
+
+        info = self.student.getLastProfile().student_info
+        self.assertEqual(
+            info.graduation_year, self.initial_grad_year,
+            "Graduation year was modified by a GET request.",
+        )
+
+    def test_post_redirects_to_userview(self):
+        """A grade-change POST should redirect back to the GET view,
+        preserving the username and program."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.post(self.userview_base, data={
+            'username': self.student.username,
+            'program': self.program.id,
+            'graduation_year': self.new_grad_year,
+        })
+        self.assertRedirects(
+            response,
+            '/manage/userview?username=%s&program=%s' % (self.student.username, self.program.id),
+            fetch_redirect_response=False,
+        )
+
+    def test_grade_change_request_approval_requires_post(self):
+        """Approving a grade change request via GET is ignored; via POST it is
+        approved and acknowledged by the admin."""
+        gcr = GradeChangeRequest.objects.create(
+            claimed_grade=12,
+            grade_before_request=8,
+            reason='test',
+            requesting_student=self.student,
+        )
+        self.client.login(username=self.admin.username, password='password')
+
+        self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'approve_request': gcr.id,
+        })
+        gcr.refresh_from_db()
+        self.assertIsNone(gcr.approved)
+
+        self.client.post(self.userview_base, data={
+            'username': self.student.username,
+            'approve_request': gcr.id,
+        })
+        gcr.refresh_from_db()
+        self.assertTrue(gcr.approved)
+        self.assertEqual(gcr.acknowledged_by, self.admin)
+
+    def test_grade_change_request_must_belong_to_viewed_user(self):
+        """A request id belonging to a different student is not acted on."""
+        other_student = self.students[1]
+        gcr = GradeChangeRequest.objects.create(
+            claimed_grade=12,
+            grade_before_request=8,
+            reason='test',
+            requesting_student=other_student,
+        )
+        self.client.login(username=self.admin.username, password='password')
+        self.client.post(self.userview_base, data={
+            'username': self.student.username,
+            'reject_request': gcr.id,
+        })
+        gcr.refresh_from_db()
+        self.assertIsNone(gcr.approved)

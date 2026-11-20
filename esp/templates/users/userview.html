@@ -44,7 +44,7 @@
     <h2>
         Administrative links
     </h2>
-    <form id="morphlink-form" action="/myesp/morph" method="post" style="display:inline">{% csrf_token %}
+    <form id="morphlink-form" action="{% url 'morph_into_user' %}" method="post" style="display:inline">{% csrf_token %}
         <input type="hidden" name="morph_user" value="{{user.id}}"/>
         <a id="morphlink" class="sidelink" onclick="$j(this).parent().submit();return false;" href="">Morph into this user</a>
     </form>
@@ -55,7 +55,7 @@
         <a id="biolink" class="sidelink" href="/accounting/user?target_user={{user.id}}">View accounting info</a>
     {% endif %}
     {% if "Teacher" in user.getUserTypes %}
-        <a id="biolink" class="sidelink" href="/teach/teachers/{{user.username}}/bio.html">Go to teacher bio</a>
+        <a id="biolink" class="sidelink" href="{% url 'teacher_bio' tl='teach' username=request.user.username %}">Go to teacher bio</a>
     {% endif %}
     <form action="/manage/{% if user.is_active %}de{% endif %}activate_user" method="post">{% csrf_token %}
         <input type="hidden" name="user_id" value="{{user.id}}"/>
@@ -67,7 +67,7 @@
                 Student links<br/>
                 (for {{program.niceName}})
             </h2>
-            <form id="onsitelink-form" action="/myesp/morph" method="post" style="display:inline">{% csrf_token %}
+            <form id="onsitelink-form" action="{% url 'morph_into_user' %}" method="post" style="display:inline">{% csrf_token %}
                 <input type="hidden" name="morph_user" value="{{user.id}}"/>
                 <input type="hidden" name="onsite" value="{{program.id}}"/>
                 <a id="onsitelink" class="sidelink" onclick="$j(this).parent().submit();return false;" href="">Onsite registration</a>
@@ -261,7 +261,8 @@
         <table class="dottedtable">
         <tr><td class="key">School</td><td>{{ profile.student_info.school }}</td></tr>
         <tr><td class="key">Graduation Year</td><td>{{ profile.student_info.graduation_year }} (currently {{ user.getGrade }}th Grade)<br />
-        <form action="/manage/userview/" method="get" name="change_grade">
+        <form action="/manage/userview/" method="post" name="change_grade">
+        {% csrf_token %}
         {{ change_grade_form.graduation_year }}
         <input type="hidden" name="username" value="{{ user.username }}" />
         {% if program %}
@@ -276,7 +277,8 @@
                 <span class="bi bi-info-circle" aria-hidden="true"></span>
                 {{ gcr }}{% if gcr.reason %} ({{ gcr.reason }}){% endif %}<br />
                 <center>
-                    <form action="/manage/userview/" method="get" name="approve_grade_request">
+                    <form action="/manage/userview/" method="post" name="approve_grade_request">
+                        {% csrf_token %}
                         <input type="hidden" name="approve_request" value="{{ gcr.id }}" />
                         <input type="hidden" name="username" value="{{ user.username }}" />
                         {% if program %}
@@ -284,7 +286,8 @@
                         {% endif %}
                         <input type="submit" value="Approve" class="btn btn-secondary" />
                     </form>
-                    <form action="/manage/userview/" method="get" name="reject_grade_request">
+                    <form action="/manage/userview/" method="post" name="reject_grade_request">
+                        {% csrf_token %}
                         <input type="hidden" name="reject_request" value="{{ gcr.id }}" />
                         <input type="hidden" name="username" value="{{ user.username }}" />
                         {% if program %}
@@ -388,7 +391,7 @@
 {% endif %}{% endwith %}
 
 {% with other_enrolled as classes %}{% if classes %}
-    <a class="btn" data-toggle="collapse" style="margin-top: 10px;" data-target="#other-enrolled-collapse">Show/hide classes enrolled in other programs</a>
+    <a class="btn btn-secondary" data-bs-toggle="collapse" style="margin-top: 10px;" data-bs-target="#other-enrolled-collapse">Show/hide classes enrolled in other programs</a>
     <div id="other-enrolled-collapse" class="collapse">
     <h2>Classes Enrolled In (Other Programs):</h2>
     <br />
@@ -413,7 +416,7 @@
 {% endif %}{% endwith %}
 
 {% with other_taken as classes %}{% if classes %}
-    <a class="btn" data-toggle="collapse" style="margin-top: 10px;" data-target="#other-taken-collapse">Show/hide classes from other programs</a>
+    <a class="btn btn-secondary" data-bs-toggle="collapse" style="margin-top: 10px;" data-bs-target="#other-taken-collapse">Show/hide classes from other programs</a>
     <div id="other-taken-collapse" class="collapse">
     <h2>Classes Taken Or Applied For (Other Programs):</h2>
     <br />

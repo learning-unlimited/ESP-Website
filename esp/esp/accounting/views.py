@@ -69,16 +69,13 @@ def user_summary(request):
     argument instead.'''
     user = None
     context = {}
+    form = StudentSearchForm()
     if 'target_user' in request.GET:
-        users = ESPUser.objects.filter(id=request.GET['target_user'])
-        if users.count() == 1:
-            user = users[0]
+        user = ESPUser.objects.filter(id=request.GET['target_user']).first()
     elif 'target_user' in request.POST:
         form = StudentSearchForm(request.POST)
         if form.is_valid():
             user = form.cleaned_data['target_user']
-    else:
-        form = StudentSearchForm()
 
     if user:
         form = StudentSearchForm(initial={'target_user': user.id})

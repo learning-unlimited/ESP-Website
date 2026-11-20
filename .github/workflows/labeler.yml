@@ -11,9 +11,10 @@ permissions:
 jobs:
   labeler:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: github.repository == 'learning-unlimited/ESP-Website'
     steps:
-      - uses: actions/labeler@v6.1.0
+      - uses: actions/labeler@v7.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           sync-labels: true  # Remove labels when files no longer match

@@ -1,7 +1,6 @@
 <ul class="navbar-nav">
   <li class="nav-item dropdown">
-    <a class="nav-link navbar-item-label" data-toggle="dropdown">About Us</a>
-    <a class="nav-link dropdown-toggle caret-wrapper" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="About Us menu"><b class="caret"></b></a>
+    <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" data-bs-display="static" aria-haspopup="true" aria-expanded="false" aria-label="About Us menu">About Us</a>
     <ul class="dropdown-menu">
       {% if theme.contact_info %}
       <li><div class="dropdown-item-text">{{ theme.contact_info|linebreaksbr }}</div></li>

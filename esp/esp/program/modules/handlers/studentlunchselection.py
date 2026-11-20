@@ -34,10 +34,8 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base    import ProgramModuleObj, main_call, needs_student_in_grade, meets_cap, meets_deadline
-from esp.program.models          import ClassSection, StudentRegistration
+from esp.program.models          import ClassSection, StudentRegistration, schedule_change_blockers
 from esp.users.models            import Record, RecordType
-from esp.cal.models              import Event
-
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.web               import render_to_response
 
@@ -56,18 +54,13 @@ class StudentLunchSelectionForm(forms.Form):
 
         #   Set choices for timeslot field
         #   [(None, '')] +
-        
-        events_filtered = Event.objects.filter(
-            meeting_times__parent_class__parent_program=self.program,
-            meeting_times__parent_class__category__category='Lunch',
-            start__date=self.day,
-            ).order_by('start').distinct()
+        events_filtered = self.program.lunch_timeslots().filter(start__date=self.day)
         self.fields['timeslot'].choices = [(ts.id, ts.short_description) for ts in events_filtered] + [(-1, 'No lunch period')]
 
     def load_data(self):
         lunch_registrations = StudentRegistration.valid_objects().filter(
             user=self.user,
-            section__parent_class__category__category='Lunch',
+            section__parent_class__category__is_lunch=True,
             section__parent_class__parent_program=self.program
         ).select_related('section').prefetch_related('section__meeting_times')
 
@@ -84,39 +77,45 @@ class StudentLunchSelectionForm(forms.Form):
                 self.initial['timeslot'] = first_meeting_time.id
 
     def save_data(self):
-        msg = ''
-        result = False
-
-        #   Clear existing lunch periods for this day
+        #   The existing lunch periods for this day, which this choice replaces
+        old_sections = []
         for section in self.user.getSections(self.program):
-            if section.parent_class.category.category == 'Lunch':
-                    first_meeting_time = section.meeting_times.order_by('start').first()
-                    if first_meeting_time and first_meeting_time.start.date() == self.day:
-                        section.unpreregister_student(self.user)
+            if section.parent_class.category.is_lunch:
+                first_meeting_time = section.meeting_times.order_by('start').first()
+                if first_meeting_time and first_meeting_time.start.date() == self.day:
+                    old_sections.append(section)
 
-        #   Attempt to sign up for a new lunch period if specified
+        new_sections = []
         if int(self.cleaned_data['timeslot']) != -1:
-            sections = list(ClassSection.objects.filter(parent_class__parent_program=self.program, parent_class__category__category='Lunch', meeting_times=self.cleaned_data['timeslot']))
-            if len(sections) > 0:
-                ca_msg = sections[0].cannotAdd(self.user, ignore_constraints=True)
-                if ca_msg:
-                    result = False
-                else:
-                    result = sections[0].preregister_student(self.user)
-                if result:
-                    msg = 'Registered for %s.' % sections[0]
-                else:
-                    msg = 'Failed to register for %s.  Please try another lunch period or remove conflicting classes from your schedule.' % sections[0]
-            else:
-                msg = 'No lunch sections are available for that timeslot.'
-        else:
-            result = True
-            msg = 'Lunch period declined.'
+            new_sections = list(ClassSection.objects.filter(parent_class__parent_program=self.program, parent_class__category__is_lunch=True, meeting_times=self.cleaned_data['timeslot']))
+            if len(new_sections) == 0:
+                return (False, 'No lunch sections are available for that timeslot.')
 
-        return (result, msg)
+        #   Declining lunch, or moving it, can violate an enforced constraint.
+        #   Check the whole swap before giving up the existing registration.
+        request = get_current_request()
+        if not getattr(getattr(request, 'user', None), 'onsite_local', False):
+            blocked = schedule_change_blockers(self.user, self.program,
+                                               add_sections=new_sections[:1],
+                                               remove_sections=old_sections)
+            if blocked:
+                return (False, 'You need to %s.' % blocked[0])
+
+        for section in old_sections:
+            section.unpreregister_student(self.user)
+
+        if len(new_sections) == 0:
+            return (True, 'Lunch period declined.')
+
+        ca_msg = new_sections[0].cannotAdd(self.user)
+        result = False if ca_msg else new_sections[0].preregister_student(self.user)
+        if result:
+            return (True, 'Registered for %s.' % new_sections[0])
+        return (False, 'Failed to register for %s.  Please try another lunch period or remove conflicting classes from your schedule.' % new_sections[0])
 
 class StudentLunchSelection(ProgramModuleObj):
     doc = """Allows students to enroll in lunch blocks."""
+    permission_types = ('Student/Classes/Lunch',)
 
     @classmethod
     def module_properties(cls):
@@ -172,7 +171,7 @@ class StudentLunchSelection(ProgramModuleObj):
         return render_to_response(self.baseDir()+'select_lunch.html', request, context)
 
     def isStep(self):
-        return Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').exists()
+        return self.program.lunch_timeslots().exists()
 
     class Meta:
         proxy = True

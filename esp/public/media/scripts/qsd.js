@@ -17,10 +17,22 @@ function post_encode(data) {
 
 function qsd_inline_edit(qsd_url, edit_id) {
     //  Switch the visibility of the edit and view areas.
-    document.getElementById("inline_edit_" + edit_id).className = "qsd_edit_visible";
-    $j("#inline_edit_msg_" + edit_id).hide();
-    document.getElementById("qsd_content_" + edit_id).focus();
-    document.getElementById("inline_qsd_" + edit_id).className = "hidden";
+    var editArea = document.getElementById("inline_edit_" + edit_id);
+    var contentArea = document.getElementById("qsd_content_" + edit_id);
+    var viewArea = document.getElementById("inline_qsd_" + edit_id);
+    var msgArea = $j("#inline_edit_msg_" + edit_id);
+
+    if (!editArea || !contentArea) {
+        alert("Unable to open editor. Please refresh the page.");
+        return;
+    }
+
+    editArea.className = "qsd_edit_visible";
+    msgArea.hide();
+    contentArea.focus();
+    if (viewArea) {
+        viewArea.className = "hidden";
+    }
 }
 
 function qsd_send_command(qsd_url, edit_id, postdata) {
@@ -245,7 +257,7 @@ function qsd_restore_version(qsd_url, edit_id, version_id, version_date)
       + '    <p class="muted">This will create a new revision with the old content.</p>'
       + '  </div>'
       + '  <div class="modal-footer">'
-      + '    <button type="button" class="btn" data-dismiss="modal">Cancel</button>'
+      + '    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>'
       + '    <button type="button" class="btn btn-warning" id="qsd-restore-confirm-btn">'
       + '      <span class="bi bi-arrow-repeat"></span> Restore'
       + '    </button>'

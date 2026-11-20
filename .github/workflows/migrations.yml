@@ -31,6 +31,7 @@ jobs:
   migrations:
     name: Migration Consistency Check
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:14
@@ -51,7 +52,7 @@ jobs:
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
     - name: Set up Python 3.12
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v7.1.0
       with:
         python-version: "3.12"
     - name: Cache pip packages

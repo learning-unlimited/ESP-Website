@@ -151,7 +151,7 @@ class ProgramPrintables(ProgramModuleObj):
                 single_select = False
 
             if ids is None:
-                transfers = pac.all_transfers().exclude(line_item__text__in=exclude_line_items).order_by('line_item', 'user').select_related()
+                lineitems = pac.all_transfers().exclude(line_item__text__in=exclude_line_items).order_by('line_item', 'user').select_related()
             else:
                 lineitems = pac.all_transfers().filter(line_item__id__in=ids).order_by('line_item', 'user').select_related()
         else:
@@ -232,50 +232,6 @@ class ProgramPrintables(ProgramModuleObj):
         classes = classes.filter(category__category__in=categories)
         classes = [cls for cls in classes
                    if cls.isAccepted() ]
-
-        if 'ids' in request.GET and 'op' in request.GET and \
-           'clsid' in request.GET:
-            try:
-                clsid = int(request.GET['clsid'])
-                cls   = ClassSubject.objects.get(parent_program = self.program,
-                                          id             = clsid)
-            except (ValueError, ClassSubject.DoesNotExist):
-                raise ESPError('Could not get the class object.')
-
-            cls_dict = {}
-            for cur_cls in classes:
-                cls_dict[str(cur_cls.id)] = cur_cls
-
-            clsids = request.GET['ids'].split(',')
-            found  = False
-
-            if request.GET['op'] == 'up':
-                for i in range(1, len(clsids)):
-                    if not found and str(clsids[i]) == request.GET['clsid']:
-                        tmp         = str(clsids[i-1])
-                        clsids[i-1] = str(clsids[i])
-                        clsids[i]   = tmp
-                        found       = True
-
-            elif request.GET['op'] == 'down':
-                for i in range(len(clsids)-1):
-                    if not found and str(clsids[i]) == request.GET['clsid']:
-                        tmp         = str(clsids[i])
-                        clsids[i]   = str(clsids[i+1])
-                        clsids[i+1] = tmp
-                        found       = True
-            else:
-                raise ESPError('Received invalid operation for class list.')
-
-            classes = []
-
-            for clsid in clsids:
-                classes.append(cls_dict[clsid])
-
-            clsids = ','.join(clsids)
-            return render_to_response(self.baseDir()+'catalog_order.html',
-                                      request,
-                                      {'clsids': clsids, 'classes': classes, 'sorting_options': list(cmp_fn.keys()), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories })
 
         if "only_nonfull" in request.GET:
             classes = [x for x in classes if not x.isFull()]
@@ -1318,7 +1274,6 @@ class ProgramPrintables(ProgramModuleObj):
                     job.status = 'COMPLETED'
                     job.save()
                 except Exception as e:
-                    import traceback
                     job = PrintableJob.objects.get(id=job_id)
                     job.status = 'FAILED'
                     job.error_message = traceback.format_exc()
@@ -1531,8 +1486,6 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def printable_job_status(self, request, tl, one, two, module, extra, prog):
         """ Displays the status of an asynchronous PrintableJob, and downloads it when completed """
-        import mimetypes
-        import os
         from wsgiref.util import FileWrapper
         from django.core.exceptions import ValidationError
         from django.http import HttpResponse, HttpResponseRedirect

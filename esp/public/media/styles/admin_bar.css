@@ -85,9 +85,6 @@
 	color: black;
 	margin: 0;
 }
-.glyphicon.glyphicon-btn-height::before {
-	line-height: 18px;
-}
 #adminbar_content .content {
 	padding: 5px;
 }

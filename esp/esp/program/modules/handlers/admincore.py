@@ -44,13 +44,12 @@ from django.template.defaultfilters import slugify
 from django.utils import timezone  # add timezone from local_settings.py in labels
 
 from esp.accounting.controllers import ProgramAccountingController
-from esp.cal.models import Event
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.program.controllers.testingutils import DataCleanupController
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
 from esp.program.modules.admin_search import AdminSearchEntry, serialize_admin_search_entries, SEARCH_CATEGORY_SETTINGS, SEARCH_CATEGORY_CLASSES, SEARCH_CATEGORY_REGISTRATION
 from esp.program.modules.handlers.listgenmodule import ListGenModule
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.program.modules.program_settings import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.tagdict.models import Tag
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.models import Permission, ESPUser, PersistentQueryFilter
@@ -64,6 +63,7 @@ logger = logging.getLogger(__name__)
 from decimal import Decimal
 from copy import copy
 from collections import OrderedDict
+from esp.utils.ids import filter_by_id, get_by_id_or_404
 
 
 TZINFO = timezone.get_current_timezone()  # get timezone set in local_settings.py
@@ -76,6 +76,14 @@ class EditPermissionForm(forms.Form):
     id = forms.IntegerField(required=True, widget=forms.HiddenInput)
     skip = forms.BooleanField(required=False, widget=forms.HiddenInput)
 
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        if start_date and end_date and end_date <= start_date:
+            raise forms.ValidationError('End date must be after start date.')
+        return cleaned_data
+
 class NewDeadlineForm(forms.Form):
     deadline_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
     role = forms.ChoiceField(choices = [("Student", "Students"), ("Teacher", "Teachers"), ("Volunteer", "Volunteers")])
@@ -87,6 +95,14 @@ class NewDeadlineForm(forms.Form):
         self.fields['role'].choices = self.fields['role'].choices + [(role, role + "s") for role in Group.objects.exclude(name__in=["Student", "Teacher", "Volunteer"]
                                                                                                                           ).order_by('name').values_list('name', flat = True)]
 
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        if start_date and end_date and end_date <= start_date:
+            raise forms.ValidationError('End date must be after start date.')
+        return cleaned_data
+
 class NewPermissionForm(forms.Form):
     permission_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
     user = AjaxForeignKeyNewformField(key_type=ESPUser, field_name='user', label='User',
@@ -94,6 +110,13 @@ class NewPermissionForm(forms.Form):
     perm_start_date = forms.DateTimeField(label='Opening date/time' + FTIMEZONE, initial=datetime.now, widget=DateTimeWidget(), required=False)
     perm_end_date = forms.DateTimeField(label='Closing date/time' + FTIMEZONE, initial=None, widget=DateTimeWidget(), required=False)
 
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('perm_start_date')
+        end_date = cleaned_data.get('perm_end_date')
+        if start_date and end_date and end_date <= start_date:
+            raise forms.ValidationError('End date must be after start date.')
+        return cleaned_data
 
 class FilterPermissionOptionsForm(forms.Form):
     permission_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
@@ -152,7 +175,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                           ('TeacherQuizModule', "Set up the teacher logistics quiz", "/customforms/", Tag.getProgramTag('quiz_form_id', self.program)),
                           ('TeacherCustomFormModule', "Set up the teacher custom form", "/customforms/", Tag.getProgramTag('teach_extraform_id', self.program)),
                           ('StudentCustomFormModule', "Set up the student custom form", "/customforms/", Tag.getProgramTag('learn_extraform_id', self.program)),
-                          ('StudentLunchSelection', "Set up multiple lunch periods", '/manage/' + self.program.url + '/lunch_constraints', Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').exists()),
+                          ('StudentLunchSelection', "Set up multiple lunch periods", '/manage/' + self.program.url + '/lunch_constraints', self.program.lunch_timeslots().exists()),
                          ] # (handler, setup title, setup path, isCompleted)
         extra_steps = [step for step in required_steps if prog.hasModule(step[0])]
         optional_steps = [
@@ -351,7 +374,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             context['POST'] = True
             form = LunchConstraintsForm(prog, request.POST)
             if form.is_valid():
-                form.save_data()
+                context['undeleted_sections'] = form.save_data()
                 context['saved'] = True
             else:
                 context['saved'] = False
@@ -373,7 +396,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         message_bad = ''
 
         if 'filter_perm_created' in request.GET:
-            perms = Permission.objects.filter(id=request.GET['filter_perm_created'], program=prog)
+            perms = filter_by_id(Permission.objects, request.GET['filter_perm_created'], program=prog)
             if perms.count() == 1:
                 perm = perms[0]
                 if perm.user_filter:
@@ -385,7 +408,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             #   If there are no permissions for this permission type, create one and open it now (open ended)
             #   If there are permission(s) for this type, take the most recent(?) and open it (open ended)
             if 'group' in request.GET and 'perm' in request.GET:
-                group = Group.objects.get(id = request.GET['group'])
+                group = get_by_id_or_404(Group, request.GET['group'])
                 perms = Permission.objects.filter(role = group, permission_type = request.GET['perm'], program = prog).order_by('-end_date')
                 if perms.count() > 0:
                     perms[0].unexpire()
@@ -393,7 +416,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     Permission.objects.create(role = group, permission_type = request.GET['perm'], start_date = datetime.now(), program = prog)
                 message_good = f'Deadline opened for {group}s: {Permission.nice_name_lookup(request.GET["perm"])}.'
             elif 'perm_id' in request.GET:
-                perms = Permission.objects.filter(id=request.GET['perm_id'])
+                perms = filter_by_id(Permission.objects, request.GET['perm_id'])
                 if perms.count() == 1:
                     perm = perms[0]
                     perm.unexpire()
@@ -405,12 +428,12 @@ class AdminCore(ProgramModuleObj, CoreModule):
         elif extra == 'close':
             #   If there are open permission(s) for this type, close them all
             if 'group' in request.GET and 'perm' in request.GET:
-                group = Group.objects.get(id = request.GET['group'])
+                group = get_by_id_or_404(Group, request.GET['group'])
                 perms = Permission.valid_objects().filter(permission_type = request.GET['perm'], program = prog, role = group)
                 perms.update(end_date = datetime.now())
                 message_good = f'Deadline closed for {group}s: {Permission.nice_name_lookup(request.GET["perm"])}.'
             if 'perm_id' in request.GET:
-                perms = Permission.objects.filter(id=request.GET['perm_id'])
+                perms = filter_by_id(Permission.objects, request.GET['perm_id'])
                 if perms.count() == 1:
                     perm = perms[0]
                     perm.expire()
@@ -421,7 +444,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         elif extra == 'delete' and 'perm_id' in request.GET:
             #   Delete the specified permission if it exists
-            perms = Permission.objects.filter(id=request.GET['perm_id'])
+            perms = filter_by_id(Permission.objects, request.GET['perm_id'])
             if perms.count() == 1:
                 perm = perms[0]
                 if 'deadline' in request.GET:
@@ -472,7 +495,11 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     if num_forms > 0:
                         message_good = 'Deadlines saved.'
                 else:
-                    message_bad = 'Error(s) while saving deadline(s): %s' % edit_formset.errors
+                    msgs = list(dict.fromkeys(
+                        msg for form_errors in edit_formset.errors
+                        for errors in form_errors.values() for msg in errors
+                    ))
+                    message_bad = 'Error(s) while saving deadline(s): ' + '; '.join(msgs) if msgs else 'Error(s) while saving deadline(s).'
             elif request.POST['action'] == 'save_permissions':
                 edit_formset = EditPermissionFormset(request.POST.copy(), prefix='edit_perms')
                 if edit_formset.is_valid():
@@ -488,7 +515,11 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     if num_forms > 0:
                         message_good = 'Permissions saved.'
                 else:
-                    message_bad = 'Error(s) while saving permission(s): %s' % edit_formset.errors
+                    msgs = list(dict.fromkeys(
+                        msg for form_errors in edit_formset.errors
+                        for errors in form_errors.values() for msg in errors
+                    ))
+                    message_bad = 'Error(s) while saving permission(s): ' + '; '.join(msgs) if msgs else 'Error(s) while saving permission(s).'
 
         #   find all the existing user group permissions for this program
         perms = Permission.objects.filter(program=self.program, user__isnull=True, permission_type__in=Permission.PERMISSION_CHOICES_FLAT).exclude(permission_type="Administer")
@@ -729,7 +760,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.save()
             # Override some settings that shouldn't be changed
             # Profile modules should always be required and always first
-            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "RegProfileModule")
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler__in=["StudentRegProfileModule", "TeacherRegProfileModule"])
             for pmo in pmos:
                 pmo.seq = 0
                 pmo.required = True
@@ -776,7 +807,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         for mod in learn_modules + teach_modules:
             handler = mod.module.handler
             required_locked = (
-                handler == 'RegProfileModule' or
+                handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
                 handler == 'AvailabilityModule' or
                 'AcknowledgementModule' in handler or
                 handler == 'StudentRegTwoPhase'
@@ -786,7 +817,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 handler == 'StudentRegConfirm'
             )
             position_locked = (
-                handler == 'RegProfileModule' or
+                handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
                 'CreditCardModule_' in handler or
                 handler == 'StudentRegConfirm'
             )
@@ -822,6 +853,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
         module_type_by_id = dict(
             ProgramModule.objects.filter(id__in=all_choice_ids).values_list('id', 'module_type')
         )
+        handler_by_id = dict(
+            ProgramModule.objects.filter(id__in=all_choice_ids).values_list('id', 'handler')
+        )
 
         for val, label in choice_pairs:
             ids = [int(i) for i in val.split(',') if i.isdigit()]
@@ -836,6 +870,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             else:
                 category = 'general'
 
+            handler_names = [handler_by_id.get(i, '') for i in ids]
             module_questions_categorized[category].append({
                 'value': val,
                 'label': label,

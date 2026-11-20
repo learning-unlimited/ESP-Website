@@ -130,7 +130,11 @@ class ScheduleManipulator:
         self.scorer.update_swap_sections(section1, section2)
         roomslots1 = section1.assigned_roomslots
         roomslots2 = section2.assigned_roomslots
-        section1.assign_roomslots(roomslots2, clear_existing=True)
+        # Release both sections' roomslots before assigning them crosswise,
+        # since assign_roomslots requires every roomslot it is given to be free
+        section1.clear_roomslots()
+        section2.clear_roomslots()
+        section1.assign_roomslots(roomslots2)
         section2.assign_roomslots(roomslots1)
         return True
 

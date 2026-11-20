@@ -45,7 +45,7 @@
   </thead>
   <tbody>
     {% for class in classes %}
-      {% if class.category.category != "Lunch" %}
+      {% if not class.category.is_lunch %}
       {% if not class.isFull %}
 
       {% if use_categories %}
