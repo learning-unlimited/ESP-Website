@@ -206,6 +206,8 @@ function fieldFromServer(fd, asCopy) {
     const f = { id: uid(), serverId: asCopy ? null : fd.id, savedType: asCopy ? null : fd.field_type, type: fd.field_type,
         label: fd.label || '', help: fd.help_text || '', required: !!fd.required, extra: {} };
     if (t.options) { f.options = 'options' in attrs ? String(attrs.options).split('|') : []; delete attrs.options; }
+    //   Saved multi-choice options may predate the ';' rule, so they stay allowed
+    if (t.multi && !asCopy) f.savedOptions = [...f.options];
     if (fd.field_type === 'radio_yesno') delete attrs.options;
     if (t.text) { [f.charMin, f.charMax] = splitPair(attrs.charlimits); delete attrs.charlimits; }
     if (fd.field_type === 'numeric') { [f.min, f.max] = splitPair(attrs.limits); delete attrs.limits; }
@@ -227,7 +229,8 @@ function fromMetadata(md, asCopy) {
     }
     s.linkType = md.link_type || '-1';
     s.linkId = isNone(s.linkType) ? -1 : Number(md.link_id);
-    s.linkModule = md.link_module || '';
+    //   A copy isn't a registration step until chosen, so saving it can't replace the original there
+    s.linkModule = asCopy ? '' : (md.link_module || '');
     st.pages = (md.pages || []).map(page => ({ id: uid(), serverId: asCopy ? null : page[0][0].section__page__id,
         sections: page.map(section => ({ id: uid(), serverId: asCopy ? null : section[0].section__id,
             title: section[0].section__title || '', description: section[0].section__description || '',
@@ -297,6 +300,7 @@ function fieldProblems(f) {
         if (!f.options.length) out.push('Add at least one choice.');
         if (f.options.some(o => !o.trim())) out.push('A choice is empty.');
         if (f.options.some(o => o.includes('|'))) out.push('Choices can’t contain the | character.');
+        if (t.multi && f.options.some(o => o.includes(';') && !(f.savedOptions || []).includes(o))) out.push('Choices for this type can’t contain ";", which separates the chosen answers when they’re saved.');
         if (new Set(f.options.map(o => o.trim())).size !== f.options.length) out.push('Two choices are the same.');
         if (t.optCap && f.options.some(o => o.length > t.optCap)) out.push('Choices can be at most ' + t.optCap + ' characters.');
     }
@@ -318,6 +322,12 @@ function fieldProblems(f) {
         if (t.correct === 'one' && !(f.correct >= 0 && f.correct < f.options.length)) out.push('The correct answer is no longer one of the choices.');
         if (t.correct === 'many' && f.correct.some(i => !(i >= 0 && i < f.options.length))) out.push('A correct answer is no longer one of the choices.');
         if (t.correct === 'number' && !INT.test(String(f.correct).trim())) out.push('The correct answer must be a whole number.');
+        else if (t.correct === 'number' && ((INT.test(f.min) && Number(f.correct) < Number(f.min)) || (INT.test(f.max) && Number(f.correct) > Number(f.max)))) out.push('The correct answer is outside the allowed range.');
+        if (t.text) {
+            const len = String(f.correct).length, maxLen = NONNEG_INT.test(f.charMax) ? Number(f.charMax) : t.cap;
+            if ((NONNEG_INT.test(f.charMin) && len < Number(f.charMin)) || (maxLen && len > maxLen)) out.push('The correct answer doesn’t fit the answer length limits.');
+        }
+        if (t.correct === 'nullbool' && f.required && f.correct === 'Unknown') out.push('A required question can’t have Unknown as its correct answer, since Unknown counts as no answer.');
         if (t.correct === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(f.correct)) out.push('The correct answer must be a date.');
         if (t.correct === 'time' && !/^([01]\d|2[0-3]):[0-5]\d$/.test(f.correct)) out.push('The correct answer must be a time like 09:30 or 14:00.');
     }
@@ -326,6 +336,22 @@ function fieldProblems(f) {
         const list = remote.links[t.category];
         if (list && list.status === 'ok' && !list.data.some(o => String(o.id) === f.linkId)) out.push('The chosen record no longer exists.');
     }
+    return out;
+}
+//   Problems between profile questions; also shown on the question they point at
+function linkedProblems() {
+    const out = [], byCategory = {}, seen = new Set();
+    allFields().filter(f => TYPES[f.type].linked).forEach(f => {
+        //   Two questions for the same profile field would overwrite each other's answer
+        if (seen.has(f.type)) out.push({ id: f.id, msg: 'Another question already asks for the profile’s ' + TYPES[f.type].label.toLowerCase() + '; only one question can update it.' });
+        seen.add(f.type);
+        if (f.linkId !== '') (byCategory[TYPES[f.type].category] = byCategory[TYPES[f.type].category] || []).push(f);
+    });
+    //   The server saves all of a form's questions about one profile model to a single record
+    Object.entries(byCategory).forEach(([category, fields]) => {
+        const other = fields.find(f => f.linkId !== fields[0].linkId);
+        if (other) out.push({ id: other.id, msg: 'All profile questions about ' + categoryName(category) + ' must update the same record.' });
+    });
     return out;
 }
 function formProblems() {
@@ -348,13 +374,7 @@ function formProblems() {
         if (list && list.status === 'ok' && !list.data.some(o => o.id === s.linkId)) out.push({ msg: 'The linked ' + s.linkType.toLowerCase() + ' no longer exists.', id: null });
     }
     allFields().forEach(f => fieldProblems(f).forEach(m => out.push({ msg: m, id: f.id })));
-    //   The server saves all of a form's questions about one profile model to a single record
-    const byCategory = {};
-    allFields().filter(f => TYPES[f.type].linked && f.linkId !== '').forEach(f => (byCategory[TYPES[f.type].category] = byCategory[TYPES[f.type].category] || []).push(f));
-    Object.entries(byCategory).forEach(([category, fields]) => {
-        const other = fields.find(f => f.linkId !== fields[0].linkId);
-        if (other) out.push({ id: other.id, msg: 'All profile questions about ' + categoryName(category) + ' must update the same record.' });
-    });
+    out.push(...linkedProblems());
     state.pages.forEach((p, pi) => p.sections.forEach(sec => {
         const name = (sec.title.trim() ? 'The section “' + sec.title.trim() + '”' : 'An untitled section') + ' on page ' + (pi + 1);
         if (!sec.fields.length) out.push({ id: sec.id, msg: name + ' has no questions.' });
@@ -564,7 +584,7 @@ function renderSection(sec, si) {
 }
 
 function renderField(f, fi) {
-    const t = TYPES[f.type], probs = fieldProblems(f);
+    const t = TYPES[f.type], probs = fieldProblems(f).concat(linkedProblems().filter(p => p.id === f.id).map(p => p.msg));
     const isSel = sel.kind === 'field' && sel.id === f.id;
     const select = () => { sel = { kind: 'field', id: f.id }; render(); };
     const el = h('div', { class: 'cfb-field' + (isSel ? ' cfb-sel' : ''), 'data-id': f.id, tabindex: 0, draggable: true,
@@ -675,6 +695,7 @@ function moveField(id, dir) {
 function duplicateField(id) {
     const loc = find(id);
     const copy = JSON.parse(JSON.stringify(loc.field));
+    delete copy.savedOptions;
     Object.assign(copy, { id: uid(), serverId: null, savedType: null, label: copy.label ? (copy.label + ' (copy)').slice(0, LIMITS.label) : '' });
     commit(s => s.pages[loc.pi].sections[loc.si].fields.splice(loc.fi + 1, 0, copy));
     sel = { kind: 'field', id: copy.id }; render();
@@ -1038,7 +1059,7 @@ function templatePicker() {
         const copy = fromMetadata(md, true);
         commit(() => { state = copy; });
         pageIx = 0; sel = { kind: 'form' }; render();
-        toast('Copied “' + (md.title || 'form') + '”. Saving creates a new form.', undoThis());
+        toast('Copied “' + (md.title || 'form') + '”. Saving creates a new form' + (md.link_module ? '; it isn’t added to registration unless you choose “Use in registration”.' : '.'), undoThis());
     } }, 'Copy');
     return h('div', { class: 'cfb-row' }, h('label', { for: 'cfb-f-template', text: 'Start from a copy of' }),
         h('div', { style: 'display:flex;gap:6px' }, pick, load), status);
@@ -1151,7 +1172,11 @@ function next() {
     pv.errors = errs;
     if (Object.keys(errs).length) {
         render({ inspector: false });
-        requestAnimationFrame(() => { const el = document.querySelector('[aria-invalid="true"], fieldset .cfb-perr'); if (el && el.focus) el.focus(); });
+        requestAnimationFrame(() => {
+            const bad = document.querySelector('[aria-invalid="true"], fieldset:has(.cfb-perr)');
+            const target = bad && bad.matches('fieldset') ? bad.querySelector('input:not([disabled])') : bad;
+            if (target) target.focus();
+        });
         return;
     }
     if (pv.step < state.pages.length - 1) { pv.step++; render({ inspector: false }); window.scrollTo({ top: 0 }); } else { pv.done = true; render({ inspector: false }); }
@@ -1179,6 +1204,8 @@ async function save() {
     if (probs.length) { goToProblem(probs); return; }
     if (saving) return;
     saving = true; showAlert(''); renderTop();
+    //   Drop any copy still loading, so it can't replace the form being saved
+    copyToken++;
     const editing = !!meta.formId;
     let message = null;
     try {
