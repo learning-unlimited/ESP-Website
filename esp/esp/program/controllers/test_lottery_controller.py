@@ -20,6 +20,12 @@ from esp.program.models import (
     StudentRegistration,
     StudentSubjectInterest,
 )
+from esp.program.models.app_ import (
+    StudentAppQuestion,
+    StudentAppResponse,
+    StudentAppReview,
+    StudentApplication,
+)
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser, StudentInfo
 
@@ -460,3 +466,89 @@ class LotteryStatsTest(LotteryTestBase):
             f'{stats["overall_capacity_ratio"] * 100.0:2.2f}% of available spaces were filled',
             ratios,
         )
+
+
+# ---------------------------------------------------------------------------
+# LotteryStudentAppsTest
+# ---------------------------------------------------------------------------
+
+class LotteryStudentAppsTest(LotteryTestBase):
+    """Tests for the use_student_apps option, which ranks students by their
+    application reviews instead of treating every signup as rank 10."""
+
+    def _make_app_controller(self):
+        return LotteryAssignmentController(self.program, use_student_apps=True)
+
+    def test_use_student_apps_initializes(self):
+        """The controller initializes with use_student_apps enabled."""
+        for student in self.students:
+            for cls in self.program.classes():
+                StudentSubjectInterest.objects.get_or_create(
+                    user=student, subject=cls
+                )
+        ctrl = self._make_app_controller()
+        self.assertEqual(ctrl.ranks.shape, (ctrl.num_students, ctrl.num_sections))
+
+    def _apply_with_review(self, score):
+        """Give the first Priority/1 student a reviewed application for that
+        section's class. Returns (student, section)."""
+        sr = StudentRegistration.objects.filter(
+            relationship=self.priority_rt,
+            section__parent_class__parent_program=self.program,
+        ).order_by('id').first()
+        self.assertIsNotNone(sr)
+        student, section = sr.user, sr.section
+        subject = section.parent_class
+        teacher = subject.get_teachers()[0]
+
+        question = StudentAppQuestion.objects.create(
+            program=self.program, subject=subject, question='Why this class?'
+        )
+        response = StudentAppResponse.objects.create(
+            question=question, response='Because it is interesting.', complete=True
+        )
+        review = StudentAppReview.objects.create(
+            reviewer=teacher, class_subject=subject, score=score, comments='Reviewed.'
+        )
+        app = StudentApplication.objects.create(program=self.program, user=student)
+        app.questions.add(question)
+        app.responses.add(response)
+        app.reviews.add(review)
+        return student, section
+
+    def test_use_student_apps_reads_review_score(self):
+        """A reviewed application sets that student/section entry in ranks."""
+        student, section = self._apply_with_review(score=5)
+        ctrl = self._make_app_controller()
+        si = ctrl.student_indices[student.id]
+        sj = ctrl.section_indices[section.id]
+        self.assertGreaterEqual(sj, 0)
+        self.assertEqual(ctrl.ranks[si, sj], 5)
+
+    def test_use_student_apps_rejected_review_blocks_enrollment(self):
+        """A student whose application was scored "No" is not enrolled in that section."""
+        student, section = self._apply_with_review(score=1)
+        ctrl = self._make_app_controller()
+        si = ctrl.student_indices[student.id]
+        sj = ctrl.section_indices[section.id]
+        self.assertEqual(ctrl.ranks[si, sj], 1)
+        ctrl.compute_assignments()
+        self.assertFalse(ctrl.student_sections[si, sj])
+
+    def test_use_student_apps_compute_assignments_completes(self):
+        """compute_assignments() runs to completion with use_student_apps on."""
+        ctrl = self._make_app_controller()
+        ctrl.compute_assignments()
+        self.assertEqual(
+            ctrl.student_sections.shape, (ctrl.num_students, ctrl.num_sections)
+        )
+
+    def test_use_student_apps_full_run(self):
+        """The calls lottery_execute makes all succeed with use_student_apps on."""
+        self._apply_with_review(score=5)
+        ctrl = self._make_app_controller()
+        ctrl.compute_assignments(True)
+        stats = ctrl.compute_stats(display=False)
+        self.assertIn('rank_5_assigned', stats)
+        self.assertTrue(ctrl.extract_stats(stats))
+        self.assertTrue(ctrl.export_assignments())

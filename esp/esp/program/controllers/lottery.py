@@ -55,6 +55,7 @@ from django.db import transaction
 from django.db.models import Min
 import os
 import operator
+import itertools
 import zlib
 import base64
 from io import BytesIO
@@ -299,11 +300,13 @@ class LotteryAssignmentController(object):
         for i in range(1, self.effective_priority_limit+1):
             self.put_prefs_in_array(priority_regs[i], self.priority[i])
         if self.options['use_student_apps']:
-            for i in range(1, self.effective_priority_limit+1):
-                for (student_id, section_id) in priority_regs[i]:
-                    self.ranks[self.student_indices[student_id], self.section_indices[section_id]] = ESPUser.getRankInClass(student_id, self.parent_classes[self.section_indices[section_id]])
-            for (student_id, section_id) in interest_regs_sr + interest_regs_ssi:
-                self.ranks[self.student_indices[student_id], self.section_indices[section_id]] = ESPUser.getRankInClass(student_id, self.parent_classes[self.section_indices[section_id]])
+            #   Ranks are per (student, class), so cache them across a class's sections
+            rank_cache = {}
+            for (student_id, section_id) in itertools.chain(*priority_regs[1:self.effective_priority_limit+1], interest_regs_sr, interest_regs_ssi):
+                subject_id = int(self.parent_classes[self.section_indices[section_id]])
+                if (student_id, subject_id) not in rank_cache:
+                    rank_cache[(student_id, subject_id)] = ESPUser.getRankInClass(student_id, subject_id)
+                self.ranks[self.student_indices[student_id], self.section_indices[section_id]] = rank_cache[(student_id, subject_id)]
 
 
         #   Populate section schedule
