@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 import json
 from importlib import import_module
+import threading
 import time
 from unittest.mock import patch
 
@@ -507,6 +508,72 @@ class FormBuilderViewTest(TestCase):
         self.client.login(username='builder_student', password='password')
         response = self.client.get('/customforms/create')
         self.assertRedirects(response, '/accounts/login/?next=/customforms/create')
+
+    def test_builder_config_lists_users_forms(self):
+        """The builder's JSON config lists the forms the user may copy."""
+        self.client.login(username='builder_teacher', password='password')
+        response = self.client.get('/customforms/create')
+        config = response.context['builder_config']
+        self.assertEqual(config['forms'], [{'id': self.teacher_form.id, 'title': 'Teacher Form'}])
+        self.assertIsNone(config['edit'])
+        self.assertEqual(config['edit_error'], '')
+        self.assertContains(response, 'id="cfb-config"')
+
+    def test_builder_config_edit_own_form(self):
+        self.client.login(username='builder_teacher', password='password')
+        response = self.client.get('/customforms/create?edit=%d' % self.teacher_form.id)
+        self.assertEqual(response.context['builder_config']['edit'], self.teacher_form.id)
+        self.assertEqual(response.context['builder_config']['edit_error'], '')
+
+    def test_builder_config_edit_other_users_form(self):
+        """A teacher asking to edit someone else's form gets an error, not the form."""
+        self.client.login(username='builder_teacher', password='password')
+        response = self.client.get('/customforms/create?edit=%d' % self.admin_form.id)
+        self.assertIsNone(response.context['builder_config']['edit'])
+        self.assertIn('not found', response.context['builder_config']['edit_error'])
+
+    def test_builder_config_edit_not_a_number(self):
+        self.client.login(username='builder_admin', password='password')
+        response = self.client.get('/customforms/create?edit=abc')
+        self.assertIsNone(response.context['builder_config']['edit'])
+        self.assertIn('not found', response.context['builder_config']['edit_error'])
+
+    def test_metadata_includes_success_message_and_url(self):
+        """Editing a form reloads its success message and URL, so saving doesn't erase them."""
+        self.client.login(username='builder_admin', password='password')
+        self.admin_form.success_message = 'Thanks for applying!'
+        self.admin_form.success_url = '/learn/index.html'
+        self.admin_form.save()
+        response = self.client.get('/customforms/metadata/', {'form_id': self.admin_form.id},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        metadata = json.loads(response.content)
+        self.assertEqual(metadata['success_message'], 'Thanks for applying!')
+        self.assertEqual(metadata['success_url'], '/learn/index.html')
+
+    def _get_metadata(self, form_id):
+        return self.client.get('/customforms/metadata/', {'form_id': form_id},
+                               HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+    def test_metadata_for_own_form(self):
+        self.client.login(username='builder_teacher', password='password')
+        response = self._get_metadata(self.teacher_form.id)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.content)['title'], 'Teacher Form')
+        #   Served as JSON, so user-written titles can't be rendered as HTML
+        self.assertEqual(response['Content-Type'], 'application/json')
+
+    def test_metadata_denied_for_other_users_form(self):
+        """A teacher can't load (and so can't edit or copy) another user's form."""
+        self.client.login(username='builder_teacher', password='password')
+        response = self._get_metadata(self.admin_form.id)
+        self.assertEqual(response.status_code, 403)
+        self.assertNotIn('Admin Form', response.content.decode())
+
+    def test_metadata_for_unknown_form(self):
+        self.client.login(username='builder_admin', password='password')
+        response = self._get_metadata(999999)
+        self.assertEqual(response.status_code, 404)
 
 class EmptyFormTitleValidationTest(TestCase):
     """Tests for validating that form title cannot be empty."""
@@ -998,6 +1065,115 @@ class SchemaLockTimeoutIntegrationTest(TransactionTestCase):
         #   The connection must still be usable, and the timeout must not have
         #   leaked into it.
         self.assertEqual(lock_timeout_ms(), before)
+
+
+class FormRowLockTest(TransactionTestCase):
+    """
+    Saving a form and reading its metadata lock the form row, so the builder's
+    check after an unconfirmed save can't read a save that is still running.
+    """
+
+    HOLD = 1.0
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='rowlock_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        self.form = Form.objects.create(
+            title='Row Lock Form', created_by=self.admin,
+            link_type='-1', link_id=-1, perms='',
+            success_message='OK', success_url='/'
+        )
+        dmh = DynamicModelHandler(self.form)
+        dmh.createTable()
+        #   This test case commits, so drop the response table even if a test fails
+        self.addCleanup(dmh.deleteTable)
+        self.client.login(username='rowlock_admin', password='password')
+
+    def _waits_for_row_lock(self, send):
+        """Runs send() while another connection holds the form row; returns its response."""
+        blocker = psycopg2.connect(**connection.get_connection_params())
+        result = {}
+
+        def run():
+            try:
+                result['response'] = send()
+            finally:
+                connection.close()
+
+        try:
+            with blocker.cursor() as cursor:
+                cursor.execute('SELECT id FROM customforms_form WHERE id = %s FOR UPDATE', [self.form.id])
+            worker = threading.Thread(target=run)
+            started = time.time()
+            worker.start()
+            worker.join(self.HOLD)
+            self.assertTrue(worker.is_alive(), 'the request did not wait for the row lock')
+        finally:
+            blocker.commit()
+            blocker.close()
+        worker.join(30)
+        self.assertFalse(worker.is_alive())
+        self.assertGreaterEqual(time.time() - started, self.HOLD)
+        return result['response']
+
+    def test_metadata_waits_for_a_save_in_progress(self):
+        response = self._waits_for_row_lock(lambda: self.client.get(
+            '/customforms/metadata/', {'form_id': self.form.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.content)['title'], 'Row Lock Form')
+
+    def test_save_waits_for_a_metadata_read_in_progress(self):
+        payload = {'form_id': self.form.id, 'title': 'Renamed', 'desc': '', 'anonymous': False,
+                   'link_type': '-1', 'link_id': -1, 'success_message': 'OK', 'success_url': '/',
+                   'perms': '', 'pages': []}
+        response = self._waits_for_row_lock(lambda: self.client.post(
+            '/customforms/modify/', json.dumps(payload), content_type='application/json',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'))
+        self.assertEqual(response.content, b'OK')
+        self.form.refresh_from_db()
+        self.assertEqual(self.form.title, 'Renamed')
+
+    def test_save_waits_until_a_metadata_read_has_finished(self):
+        """The metadata view keeps the row locked for the whole read, not just while fetching the form."""
+        reading, release = threading.Event(), threading.Event()
+        original = FormHandler.rebuildData
+        results = {}
+
+        def paused_rebuild(handler):
+            reading.set()
+            release.wait(30)
+            return original(handler)
+
+        def call(name, send):
+            try:
+                results[name] = send()
+            finally:
+                connection.close()
+
+        payload = {'form_id': self.form.id, 'title': 'Renamed', 'desc': '', 'anonymous': False,
+                   'link_type': '-1', 'link_id': -1, 'success_message': 'OK', 'success_url': '/',
+                   'perms': '', 'pages': []}
+        with patch.object(FormHandler, 'rebuildData', paused_rebuild):
+            read = threading.Thread(target=call, args=('read', lambda: self.client.get(
+                '/customforms/metadata/', {'form_id': self.form.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')))
+            read.start()
+            self.assertTrue(reading.wait(30))
+            save = threading.Thread(target=call, args=('save', lambda: self.client.post(
+                '/customforms/modify/', json.dumps(payload), content_type='application/json',
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')))
+            save.start()
+            save.join(self.HOLD)
+            try:
+                self.assertTrue(save.is_alive(), 'the save did not wait for the metadata read')
+            finally:
+                release.set()
+                read.join(30)
+                save.join(30)
+        #   The read saw the form as it was before the save
+        self.assertEqual(json.loads(results['read'].content)['title'], 'Row Lock Form')
+        self.assertEqual(results['save'].content, b'OK')
 
 
 class FailedFormSaveRollbackTest(TestCase):
