@@ -45,7 +45,7 @@ Here is an attendance summary for {{ timeslot }}. Here you can see attendance st
 {% if timeslot %}
 If you are looking for a different timeslot, you can select it from the dropdown below:
 {% else %}
-<a class="btn" href="/onsite/{{ one }}/{{ two }}/section_attendance/">See or record section attendance</a><br /><br />
+<a class="btn btn-secondary" href="/onsite/{{ one }}/{{ two }}/section_attendance/">See or record section attendance</a><br /><br />
 or select a timeslot from the dropdown below to see attendance stats:
 {% endif %}
 </p>
@@ -76,7 +76,7 @@ or select a timeslot from the dropdown below to see attendance stats:
         <input name="when" type="date" value="{{ when|date:'Y-m-d' }}" style="width:auto;"><input type="submit" value="Change Date">
     </form>
     <br />
-    <a class="btn" href="/onsite/{{ one }}/{{ two }}/section_attendance/{{ timeslot.id }}">See or record section attendance{% if timeslot %} for this timeslot{% endif %}</a>
+    <a class="btn btn-secondary" href="/onsite/{{ one }}/{{ two }}/section_attendance/{{ timeslot.id }}">See or record section attendance{% if timeslot %} for this timeslot{% endif %}</a>
     {% else %}
         {% include "program/modules/bigboardmodule/bigboard_graph.html" %}
     {% endif %}

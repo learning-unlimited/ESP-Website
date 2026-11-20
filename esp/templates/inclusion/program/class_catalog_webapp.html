@@ -46,7 +46,7 @@
             <input type="hidden" name="class_id" value="{{ class.id }}" />
             <input type="hidden" name="section_id" value="{{ section.id }}" />
             {% if not errormsg or "conflicts with your schedule" in errormsg %}
-                <div id="addbutton_fillslot_sec{{ section.id }}"><button type="submit" class="btn" name="action" id="submitbutton{{ class.id }}">
+                <div id="addbutton_fillslot_sec{{ section.id }}"><button type="submit" class="btn btn-primary" name="action" id="submitbutton{{ class.id }}">
                     Click here to add this class
                 </button></div>
             {% else %}
