@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, CoreModule, main_call
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
-from esp.program.modules.handlers.studentregcore import StudentRegCore
+from esp.program.modules.checklist import get_checklist_context
 from esp.utils.web import render_to_response
 
 class TeacherRegCore(ProgramModuleObj, CoreModule):
@@ -72,21 +72,16 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
         context = {}
         modules = self.program.getModules(request.user, 'teach')
 
-        context['completedAll'] = True
         for module in modules:
-            if not module.isCompleted(request.user) and module.isRequired():
-                context['completedAll'] = False
-
             context = module.prepare(context)
 
-        records = StudentRegCore.get_reg_records(request.user, prog, 'teach')
-
-        context['modules'] = modules
-        context['records'] = records
-        context['options'] = prog.classregmoduleinfo
+        # Same checklist context as the teacher module pages; see teacher_module_base.html.
+        checklist = get_checklist_context(request.user, prog, 'teach', modules)
+        checklist['options'] = prog.classregmoduleinfo
+        context.update(checklist)
+        context['checklist'] = checklist
         context['one'] = one
         context['two'] = two
-        context['extra_steps'] = "teach:extra_steps"
         return render_to_response(self.baseDir()+'mainpage.html', request, context)
 
     def isStep(self):
