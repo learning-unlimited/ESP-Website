@@ -58,32 +58,14 @@ class StudentLunchSelectionForm(forms.Form):
         self.fields['timeslot'].choices = [(ts.id, ts.short_description) for ts in events_filtered] + [(-1, 'No lunch period')]
 
     def load_data(self):
-        lunch_registrations = StudentRegistration.valid_objects().filter(
-            user=self.user,
-            section__parent_class__category__is_lunch=True,
-            section__parent_class__parent_program=self.program
-        ).select_related('section').prefetch_related('section__meeting_times')
-
-        filtered = []
-        for lunch_registration in lunch_registrations:
-            first_meeting_time = lunch_registration.section.meeting_times.order_by('start').first()
-            if first_meeting_time and first_meeting_time.start.date() == self.day:
-                filtered.append(lunch_registration)
-
-        if filtered:
-            section = filtered[0].section
-            first_meeting_time = section.meeting_times.order_by('start').first()
-            if first_meeting_time:
-                self.initial['timeslot'] = first_meeting_time.id
+        lunch_registration = StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__category__is_lunch=True, section__parent_class__parent_program=self.program, section__meeting_times__start__date=self.day).select_related('section').first()
+        if lunch_registration:
+            timeslot = lunch_registration.section.meeting_times.filter(start__date=self.day).order_by('start').first()
+            self.initial['timeslot'] = timeslot.id
 
     def save_data(self):
         #   The existing lunch periods for this day, which this choice replaces
-        old_sections = []
-        for section in self.user.getSections(self.program):
-            if section.parent_class.category.is_lunch:
-                first_meeting_time = section.meeting_times.order_by('start').first()
-                if first_meeting_time and first_meeting_time.start.date() == self.day:
-                    old_sections.append(section)
+        old_sections = list(self.user.getSections(self.program).filter(parent_class__category__is_lunch=True, meeting_times__start__date=self.day).distinct())
 
         new_sections = []
         if int(self.cleaned_data['timeslot']) != -1:
