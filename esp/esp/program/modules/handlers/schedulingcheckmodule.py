@@ -139,6 +139,7 @@ class SchedulingCheckRunner:
         self.d_categories = []
         self.d_grades = []
         self._available_times_by_user = {}
+        self._unapproved_sections = None
 
     def _getLunchByDay(self):
         #   Get IDs of timeslots allocated to lunch by day
@@ -404,13 +405,15 @@ class SchedulingCheckRunner:
         return self.formatter.format_list(output, ["Classes"])
 
     def unapproved_scheduled_classes(self):
-        #   Looks outside the snapshot, which holds only approved sections.
-        sections = ClassSection.objects.filter(status__lt=10, parent_class__parent_program=self.p) \
-                                       .select_related('parent_class') \
-                                       .prefetch_related('meeting_times', 'resourceassignment_set')
-        output = [sec for sec in sections
-                  if sec.meeting_times.all() or sec.resourceassignment_set.all()]
-        return self.formatter.format_list(output, ["Classes"])
+        #   The snapshot holds only approved sections, so this check keeps its
+        #   own, memoized so re-running it cannot contradict the first result.
+        if self._unapproved_sections is None:
+            sections = ClassSection.objects.filter(status__lt=10, parent_class__parent_program=self.p) \
+                                           .select_related('parent_class') \
+                                           .prefetch_related('meeting_times', 'resourceassignment_set')
+            self._unapproved_sections = [sec for sec in sections
+                                         if sec.meeting_times.all() or sec.resourceassignment_set.all()]
+        return self.formatter.format_list(self._unapproved_sections, ["Classes"])
 
     def teachers_teaching_two_classes_same_time(self):
         if self.p.hasModule("TeacherModeratorModule"):

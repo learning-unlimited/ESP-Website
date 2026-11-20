@@ -278,6 +278,22 @@ class SchedulingCheckSnapshotTest(ProgramFrameworkTest):
         runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
         self.assertIn(section, runner.unapproved_scheduled_classes())
 
+    def test_unapproved_scheduled_classes_is_stable_across_reruns(self):
+        # This check queries outside the snapshot, so it needs its own memo to
+        # honour the same consistency guarantee as the rest.
+        section = self.sections[0]
+        section.status = 0
+        section.save()
+
+        runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
+        before = runner.unapproved_scheduled_classes()
+        self.assertIn(section, before)
+
+        section.clearRooms()
+        section.clear_meeting_times()
+
+        self.assertEqual(runner.unapproved_scheduled_classes(), before)
+
     def test_no_overlap_classes_reports_each_class_once_per_block(self):
         first, second = self.sections[0], self.sections[1]
         second.assign_meeting_times(list(first.get_meeting_times()))
