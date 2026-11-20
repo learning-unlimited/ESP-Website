@@ -1,5 +1,4 @@
-from django.db.models import ForeignKey, Field
-from django.conf import settings
+from django.db.models import ForeignKey, OneToOneField
 from esp.db.forms import AjaxForeignKeyNewformField
 
 
@@ -16,6 +15,17 @@ class AjaxForeignKey(ForeignKey):
 
     def get_newform_field(self):
         return AjaxForeignKeyNewformField(field=self)
+
+    def formfield(self, **kwargs):
+        defaults = {'form_class': AjaxForeignKeyNewformField,
+                    'field': self}
+
+        defaults.update(kwargs)
+        return super().formfield(**defaults)
+
+
+class AjaxOneToOneField(OneToOneField):
+    """OneToOneField that renders with the AjaxForeignKey autocomplete widget."""
 
     def formfield(self, **kwargs):
         defaults = {'form_class': AjaxForeignKeyNewformField,

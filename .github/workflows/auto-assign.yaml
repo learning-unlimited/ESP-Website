@@ -31,6 +31,7 @@ jobs:
       && !github.event.issue.pull_request
       && contains(github.event.comment.body, '/assign')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Process /assign request
         uses: actions/github-script@v9
@@ -223,6 +224,7 @@ jobs:
       && !github.event.issue.pull_request
       && !contains(github.event.comment.body, '/assign')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check for informal assignment requests
         uses: actions/github-script@v9
@@ -320,6 +322,7 @@ jobs:
   check-direct-assignment:
     if: github.event_name == 'issues'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Verify assignee is within limit
         uses: actions/github-script@v9

@@ -14,6 +14,19 @@ Teachers can now save an incomplete class registration form as a draft and come 
 
 A draft is held as a class with the new "draft" status. Drafts are invisible to students, are not counted as submitted classes for admin teacher lists or teacher registration progress, and do not take part in teacher conflict or time-commitment calculations. Each teacher gets one draft per registration flow (regular classes and open classes are tracked separately); submitting the form promotes that draft into a normal unreviewed class.
 
+New Customization Tags
+======================
+
+Several previously hard-coded behaviors are now configurable by tag. Each tag
+defaults to the existing behavior.
+
+- ``student_profile_show_guardian_info`` (global, student registration): set to ``False`` to drop the parent/guardian contact section from the student profile form.
+- ``onsite_show_paid_field`` (global, onsite): set to ``False`` to hide the "Paid" checkbox on the onsite registration form.
+- ``volunteer_label_comments`` (per-program, volunteer): overrides the label of the volunteer form's comments field (the ``volunteer_help_text_comments`` tag already exists).
+- ``volunteer_help_text_requests`` (per-program, volunteer): overrides the help text of the volunteer form's timeslots field.
+- ``volunteer_help_text_confirm`` (per-program, volunteer): overrides the help text of the volunteer form's confirmation checkbox.
+- ``bigboard_graph_drop_beg``, ``bigboard_graph_drop_end``, and ``bigboard_graph_min_points`` (per-program, general management): control where the big board's registration graph starts, where it stops, and how many data points a series needs before it is plotted at all.
+
 Teacher Schedule Deadline
 =========================
 
@@ -25,6 +38,24 @@ Scheduling Check Legends
 ========================
 
 The "Checks" tab of the AJAX scheduler now shows a legend below the list of scheduling checks that describes the selected check and explains what each cell color means (including the category colors for "Color by Class Category" and the orange corners on classes flagged as having special scheduling needs). Hovering over a check's name also shows its description.
+
+Lunch Constraints: Warn or Enforce
+==================================
+
+Schedule constraints (e.g., lunch constraints generated from the "Lunch Constraints" management page) can now either warn students or block them when they try to add a class that **newly** violates a constraint. Previously existing overrides (e.g., an enrollment by an admin) no longer block a student from making new changes.
+
+The "Lunch Constraints" page has a new "enforce" checkbox:
+
+- **Unchecked (warn).** Students see a note at the top of their schedule listing what it is missing (e.g., "You need to choose a lunch period on Saturday"), on the main student registration page and in the onsite webapp. The note updates as soon as they add or remove a class. Nothing is ever blocked.
+- **Checked (enforce).** The same note appears, and in addition a student is refused any schedule change that would *newly* break a constraint (e.g., dropping their only lunch period while they still have classes before and after it). A student whose schedule already violates a constraint is never blocked, so they can always work their way back to a valid schedule instead of being stuck.
+
+Old programs will continue to enforce existing constraints. New programs will default to warnings unless configured otherwise.
+
+The onsite class changes grid now reports the same notifications but can be overridden using the "Override size limits and schedule constraints" checkbox.
+
+The "autocorrect" checkbox on that page works again. When a student would otherwise be warned or blocked, they are enrolled in a lunch period in a block they still have free. If they have no free lunch block they are warned or blocked as usual.
+
+In terms of blocking, adding a class is refused only when it would use up their last opportunity to comply (e.g., filling their final free lunch block) and giving up a class is refused only when it breaks a requirement they were already meeting.
 
 Form Field Selectors
 ====================
@@ -41,6 +72,9 @@ have set already carry over and keep working.
 Bug Fixes
 =========
 
+- The teacher custom form, teacher quiz and student custom form module pages now check required fields and field formats in the browser before submitting, as standalone custom forms do. The date check on all custom forms now also accepts the format the site re-displays saved dates in (such as "2026-11-14"). Phone numbers are no longer checked in the browser, which rejected international numbers the site accepts; the server still checks them.
+- The "First Step" and "Prev Step" buttons on custom forms no longer require the current page to be filled in correctly, so users can go back without completing it first.
+- Pressing Enter on a later page of a custom form (standalone, or a teacher or student registration step) now goes to the next page instead of back a page.
 - Director email addresses and outgoing "From" addresses now accept ``learningu.org`` at any subdomain depth. The rule previously allowed at most one subdomain label, so an address like ``info@a.b.learningu.org`` was rejected even though the director email help text has always described any valid subdomain as acceptable. This applies to the program creation and program settings forms, the ``director_email`` model validator, and the "From" address checks used by the comm panel and automated mail.
 - Teachers can now edit their class website pages inline. Inline editing controls and the "Edit this page" button were previously only shown to administrators, even though teachers of a class have permission to edit its pages. Logged-in non-admins now see the editing controls for any page or inline text block they have permission to edit, and nothing else.
 
