@@ -44,8 +44,8 @@ class Command(BaseCommand):
         from esp.themes.controllers import ThemeController
         tc = ThemeController()
         # Resolve once before any attempt. recompile_theme() calls clear_theme()
-        # which unsets current_theme_name, so a bare retry would fall back to
-        # 'default' and fail with a misleading missing-pipeline error.
+        # which unsets current_theme_name, so a bare retry would see no theme
+        # and silently fall back to the stock Bootstrap stylesheet.
         theme_name = tc.get_current_theme()
         customization_name = tc.get_current_customization()
         try:
