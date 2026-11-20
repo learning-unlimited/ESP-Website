@@ -45,6 +45,7 @@ from esp.cal.models import Event
 from esp.middleware import ESPError
 from django.http import HttpResponse, HttpResponseRedirect
 import csv
+from esp.utils.ids import filter_by_id, get_by_id_or_404
 
 class VolunteerManage(ProgramModuleObj):
     doc = """Manage timeslots for volunteers and the volunteers that have signed up for those timeslots."""
@@ -107,11 +108,11 @@ class VolunteerManage(ProgramModuleObj):
             form = VolunteerRequestForm(program=prog)
 
         elif request.POST.get('op') == 'delete':
-            VolunteerRequest.objects.filter(id=request.POST.get('id'), timeslot__program=prog).delete()
+            filter_by_id(VolunteerRequest.objects, request.POST.get('id'), timeslot__program=prog).delete()
             form = VolunteerRequestForm(program=prog)
         elif request.GET.get('op') == 'edit':
             form = VolunteerRequestForm(program=prog)
-            form.load(VolunteerRequest.objects.get(id=request.GET['id']))
+            form.load(get_by_id_or_404(VolunteerRequest, request.GET['id']))
         elif request.method == 'POST':
             form = VolunteerRequestForm(request.POST, program=prog)
             if form.is_valid():
@@ -209,13 +210,11 @@ class VolunteerManage(ProgramModuleObj):
             context = {}
             return HttpResponseRedirect( f'/manage/{one}/{two}/volunteering' )
 
-        try:
-            volunteer = ESPUser.objects.get(id=target_id)
-        except ESPUser.DoesNotExist:
-            try:
-                volunteer = ESPUser.objects.get(username=target_id)
-            except ESPUser.DoesNotExist:
-                raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
+        volunteer = filter_by_id(ESPUser.objects, target_id).first()
+        if volunteer is None:
+            volunteer = ESPUser.objects.filter(username=target_id).first()
+        if volunteer is None:
+            raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
 
         vs = VolunteerSignup
         return vs.signupForm(request, tl, one, two, prog, volunteer, isAdmin=True)

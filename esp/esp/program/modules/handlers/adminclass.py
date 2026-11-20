@@ -182,11 +182,12 @@ class AdminClass(ProgramModuleObj):
         if request.method == 'POST':
             if request.POST.get('sure') == 'True':
                 try:
-                    s = ClassSection.objects.get(id=int(request.GET['sec_id']))
+                    s = ClassSection.objects.get(id=int(request.GET.get('sec_id')))
                     s.delete()
-                    return HttpResponseRedirect(f'/manage/{one}/{two}/manageclass/{extra}')
-                except (ValueError, ClassSection.DoesNotExist):
-                    raise ESPError(f'Unable to delete a section.  The section requested was: {request.GET["sec_id"]}', log=False)
+                except (TypeError, ValueError, ClassSection.DoesNotExist):
+                    raise ESPError(f'Unable to delete a section.  The section requested was: {request.GET.get("sec_id")}', log=False)
+            #   Both Confirm and Cancel go back to the class's management page.
+            return HttpResponseRedirect(f'/manage/{one}/{two}/manageclass/{extra}')
         else:
             section = get_by_id_or_404(ClassSection, request.GET.get('sec_id'))
             context = {'sec': section, 'module': self}

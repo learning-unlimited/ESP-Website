@@ -8,6 +8,8 @@ import random
 from datetime import datetime, timedelta
 
 from django.core import mail
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from esp.cal.models import Event
 from esp.program.class_status import ClassStatus
@@ -944,6 +946,49 @@ class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
         self.assertEqual(response.status_code, 400)
         self.assertFalse(self._valid_priorities(student).exists())
 
+    def test_save_priorities_unknown_timeslot_rejected(self):
+        """A timeslot id that doesn't exist or isn't numeric returns 400."""
+        self._login_with_profile(self.students[0])
+        bogus = Event.objects.order_by('-id')[0].id + 1000
+        for timeslot_id in (str(bogus), 'abc'):
+            response = self.client.post(
+                self._url('save_priorities'),
+                {'json_data': json.dumps({timeslot_id: {'1': ''}})})
+            self.assertEqual(response.status_code, 400, timeslot_id)
+            self.assertEqual(response.content, b'JSON data mis-formatted.')
+
+    def test_save_priorities_other_program_timeslot_rejected(self):
+        """A timeslot that isn't in this program returns 400 and saves nothing."""
+        ts = self.timeslots[0]
+        sec = self.program.sections()[0]
+        self._place(sec, ts)
+        other = Event.objects.create(
+            program=None, event_type=ts.event_type, start=ts.start,
+            end=ts.end, short_description='Other', description='Other')
+        student = self.students[0]
+        self._login_with_profile(student)
+
+        response = self._post_priorities(
+            other, {'1': str(sec.parent_class.id)})
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(self._valid_priorities(student).exists())
+
+    def test_save_priorities_non_numeric_class_rejected(self):
+        """A non-numeric class id returns 400 and saves no other ranks."""
+        ts = self.timeslots[0]
+        sec = self.program.sections()[0]
+        self._place(sec, ts)
+        student = self.students[0]
+        self._login_with_profile(student)
+
+        for bad in ('abc', None, [1]):
+            response = self._post_priorities(
+                ts, {'1': str(sec.parent_class.id), '2': bad})
+            self.assertEqual(response.status_code, 400, bad)
+            self.assertEqual(response.content, b'JSON data mis-formatted.')
+        self.assertFalse(
+            StudentRegistration.objects.filter(user=student).exists())
+
     def test_save_priorities_blank_choice_expires_existing(self):
         """An empty choice clears the existing priority for that slot."""
         ts = self.timeslots[0]
@@ -1040,6 +1085,37 @@ class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
         self.assertEqual(self._valid_priorities(student).count(), 1)
         self.assertEqual(
             StudentRegistration.objects.filter(user=student).count(), 2)
+
+    def test_save_priorities_duplicate_cleanup_keeps_lowest_id(self):
+        """Duplicate cleanup keeps the lowest-id row and expires the rest."""
+        ts = self.timeslots[0]
+        sec = self.program.sections()[0]
+        self._place(sec, ts)
+        student = self.students[0]
+        keep, dup1, dup2 = [self._priority(student, sec) for _ in range(3)]
+
+        self._login_with_profile(student)
+        with CaptureQueriesContext(connection) as queries:
+            response = self._post_priorities(ts, {'1': str(sec.parent_class_id)})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            list(self._valid_priorities(student).values_list('id', flat=True)),
+            [keep.id])
+        # The duplicates are fetched once, in id order, rather than sliced in
+        # two separate unordered queries. They're the registrations grouped
+        # by meeting time; skip the exists() check on the same queryset.
+        table = StudentRegistration._meta.db_table
+        fetches = [q['sql'] for q in queries.captured_queries
+                   if f'FROM "{table}"' in q['sql']
+                   and 'HAVING MIN("cal_event"."start")' in q['sql']
+                   and not q['sql'].startswith('SELECT 1 AS')]
+        self.assertEqual(len(fetches), 1, fetches)
+        self.assertNotIn('LIMIT', fetches[0])
+        self.assertNotIn('OFFSET', fetches[0])
+        self.assertIn(f'ORDER BY "{table}"."id" ASC', fetches[0])
+        for dup in (dup1, dup2):
+            dup.refresh_from_db()
+            self.assertFalse(dup.is_valid(), dup.id)
 
     def test_save_priorities_reuses_expired_registration(self):
         """Re-choosing a class unexpires the old row instead of adding one."""
