@@ -1,5 +1,6 @@
 from copy import deepcopy
 import json
+import logging
 import os
 
 from django.conf import settings
@@ -23,6 +24,8 @@ from django.contrib.auth.decorators import user_passes_test, login_required
 from esp.users.models import ESPUser
 from esp.middleware import ESPError, Http403
 from esp.utils.web import render_to_response, zip_download, error404
+
+logger = logging.getLogger(__name__)
 
 def test_func(user):
     return user.is_authenticated and (user.is_morphed() or user.isTeacher() or user.isAdministrator())
@@ -512,9 +515,10 @@ def getRebuildData(request):
                     return JsonResponse({'message': 'You do not have permission to edit or copy this form.'}, status=403)
                 fh = FormHandler(form=form, request=request)
                 try:
-                    return HttpResponse(json.dumps(fh.rebuildData()))
-                except Exception as err:
-                    return HttpResponse(json.dumps({'message': str(err)}), status=400)
+                    return JsonResponse(fh.rebuildData())
+                except Exception:
+                    logger.exception('Could not rebuild metadata for form %s', form_id)
+                    return JsonResponse({'message': 'The form’s data could not be read.'}, status=400)
     return HttpResponse(status=400)
 
 @user_passes_test(test_func)

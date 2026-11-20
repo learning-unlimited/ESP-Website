@@ -559,6 +559,8 @@ class FormBuilderViewTest(TestCase):
         response = self._get_metadata(self.teacher_form.id)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.content)['title'], 'Teacher Form')
+        #   Served as JSON, so user-written titles can't be rendered as HTML
+        self.assertEqual(response['Content-Type'], 'application/json')
 
     def test_metadata_denied_for_other_users_form(self):
         """A teacher can't load (and so can't edit or copy) another user's form."""
