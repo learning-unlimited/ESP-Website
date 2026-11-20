@@ -24,6 +24,7 @@ class SearchOptimizer:
 
         best_score = self.manipulator.scorer.score_schedule()
         best_actions = []
+        failed = False
         # Explore all possible roomslots to move to.
         for roomslot in self.roomslots:
             # First, figure out what slots we need.
@@ -37,6 +38,7 @@ class SearchOptimizer:
                     roomslot, section.duration)
             other_sections = []
             proposed_actions = []
+            # Reset this for each candidate roomslot.
             failed = False
             # Kick everyone else out of those slots.
             for needed_slot in needed_slots:
@@ -74,8 +76,11 @@ class SearchOptimizer:
                                               timeout)
                 if not other_section.is_scheduled():
                     # Evicted sections must be scheduled
-                    self.revert(len(proposed_actions))
-                    continue
+                    failed = True
+                    break
+            if failed:
+                self.revert(len(proposed_actions))
+                continue
             # Compute the score.
             new_score = self.manipulator.scorer.score_schedule()
             if new_score > best_score:
