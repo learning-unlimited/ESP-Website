@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 import json
 from importlib import import_module
+import threading
 import time
 from unittest.mock import patch
 
@@ -1064,6 +1065,75 @@ class SchemaLockTimeoutIntegrationTest(TransactionTestCase):
         #   The connection must still be usable, and the timeout must not have
         #   leaked into it.
         self.assertEqual(lock_timeout_ms(), before)
+
+
+class FormRowLockTest(TransactionTestCase):
+    """
+    Saving a form and reading its metadata lock the form row, so the builder's
+    check after an unconfirmed save can't read a save that is still running.
+    """
+
+    HOLD = 1.0
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='rowlock_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        self.form = Form.objects.create(
+            title='Row Lock Form', created_by=self.admin,
+            link_type='-1', link_id=-1, perms='',
+            success_message='OK', success_url='/'
+        )
+        dmh = DynamicModelHandler(self.form)
+        dmh.createTable()
+        #   This test case commits, so drop the response table even if a test fails
+        self.addCleanup(dmh.deleteTable)
+        self.client.login(username='rowlock_admin', password='password')
+
+    def _waits_for_row_lock(self, send):
+        """Runs send() while another connection holds the form row; returns its response."""
+        blocker = psycopg2.connect(**connection.get_connection_params())
+        result = {}
+
+        def run():
+            try:
+                result['response'] = send()
+            finally:
+                connection.close()
+
+        try:
+            with blocker.cursor() as cursor:
+                cursor.execute('SELECT id FROM customforms_form WHERE id = %s FOR UPDATE', [self.form.id])
+            worker = threading.Thread(target=run)
+            started = time.time()
+            worker.start()
+            worker.join(self.HOLD)
+            self.assertTrue(worker.is_alive(), 'the request did not wait for the row lock')
+        finally:
+            blocker.commit()
+            blocker.close()
+        worker.join(30)
+        self.assertFalse(worker.is_alive())
+        self.assertGreaterEqual(time.time() - started, self.HOLD)
+        return result['response']
+
+    def test_metadata_waits_for_a_save_in_progress(self):
+        response = self._waits_for_row_lock(lambda: self.client.get(
+            '/customforms/metadata/', {'form_id': self.form.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.content)['title'], 'Row Lock Form')
+
+    def test_save_waits_for_a_metadata_read_in_progress(self):
+        payload = {'form_id': self.form.id, 'title': 'Renamed', 'desc': '', 'anonymous': False,
+                   'link_type': '-1', 'link_id': -1, 'success_message': 'OK', 'success_url': '/',
+                   'perms': '', 'pages': []}
+        response = self._waits_for_row_lock(lambda: self.client.post(
+            '/customforms/modify/', json.dumps(payload), content_type='application/json',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'))
+        self.assertEqual(response.content, b'OK')
+        self.form.refresh_from_db()
+        self.assertEqual(self.form.title, 'Renamed')
 
 
 class FailedFormSaveRollbackTest(TestCase):
