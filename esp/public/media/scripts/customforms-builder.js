@@ -1080,7 +1080,8 @@ const perr = (e, id) => e ? h('span', { class: 'cfb-perr', id: id + '-e', text: 
 function previewError(f, v) {
     const t = TYPES[f.type];
     const empty = v === undefined || v === '' || (Array.isArray(v) && !v.length);
-    if (f.required && empty) return 'This field is required.';
+    //   The server counts "Unknown" as no answer to a required Yes/No/Unknown question
+    if (f.required && (empty || (f.type === 'null_boolean' && v === 'Unknown'))) return 'This field is required.';
     if (empty) return null;
     if (f.type === 'numeric') {
         const n = Number(v);
