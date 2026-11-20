@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 from django import forms
 from django.forms.renderers import TemplatesSetting
 
+from esp.db.forms import AjaxForeignKeyFieldBase
 from esp.tagdict.models import Tag
 from esp.utils.widgets import DummyWidget
 
@@ -66,6 +67,48 @@ class FormWithRequiredCss(forms.Form):
                     field.widget.attrs['class'] += ' required'
                 else:
                     field.widget.attrs['class'] = 'required'
+
+def _add_widget_class(widget, css_class):
+    widget.attrs['class'] = ' '.join(filter(None, [widget.attrs.get('class'), css_class]))
+
+def _bootstrap_widget_class(widget):
+    if isinstance(widget, (forms.CheckboxInput, forms.RadioSelect, forms.CheckboxSelectMultiple)):
+        return 'form-check-input'
+    if isinstance(widget, forms.Select):
+        return 'form-select'
+    return 'form-control'
+
+class BootstrapFormMixin:
+    """ Adds Bootstrap 5 control classes to every widget, and is-invalid to fields with errors.
+        Put it first in the bases so it runs after the other forms have set up their widgets. """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            for widget in self._bootstrap_widgets(field.widget):
+                if isinstance(widget, AjaxForeignKeyFieldBase):
+                    #   Ajax widgets render their own <input> and ignore attrs
+                    widget.input_class = 'form-control'
+                else:
+                    _add_widget_class(widget, _bootstrap_widget_class(widget))
+
+    @staticmethod
+    def _bootstrap_widgets(widget):
+        if isinstance(widget, forms.HiddenInput):
+            return []
+        if isinstance(widget, forms.MultiWidget):
+            #   The MultiWidget's own class would replace its subwidgets' classes, so push it down
+            parent_class = widget.attrs.pop('class', None)
+            for subwidget in widget.widgets:
+                _add_widget_class(subwidget, parent_class)
+            return [w for w in widget.widgets if not isinstance(w, forms.HiddenInput)]
+        return [widget]
+
+    def full_clean(self):
+        super().full_clean()
+        for name in self.errors:
+            if name in self.fields:
+                for widget in self._bootstrap_widgets(self.fields[name].widget):
+                    _add_widget_class(widget, 'is-invalid')
 
 class FormWithTagInitialValues(forms.Form):
     def __init__(self, *args, **kwargs):
