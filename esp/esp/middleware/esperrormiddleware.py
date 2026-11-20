@@ -68,6 +68,10 @@ def ESPError(message=None, log=True):
     Legacy (deprecated) usage::
         raise ESPError(log=False), 'This error will not be logged.'
 
+    Messages are HTML-escaped when rendered.  To include markup, build the
+    message with django.utils.html.format_html() (or mark_safe() for a
+    constant string).
+
     Note: "log=False" is a bit of a lie -- it just means it gets logged as INFO
     rather than ERROR (and therefore doesn't go to the serverlog email archive,
     just to the on-disk log).

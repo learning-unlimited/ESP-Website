@@ -330,3 +330,14 @@ class UpdateClassSectionsTest(ClassregControllerTestBase):
         self.controller.update_class_sections(cls, 0)
 
         self.assertEqual(cls.sections.count(), 0)
+
+    def test_section_with_enrolled_student_is_kept_and_reported(self):
+        """Reducing sections keeps (and reports) a section that has an enrolled student."""
+        cls = self._make_saved_class(num_sections=2)
+        enrolled_sec = cls.get_sections()[1]
+        enrolled_sec.preregister_student(self.students[0], overridefull=True)
+
+        self.controller.update_class_sections(cls, 1)
+
+        self.assertEqual(self.controller.undeleted_sections, [enrolled_sec])
+        self.assertEqual(cls.sections.count(), 2)

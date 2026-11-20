@@ -202,7 +202,7 @@ class NameTagModule(ProgramModuleObj):
 
         elif idtype == 'other':
             user_title = request.POST['blanktitle']
-            if request.POST['group'] == '':
+            if request.POST.get('group', '') == '':
                 raise ESPError("You need to select a group", log=False)
             group = request.POST['group']
             user_Q = Q(groups=group)
@@ -232,7 +232,11 @@ class NameTagModule(ProgramModuleObj):
         elif idtype == 'blank':
             users = []
             user_title = request.POST['blanktitle']
-            for i in range(int(request.POST['number'])):
+            try:
+                number = int(request.POST.get('number', ''))
+            except ValueError:
+                raise ESPError("You need to enter a valid number of blank name tags", log=False)
+            for i in range(number):
                 users.append({'title': user_title,
                               'name' : '',
                               'id'   : ''})
