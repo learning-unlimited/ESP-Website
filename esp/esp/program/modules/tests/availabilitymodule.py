@@ -82,3 +82,28 @@ class AvailabilityModuleTest(ProgramFrameworkTest):
         response = self.client.post( self.moduleobj.get_full_path(), data={ 'timeslots': timeslots } )
         self.assertTrue( response.status_code == 302 )
         self.assertTrue( self.moduleobj.isCompleted(self.teachers[0]) )
+
+    def test_prepare_default_context_independent_across_calls(self):
+        """Separate calls to prepare() without context must receive independent dictionaries."""
+        res1 = self.moduleobj.prepare()
+        res2 = self.moduleobj.prepare()
+        self.assertIsNot(res1, res2)
+        res1['injected_leak'] = 'leaked_data'
+        res3 = self.moduleobj.prepare()
+        self.assertNotIn('injected_leak', res3)
+        self.assertEqual(res3['availabilitymodule'], self.moduleobj)
+
+    def test_prepare_explicit_context_preserved(self):
+        """Explicit context dictionary must be preserved and mutated."""
+        explicit_ctx = {'initial_key': 'initial_val'}
+        res = self.moduleobj.prepare(explicit_ctx)
+        self.assertIs(res, explicit_ctx)
+        self.assertEqual(res['initial_key'], 'initial_val')
+        self.assertEqual(res['availabilitymodule'], self.moduleobj)
+
+    def test_prepare_explicit_empty_dict_preserved(self):
+        """An explicit empty dictionary {} must not be replaced by a new dictionary."""
+        empty_ctx = {}
+        res = self.moduleobj.prepare(empty_ctx)
+        self.assertIs(res, empty_ctx)
+        self.assertEqual(res['availabilitymodule'], self.moduleobj)

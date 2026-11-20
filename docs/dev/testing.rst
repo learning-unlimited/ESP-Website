@@ -205,15 +205,14 @@ Behavioral tests verify critical system invariants hold.
           self.assertTrue(result)
 
           # Second enrollment blocked by conflict
-          error = sec_b.cannotAdd(student, checkFull=True,
-                                  autocorrect_constraints=False)
+          error = sec_b.cannotAdd(student, checkFull=True)
           self.assertTrue(error)
           self.assertIn('conflicts', error.lower())
 
 ``cannotAdd()`` returns an error string when the student may not join, and a
-falsy value when they may. Pass ``autocorrect_constraints=False`` in tests:
-with the default of ``True`` it may resolve the constraint itself and report no
-error, which is not what a conflict test is trying to observe.
+falsy value when they may. It covers fullness, grade range and schedule
+conflicts; schedule constraints are handled separately by
+``esp.program.models.blocking_requirements()``.
 
 Common Test Patterns
 ---------------------
@@ -283,8 +282,7 @@ Testing Error Messages
 
 Verify validation produces helpful errors::
 
-  error = section.cannotAdd(student, checkFull=True,
-                            autocorrect_constraints=False)
+  error = section.cannotAdd(student, checkFull=True)
   self.assertTrue(error)
   self.assertIn('conflicts', error.lower())
 

@@ -242,6 +242,9 @@ class CustomFormHandler():
                 if 'widget_attrs' in self._field_types[field['field_type']]:
                     widget_attrs.update(self._field_types[field['field_type']]['widget_attrs'])
                 typeMap = self._field_types[field['field_type']]['typeMap']
+                # Django's NullBooleanField.validate() ignores `required`; ours doesn't.
+                if field['required'] and typeMap is forms.NullBooleanField:
+                    typeMap = RequiredNullBooleanField
 
                 # Setting classes required for front-end validation
                 if field['required']:
@@ -607,10 +610,13 @@ class FormHandler:
 
     def get_wizard(self, initial_data=None, wizard_view=ComboForm):
         combined_initial_data = self.get_initial_data(initial_data)
-        return wizard_view( form_list = self._getFormList(),
+        #   get_initkwargs() sets up form_list and condition_dict the way
+        #   as_view() would, which formtools needs to build the forms.
+        return wizard_view(**wizard_view.get_initkwargs(
+                            self._getFormList(),
                             initial_dict = combined_initial_data,
                             form_handler = self,
-                            form = self.form)
+                            form = self.form))
 
     def get_wizard_view(self, initial_data=None, wizard_view=ComboForm, **kwargs):
         """
@@ -686,7 +692,10 @@ class FormHandler:
             elif generic_fields[ftype]['typeMap'] is not DummyField:
                 response_data['questions'].append([qname, field['label'], ftype])
 
-        users = ESPUser.objects.in_bulk([response['user_id'] for response in responses])
+        # Anonymous forms' responses have no user column
+        users = {}
+        if not form.anonymous:
+            users = ESPUser.objects.in_bulk([response['user_id'] for response in responses])
 
         # Pre-fetch for only_fkey_model
         fkey_instances = {}
