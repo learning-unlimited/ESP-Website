@@ -72,8 +72,7 @@ def registration_checklist(context):
     # A view can pass an empty checklist to show none.
     checklist = context['checklist'] if 'checklist' in context else _lookup_checklist(context)
     if checklist:
-        # Progress mode 2 (formerly the separate progress bar) shows the checklist too.
-        show_steps = checklist['options'].progress_mode in (1, 2)
+        show_steps = checklist['options'].show_checklist
         checklist['show_steps'] = show_steps
         checklist['show_list'] = show_steps or bool(checklist.get('records'))
         checklist['in_theme_sidebar'] = checklist['show_list'] and _theme_has_checklist_sidebar(context)
