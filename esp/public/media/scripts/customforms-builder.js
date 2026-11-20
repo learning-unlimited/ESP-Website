@@ -1234,8 +1234,8 @@ async function save() {
         const r = await request(editing ? URLS.modify : URLS.submit, { method: 'POST', body: JSON.stringify(toServer()),
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() } });
         if (!(r.res.ok && r.text === 'OK')) message = serverMessage(r.res, r.data);
-        //   Saves run in a transaction, so a Django error rolled back; a gateway error may have come after the commit
-        unknown = r.res.status >= 502;
+        //   Any 5xx may come from a proxy after the commit; a Django error rolled back, which the check then confirms
+        unknown = r.res.status >= 500;
     } catch (e) {
         unknown = true;
     }
