@@ -34,6 +34,29 @@ A new ``Teacher/Classes/Schedule`` deadline controls whether teachers and modera
 
 The deadline is created default-open for new programs, and is backfilled default-open for existing programs, so nothing changes until an administrator closes it. Close it while scheduling is in progress to keep teachers from seeing assignments that may still change, and re-open it when the schedule is final. Note that ``Teacher/All`` and ``Teacher/Classes/All`` imply this permission, so they must not be open at the same time for it to have any effect.
 
+Scheduling Check Legends
+========================
+
+The "Checks" tab of the AJAX scheduler now shows a legend below the list of scheduling checks that describes the selected check and explains what each cell color means (including the category colors for "Color by Class Category" and the orange corners on classes flagged as having special scheduling needs). Hovering over a check's name also shows its description.
+
+Lunch Constraints: Warn or Enforce
+==================================
+
+Schedule constraints (e.g., lunch constraints generated from the "Lunch Constraints" management page) can now either warn students or block them when they try to add a class that **newly** violates a constraint. Previously existing overrides (e.g., an enrollment by an admin) no longer block a student from making new changes.
+
+The "Lunch Constraints" page has a new "enforce" checkbox:
+
+- **Unchecked (warn).** Students see a note at the top of their schedule listing what it is missing (e.g., "You need to choose a lunch period on Saturday"), on the main student registration page and in the onsite webapp. The note updates as soon as they add or remove a class. Nothing is ever blocked.
+- **Checked (enforce).** The same note appears, and in addition a student is refused any schedule change that would *newly* break a constraint (e.g., dropping their only lunch period while they still have classes before and after it). A student whose schedule already violates a constraint is never blocked, so they can always work their way back to a valid schedule instead of being stuck.
+
+Old programs will continue to enforce existing constraints. New programs will default to warnings unless configured otherwise.
+
+The onsite class changes grid now reports the same notifications but can be overridden using the "Override size limits and schedule constraints" checkbox.
+
+The "autocorrect" checkbox on that page works again. When a student would otherwise be warned or blocked, they are enrolled in a lunch period in a block they still have free. If they have no free lunch block they are warned or blocked as usual.
+
+In terms of blocking, adding a class is refused only when it would use up their last opportunity to comply (e.g., filling their final free lunch block) and giving up a class is refused only when it breaks a requirement they were already meeting.
+
 Form Field Selectors
 ====================
 
@@ -46,6 +69,19 @@ the teacher class registration form (``teacher_profile_hide_fields``,
 hidden from the form. The settings themselves are unchanged, so any values you
 have set already carry over and keep working.
 
+Profile Page Sections
+=====================
+
+Each section of the profile editor (contact information, role-specific
+information, parent/guardian contact and emergency contact) is now shown in its
+own card, so the parts of the form are easier to tell apart. The cards use the
+site theme's colors.
+
+For student and teacher profiles, the fields now use the site theme's input
+styling, related fields (first and last name, city/state/ZIP, home and cell
+phone) sit side by side on wider screens and stack on phones, every address
+field has its own label, and fields with errors are highlighted.
+
 Bulk and Automatic Class Flagging
 =================================
 
@@ -56,8 +92,10 @@ Bug Fixes
 
 - The teacher custom form, teacher quiz and student custom form module pages now check required fields and field formats in the browser before submitting, as standalone custom forms do. The date check on all custom forms now also accepts the format the site re-displays saved dates in (such as "2026-11-14"). Phone numbers are no longer checked in the browser, which rejected international numbers the site accepts; the server still checks them.
 - The "First Step" and "Prev Step" buttons on custom forms no longer require the current page to be filled in correctly, so users can go back without completing it first.
+- Custom form questions linked to contact info (name, email, phone, address or text message request) now show and save the user's own contact info.
 - Pressing Enter on a later page of a custom form (standalone, or a teacher or student registration step) now goes to the next page instead of back a page.
 - Director email addresses and outgoing "From" addresses now accept ``learningu.org`` at any subdomain depth. The rule previously allowed at most one subdomain label, so an address like ``info@a.b.learningu.org`` was rejected even though the director email help text has always described any valid subdomain as acceptable. This applies to the program creation and program settings forms, the ``director_email`` model validator, and the "From" address checks used by the comm panel and automated mail.
+- On the student profile, the "Use my parents as my emergency contact" button is now shown only when the parent/guardian section is on the page, and it copies only the parent/guardian and home address fields that are shown. Previously, with the parent/guardian section turned off (``student_profile_show_guardian_info``) or some of its fields hidden (``student_profile_hide_fields``), clicking the button cleared the matching emergency contact fields.
 - Teachers can now edit their class website pages inline. Inline editing controls and the "Edit this page" button were previously only shown to administrators, even though teachers of a class have permission to edit its pages. Logged-in non-admins now see the editing controls for any page or inline text block they have permission to edit, and nothing else.
 
 Developer Notes
