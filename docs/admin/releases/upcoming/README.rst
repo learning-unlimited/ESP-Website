@@ -82,6 +82,11 @@ styling, related fields (first and last name, city/state/ZIP, home and cell
 phone) sit side by side on wider screens and stack on phones, every address
 field has its own label, and fields with errors are highlighted.
 
+Bulk and Automatic Class Flagging
+=================================
+
+The class search page has a new "Add Flag to All" button. Its popup lets you add a flag to all of the classes currently matching your search, create an auto-flag rule that adds the flag to any class matching your search whenever it is saved in the future, or both. Classes that already have the flag are skipped, and a message after saving reports how many classes were flagged.
+
 Bug Fixes
 =========
 

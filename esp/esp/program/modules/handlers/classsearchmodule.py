@@ -5,6 +5,7 @@ import urllib.parse
 
 from collections import OrderedDict
 
+from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.db.models import Count
 from django.db.models.query import Q
@@ -14,7 +15,7 @@ from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, need
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 from esp.program.models import RegistrationType
 from esp.program.models.class_ import ClassSubject, STATUS_CHOICES
-from esp.program.models.flags import ClassFlagType
+from esp.program.models.flags import AutoClassFlagRule, ClassFlag, ClassFlagType
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
 from esp.utils.query_builder import QueryBuilder, SearchFilter
@@ -47,7 +48,7 @@ class ClassSearchModule(ProgramModuleObj):
     @classmethod
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
         # Surface the class search page in the admin dashboard search dropdown.
-        # Only the main view is searchable; aux endpoints (e.g. create_autorule) return None.
+        # Only the main view is searchable; aux endpoints (e.g. bulk_add_flag) return None.
         if view_name != "classsearch":
             return None
         return AdminSearchEntry(
@@ -259,36 +260,52 @@ class ClassSearchModule(ProgramModuleObj):
 
     @aux_call
     @needs_admin
-    def create_autorule(self, request, tl, one, two, module, extra, prog):
-        """Create an AutoClassFlagRule from a query."""
-        from esp.program.models.flags import AutoClassFlagRule, ClassFlagType
+    def bulk_add_flag(self, request, tl, one, two, module, extra, prog):
+        """Add a flag to the classes matching a query.
+
+        With "apply_existing", flags the classes that match now; with
+        "create_rule", creates an AutoClassFlagRule so that classes matching
+        it in the future are flagged when saved.
+        """
         query_data = request.POST.get('query_data')
         flag_type_id = request.POST.get('flag_type_id')
         comment = request.POST.get('comment', '')
         apply_existing = request.POST.get('apply_existing')
+        create_rule = request.POST.get('create_rule')
 
-        if not query_data or not flag_type_id:
+        if not query_data or not flag_type_id or not (apply_existing or create_rule):
             return HttpResponseRedirect(request.META.get('HTTP_REFERER', './classsearch'))
 
         try:
             flag_type = self.program.flag_types.get(id=flag_type_id)
-            # Create the rule
-            rule = AutoClassFlagRule.objects.create(
-                program=self.program,
-                flag_type=flag_type,
-                rule_data=query_data,
-                comment=comment
-            )
+            # Build the queryset first so an invalid query doesn't create a rule.
+            qb = self.query_builder()
+            decoded = json.loads(query_data)
+            matching_classes = qb.as_queryset(decoded).distinct()
+            rule = None
+            if create_rule:
+                # Create the rule
+                rule = AutoClassFlagRule.objects.create(
+                    program=self.program,
+                    flag_type=flag_type,
+                    rule_data=query_data,
+                    comment=comment
+                )
+                messages.success(request, 'Created an auto-flag rule for "%s".' % flag_type.name)
 
             # If checkbox is checked, apply flag to all existing matching classes
             if apply_existing:
-                qb = self.query_builder()
-                decoded = json.loads(query_data)
-                matching_classes = qb.as_queryset(decoded).distinct()
-                rule.apply_to_queryset(matching_classes, user=request.user)
+                if rule is not None:
+                    created_count = rule.apply_to_queryset(matching_classes, user=request.user)
+                else:
+                    created_count = ClassFlag.flag_classes(
+                        matching_classes, flag_type, comment=comment, user=request.user)
+                messages.success(request, 'Added the "%s" flag to %d class%s that did not already have it.' % (
+                    flag_type.name, created_count, '' if created_count == 1 else 'es'))
 
         except Exception as e:
-            logger.error("Error creating AutoClassFlagRule: %s", e)
+            logger.error("Error bulk adding flags: %s", e)
+            messages.error(request, 'Error adding flags: %s' % e)
 
         return HttpResponseRedirect('./classsearch?query=' + urllib.parse.quote(query_data))
 
