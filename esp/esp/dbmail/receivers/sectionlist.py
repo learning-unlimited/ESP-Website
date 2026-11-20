@@ -89,10 +89,18 @@ class SectionList(BaseHandler):
                                          'mod_password': set_list_moderator_password(list_name) }),
                       settings.DEFAULT_EMAIL_ADDRESSES['default'], ["%s-teachers@%s" % (cls.emailcode(), Site.objects.get_current().domain), ])
         else:
-            apply_list_settings(list_name, {'default_member_moderation': False})
-            apply_list_settings(list_name, {'generic_nonmember_action': 0})
-            apply_list_settings(list_name, {'acceptable_aliases': "%s.*-(students|class)-.*@%s" % (cls.emailcode(), Site.objects.get_current().domain)})
-            apply_list_settings(list_name, {'subject_prefix': "[%s]" % (cls.parent_program.niceName(),)})
+            # A new Mailman list holds non-member posts until this runs. Posts
+            # can arrive in that window, e.g. the activation notice and
+            # moderation requests from the students list when someone emails
+            # both lists at once, so also release anything held only for
+            # being from a non-member, as if the setting had been there all
+            # along.
+            apply_list_settings(list_name, {
+                'generic_nonmember_action': 0,
+                'default_member_moderation': False,
+                'acceptable_aliases': "%s.*-(students|class)-.*@%s" % (cls.emailcode(), Site.objects.get_current().domain),
+                'subject_prefix': "[%s]" % (cls.parent_program.niceName(),),
+            }, release_nonmember_holds=True)
 
         logger.info("Settings applied still...")
         add_list_member(list_name, cls.parent_program.director_email)

@@ -19,6 +19,25 @@ else:
     MAILMAN_PASSWORD = ''
     MM_PATH = "/usr/sbin/"
 
+# Python 2 code for Mailman's config_list, which runs it with the list
+# locked and saves the list (including approvals) afterwards. An exception
+# here would stop config_list from saving the list's settings at all, so
+# failures are caught and only reported.
+RELEASE_NONMEMBER_HOLDS = """\
+def _release_nonmember_holds(mlist):
+    import sys
+    from Mailman import mm_cfg
+    from Mailman.Handlers.Hold import NonMemberPost
+    for id in mlist.GetHeldMessageIds():
+        try:
+            if mlist.GetRecord(id)[3] == NonMemberPost.reason:
+                mlist.HandleRequest(id, mm_cfg.APPROVE)
+        except Exception, e:
+            print >> sys.stderr, 'could not release held message %s: %s' % (id, e)
+_release_nonmember_holds(mlist)
+del _release_nonmember_holds
+"""
+
 ## Functions for Mailman interop
 
 @enable_with_setting(settings.USE_MAILMAN)
@@ -62,15 +81,24 @@ def apply_raw_list_settings(list, data):
 
 
 @enable_with_setting(settings.USE_MAILMAN)
-def apply_list_settings(list, data):
+def apply_list_settings(list, data, release_nonmember_holds=False):
     """
     Apply the settings in 'data' to the specified list.
     'data' is a key-value dictionary for Mailman variables to be set.
     Keys should be valid Python variable names expressed as strings.
     Values should be either strings, or objects that, when converted to a string via repr(), represent valid Python expressions in the configuration file.
+
+    If 'release_nonmember_holds' is set, also approve every post the list is
+    holding only because its sender isn't a member. Use it together with
+    'generic_nonmember_action': 0 to make that setting cover posts that
+    arrived before it was applied, e.g. while the list was being created.
+    Both happen in one config_list run, which holds the list's lock, so no
+    post can be held for that reason in between.
     """
 
     with NamedTemporaryFile(mode="w") as f:
+        if release_nonmember_holds:
+            f.write(RELEASE_NONMEMBER_HOLDS)
         f.writelines( ( "%s = %s\n" % (key, repr(value)) for key, value in six.iteritems(data) ) )
         f.file.flush()
         return call([MM_PATH + "config_list", "-i", f.name, list])
