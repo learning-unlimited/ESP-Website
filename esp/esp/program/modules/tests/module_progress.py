@@ -56,10 +56,10 @@ class RegistrationChecklistTagTest(ProgramFrameworkTest):
     def setUp(self):
         super().setUp()
         self.scrmi = self.program.studentclassregmoduleinfo
-        self.scrmi.progress_mode = 1
+        self.scrmi.show_checklist = True
         self.scrmi.save()
         self.crmi = self.program.classregmoduleinfo
-        self.crmi.progress_mode = 1
+        self.crmi.show_checklist = True
         self.crmi.save()
 
     def _make_request(self, tl=None, with_program=True):
@@ -98,8 +98,8 @@ class RegistrationChecklistTagTest(ProgramFrameworkTest):
             self.assertIn('records', result)
             self.assertTrue(result['show_list'])
 
-    def test_no_list_when_progress_mode_disabled(self):
-        self.scrmi.progress_mode = 0
+    def test_no_list_when_checklist_disabled(self):
+        self.scrmi.show_checklist = False
         self.scrmi.save()
         self.assertFalse(self._checklist('learn')['show_list'])
 
@@ -160,8 +160,8 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
 
     These tests use the Django test client to make full HTTP requests.
     The program is set up with StudentAcknowledgementModule as the only
-    required module, force_show_required_modules=True, and progress_mode=1
-    (checkboxes).
+    required module, force_show_required_modules=True, and the checklist
+    turned on.
 
     The test student has Student/All permission (set up by ProgramFrameworkTest)
     so they can reach all student-facing module pages.
@@ -182,10 +182,10 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
             pmo.required = (pmo.module == ack_pm)
             pmo.save()
 
-        # Enable the required-module redirect flow with the checkboxes UI
+        # Enable the required-module redirect flow with the checklist
         self.scrmi = self.program.studentclassregmoduleinfo
         self.scrmi.force_show_required_modules = True
-        self.scrmi.progress_mode = 1
+        self.scrmi.show_checklist = True
         self.scrmi.save()
 
         # Log in as the first test student
@@ -206,9 +206,9 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
         self.assertContains(response, 'Student Acknowledgement')
         self.assertNotContains(response, 'class="vModuleLink"')
 
-    def test_no_checklist_when_progress_mode_disabled(self):
-        """When progress_mode is 0, the acknowledgement page has no checklist."""
-        self.scrmi.progress_mode = 0
+    def test_no_checklist_when_checklist_disabled(self):
+        """With the checklist turned off, the acknowledgement page has none."""
+        self.scrmi.show_checklist = False
         self.scrmi.save()
         response = self.client.get('/learn/%s/acknowledgement' % self.program.url)
         self.assertEqual(response.status_code, 200)
@@ -233,15 +233,6 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
         self.assertEqual(ack_response.status_code, 200)
         self.assertContains(ack_response, self.SIDEBAR_MARKER)
 
-    def test_progress_bar_mode_shows_the_checklist(self):
-        """Progress mode 2 shows the checklist card, not the old progress bar."""
-        self.scrmi.progress_mode = 2
-        self.scrmi.save()
-        response = self.client.get('/learn/%s/studentreg' % self.program.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, self.CHECKLIST_MARKER)
-        self.assertNotContains(response, 'class="progressbar"')
-
     def test_class_pages_have_no_checklist(self):
         """Pages students open on purpose to pick classes show no checklist."""
         self.scrmi.force_show_required_modules = False
@@ -264,7 +255,7 @@ class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
         super().setUp()
         self.add_user_profiles()
         crmi = self.program.classregmoduleinfo
-        crmi.progress_mode = 1
+        crmi.show_checklist = True
         crmi.save()
         self.teacher = self.teachers[0]
         self.client.login(username=self.teacher.username, password='password')
@@ -291,9 +282,9 @@ class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
             self.assertNotContains(response, self.SIDEBAR_MARKER)
             self.assertNotContains(response, RequiredModuleProgressIntegrationTest.CHECKLIST_MARKER)
 
-    def test_no_checklist_column_when_progress_mode_disabled(self):
+    def test_no_checklist_column_when_checklist_disabled(self):
         crmi = self.program.classregmoduleinfo
-        crmi.progress_mode = 0
+        crmi.show_checklist = False
         crmi.save()
         response = self.client.get('/teach/%s/availability' % self.program.url)
         self.assertEqual(response.status_code, 200)
@@ -311,17 +302,6 @@ class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
         main_start = html.index('id="main"')
         self.assertTrue(sidebar_start < html.index(self.SIDEBAR_MARKER) < main_start)
         self.assertNotIn('reg-columns', html)
-
-    def test_progress_bar_mode_shows_the_checklist(self):
-        """Teacher pages show the checklist card for progress mode 2, not the old progress bar."""
-        crmi = self.program.classregmoduleinfo
-        crmi.progress_mode = 2
-        crmi.save()
-        response = self.client.get('/teach/%s/availability' % self.program.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, self.SIDEBAR_MARKER)
-        self.assertContains(response, RequiredModuleProgressIntegrationTest.CHECKLIST_MARKER)
-        self.assertNotContains(response, 'class="progressbar"')
 
     def _require_acknowledgement(self, force_show):
         """Make the (unfinished) teacher acknowledgement a required step."""
