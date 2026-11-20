@@ -83,6 +83,9 @@ function typeInfo(type) {
 const uid = () => Math.random().toString(36).slice(2, 9);
 const INT = /^-?\d+$/;
 const NONNEG_INT = /^\d+$/;
+//   Whole-number answers are stored in a PostgreSQL integer column
+const INT_RANGE = [-2147483648, 2147483647];
+const fitsInt = v => Number(v) >= INT_RANGE[0] && Number(v) <= INT_RANGE[1];
 const blank = v => v === undefined || v === null || String(v).trim() === '';
 const plural = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
 const isNone = linkType => !linkType || linkType === '-1';
@@ -165,7 +168,8 @@ const linkTargets = model => fetchList('links', model, URLS.links, { link_model:
 const programModules = prog => fetchList('modules', prog, URLS.modules, { program: prog });
 
 // ---------- State ----------
-const meta = { formId: null, savedLinkType: null, loaded: false, fatal: false };
+const meta = { formId: null, savedLinkType: null, savedSuccessUrl: '', loaded: false, fatal: false };
+let linkedByField = {};
 let state, sel = { kind: 'form' }, pageIx = 0, mode = 'edit', saving = false, savedJSON = null;
 let hist = [], fut = [], lastKey = null, lastT = 0, problemIx = 0;
 let pv = { step: 0, answers: {}, errors: {}, done: false };
@@ -317,12 +321,13 @@ function fieldProblems(f) {
         if (!blank(f.min) && !INT.test(f.min)) out.push('The smallest value must be a whole number.');
         if (!blank(f.max) && !INT.test(f.max)) out.push('The largest value must be a whole number.');
         if (INT.test(f.min) && INT.test(f.max) && Number(f.min) > Number(f.max)) out.push('The smallest value is larger than the largest.');
+        if ([f.min, f.max].some(v => INT.test(v) && !fitsInt(v))) out.push('Limits must be between ' + INT_RANGE[0] + ' and ' + INT_RANGE[1] + ', the range a whole-number answer can store.');
     }
     if (hasCorrect(f)) {
         if (t.correct === 'one' && !(f.correct >= 0 && f.correct < f.options.length)) out.push('The correct answer is no longer one of the choices.');
         if (t.correct === 'many' && f.correct.some(i => !(i >= 0 && i < f.options.length))) out.push('A correct answer is no longer one of the choices.');
         if (t.correct === 'number' && !INT.test(String(f.correct).trim())) out.push('The correct answer must be a whole number.');
-        else if (t.correct === 'number' && ((INT.test(f.min) && Number(f.correct) < Number(f.min)) || (INT.test(f.max) && Number(f.correct) > Number(f.max)))) out.push('The correct answer is outside the allowed range.');
+        else if (t.correct === 'number' && (!fitsInt(f.correct) || (INT.test(f.min) && Number(f.correct) < Number(f.min)) || (INT.test(f.max) && Number(f.correct) > Number(f.max)))) out.push('The correct answer is outside the allowed range.');
         if (t.text) {
             const len = String(f.correct).length, maxLen = NONNEG_INT.test(f.charMax) ? Number(f.charMax) : t.cap;
             if ((NONNEG_INT.test(f.charMin) && len < Number(f.charMin)) || (maxLen && len > maxLen)) out.push('The correct answer doesn’t fit the answer length limits.');
@@ -354,14 +359,16 @@ function linkedProblems() {
     });
     return out;
 }
+//   A saved link in another format is left alone unless it's changed
+const badSuccessUrl = v => !!v.trim() && v.trim() !== meta.savedSuccessUrl && !/^(https?:\/\/|\/)/i.test(v.trim());
 function formProblems() {
     const s = state.settings, out = [];
     if (!state.title.trim()) out.push({ msg: 'The form needs a title.', id: null });
     if (state.title.trim().length > LIMITS.title) out.push({ msg: 'The title is longer than ' + LIMITS.title + ' characters.', id: null });
     if (s.successMessage.length > LIMITS.successMessage) out.push({ msg: 'The thank-you message is longer than ' + LIMITS.successMessage + ' characters.', id: null });
     const u = s.successUrl.trim();
-    if (u && !/^(https?:\/\/|\/)/i.test(u)) out.push({ msg: 'The redirect address must start with /, http:// or https://.', id: null });
-    if (u.length > LIMITS.successUrl) out.push({ msg: 'The redirect address is longer than ' + LIMITS.successUrl + ' characters.', id: null });
+    if (badSuccessUrl(u)) out.push({ msg: 'The thank-you page link must start with /, http:// or https://.', id: null });
+    if (u.length > LIMITS.successUrl) out.push({ msg: 'The thank-you page link is longer than ' + LIMITS.successUrl + ' characters.', id: null });
     if (s.anonymous && hasLinked()) out.push({ msg: 'Anonymous forms can’t use profile questions.', id: null });
     if (s.role && s.permProgram) {
         const groups = remote.perms[s.permProgram];
@@ -469,9 +476,10 @@ function renderTop() {
     document.getElementById('cfb-panes').classList.toggle('cfb-previewing', mode === 'preview');
     document.getElementById('cfb-settings').setAttribute('aria-pressed', mode === 'edit' && sel.kind === 'form');
     //   The page loads with these disabled; nothing can be edited while a save is in flight
-    document.getElementById('cfb-title').disabled = saving;
-    ['cfb-m-edit', 'cfb-m-preview', 'cfb-settings'].forEach(id => { document.getElementById(id).disabled = saving; });
-    document.getElementById('cfb-panes').inert = saving;
+    const locked = saving || meta.fatal;
+    document.getElementById('cfb-title').disabled = locked;
+    ['cfb-m-edit', 'cfb-m-preview', 'cfb-settings'].forEach(id => { document.getElementById(id).disabled = locked; });
+    document.getElementById('cfb-panes').inert = locked;
 }
 function goToProblem(probs) {
     const p = probs[problemIx++ % probs.length];
@@ -524,12 +532,20 @@ function addField(type, target) {
 }
 
 function renderCanvas() {
+    //   Profile problems point at one question each; work them out once per render
+    linkedByField = {};
+    linkedProblems().forEach(p => { (linkedByField[p.id] = linkedByField[p.id] || []).push(p.msg); });
     const root = document.getElementById('cfb-canvas'); root.replaceChildren();
     const tabs = h('div', { class: 'cfb-pages', role: 'tablist', 'aria-label': 'Pages' });
     state.pages.forEach((p, i) => {
         const count = p.sections.reduce((n, s) => n + s.fields.length, 0);
         tabs.append(h('button', { type: 'button', class: 'cfb-pagetab', role: 'tab', 'aria-selected': i === pageIx ? 'true' : 'false',
-            onclick: () => { pageIx = i; render({ inspector: false }); },
+            onclick: () => {
+                const loc = sel.id ? find(sel.id) : null;
+                pageIx = i;
+                //   The settings panel shouldn't keep editing a question on another page
+                if (loc && loc.pi !== i) { sel = { kind: 'form' }; render(); } else render({ inspector: false });
+            },
             ondragover: e => { if (e.dataTransfer.types.includes('text/x-cfb-field')) e.preventDefault(); },
             ondrop: e => { const id = e.dataTransfer.getData('text/x-cfb-field'); if (id) { e.preventDefault(); moveFieldToPage(id, i); } } },
             'Page ' + (i + 1), h('span', { class: 'cfb-n', text: count })));
@@ -584,7 +600,7 @@ function renderSection(sec, si) {
 }
 
 function renderField(f, fi) {
-    const t = TYPES[f.type], probs = fieldProblems(f).concat(linkedProblems().filter(p => p.id === f.id).map(p => p.msg));
+    const t = TYPES[f.type], probs = fieldProblems(f).concat(linkedByField[f.id] || []);
     const isSel = sel.kind === 'field' && sel.id === f.id;
     const select = () => { sel = { kind: 'field', id: f.id }; render(); };
     const el = h('div', { class: 'cfb-field' + (isSel ? ' cfb-sel' : ''), 'data-id': f.id, tabindex: 0, draggable: true,
@@ -1019,9 +1035,9 @@ function formInspector(root) {
     root.append(h('hr', { class: 'cfb-sep' }));
     root.append(row('After submitting, show', textArea('cfb-f-msg', s.successMessage, set('successMessage'), 2, { maxlength: LIMITS.successMessage }), null, 'cfb-f-msg'));
     const urlErr = h('div', { class: 'cfb-err' });
-    const checkUrl = v => { urlErr.textContent = v.trim() && !/^(https?:\/\/|\/)/i.test(v.trim()) ? 'Use a link starting with /, http:// or https://.' : ''; };
-    root.append(row('Then send them to', textInput('cfb-f-url', s.successUrl, v => { set('successUrl')(v); checkUrl(v); }, { inputmode: 'url', placeholder: '/learn/…/studentreg', maxlength: LIMITS.successUrl }),
-        'Optional. Leave blank to stay on the thank-you page.', 'cfb-f-url'), urlErr);
+    const checkUrl = v => { urlErr.textContent = badSuccessUrl(v) ? 'Use a link starting with /, http:// or https://.' : ''; };
+    root.append(row('Link on the thank-you page', textInput('cfb-f-url', s.successUrl, v => { set('successUrl')(v); checkUrl(v); }, { inputmode: 'url', placeholder: '/learn/…/studentreg', maxlength: LIMITS.successUrl }),
+        'Optional. Shown under the thank-you message as a link to click (“Click here to proceed”).', 'cfb-f-url'), urlErr);
     checkUrl(s.successUrl);
 }
 function moduleRow() {
@@ -1042,19 +1058,22 @@ function moduleRow() {
 }
 function templatePicker() {
     const pick = selectBox('cfb-f-template', [['', 'Choose a form…'], ...CONFIG.forms.map(f => [String(f.id), f.title + ' (#' + f.id + ')'])], pickedTemplate, v => { pickedTemplate = v; });
-    const status = h('div', { class: 'cfb-help' });
-    const load = h('button', { type: 'button', class: 'cfb-btn', onclick: async () => {
+    const current = copyState && copyState.token === copyToken ? copyState : null;
+    const status = h('div', { class: current && current.error ? 'cfb-err' : 'cfb-help', text: current ? (current.loading ? 'Loading…' : current.error) : '' });
+    const load = h('button', { type: 'button', class: 'cfb-btn', disabled: !!(current && current.loading), onclick: async () => {
         if (!pick.value) return;
         if (dirty() && !window.confirm('Replace what you have so far with a copy of this form? You can undo this.')) return;
         const token = ++copyToken, before = JSON.stringify(toServer());
-        load.disabled = true; status.textContent = 'Loading…';
+        copyState = { token, loading: true, error: '' };
+        render({ keepFocus: true });
         let md;
-        try { md = await getJSON(URLS.metadata, { form_id: pick.value }); } catch (e) {
-            if (token === copyToken) { status.textContent = e.message; load.disabled = false; }
+        try { md = await getJSON(URLS.metadata, { form_id: pickedTemplate }); } catch (e) {
+            if (token === copyToken) { copyState = { token, loading: false, error: e.message }; render({ keepFocus: true }); }
             return;
         }
         //   Only the latest request applies, and only if nothing changed while it loaded
         if (token !== copyToken) return;
+        copyState = null;
         if (JSON.stringify(toServer()) !== before) { toast('The form changed while the copy loaded, so it wasn’t replaced. Click Copy again to replace it.'); render(); return; }
         const copy = fromMetadata(md, true);
         commit(() => { state = copy; });
@@ -1072,7 +1091,7 @@ function renderPreview() {
     const wrap = h('div', { class: 'cfb-pv-wrap' }), s = state.settings;
     if (pv.done) {
         wrap.append(h('div', { class: 'cfb-pv cfb-done' }, h('h2', { text: 'Thank you' }), h('p', { text: s.successMessage || 'Your response has been recorded.' }),
-            s.successUrl ? h('p', { class: 'cfb-hint', text: 'Next, they’re sent to ' + s.successUrl }) : null,
+            s.successUrl ? h('p', { class: 'cfb-hint', text: 'The page then shows a link to ' + s.successUrl + '.' }) : null,
             h('button', { type: 'button', class: 'cfb-btn', style: 'justify-self:center', onclick: () => { resetPreview(); render({ inspector: false }); } }, 'Fill it in again')));
         root.append(wrap); return;
     }
@@ -1184,7 +1203,7 @@ function next() {
 
 // ---------- Saving and loading ----------
 //   The copy picker's choice survives re-renders of the settings panel
-let toastTimer, copyToken = 0, pickedTemplate = '';
+let toastTimer, copyToken = 0, pickedTemplate = '', copyState = null;
 function toast(msg, action) {
     const t = document.getElementById('cfb-toast'); t.replaceChildren(h('span', { text: msg }));
     if (action) t.append(h('button', { type: 'button', text: 'Undo', onclick: () => { action(); t.hidden = true; } }));
@@ -1193,7 +1212,7 @@ function toast(msg, action) {
 function showAlert(msg) { const a = document.getElementById('cfb-alert'); a.textContent = msg || ''; a.hidden = !msg; }
 
 function loadSaved(md, formId) {
-    meta.formId = formId; meta.savedLinkType = md.link_type || '-1';
+    meta.formId = formId; meta.savedLinkType = md.link_type || '-1'; meta.savedSuccessUrl = (md.success_url || '').trim();
     state = fromMetadata(md, false);
     hist = []; fut = []; lastKey = null;
     markSaved();
@@ -1207,16 +1226,17 @@ async function save() {
     //   Drop any copy still loading, so it can't replace the form being saved
     copyToken++;
     const editing = !!meta.formId;
-    let message = null;
+    let message = null, unknown = false;
     try {
         const r = await request(editing ? URLS.modify : URLS.submit, { method: 'POST', body: JSON.stringify(toServer()),
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() } });
         if (!(r.res.ok && r.text === 'OK')) message = serverMessage(r.res, r.data);
     } catch (e) {
-        message = 'Could not reach the server. Your changes are still here; check your connection and save again.';
+        unknown = true;
+        message = 'The server didn’t respond, so this may or may not have been saved. Your changes are still here. Check the custom forms list in another tab before saving again, since saving twice can create duplicates.';
     }
     if (message) {
-        saving = false; showAlert('Not saved: ' + message); renderTop(); return;
+        saving = false; showAlert(unknown ? message : 'Not saved: ' + message); renderTop(); return;
     }
     if (!editing) {
         markSaved();
@@ -1229,7 +1249,8 @@ async function save() {
         toast('Saved');
     } catch (e) {
         markSaved();
-        showAlert('Saved, but the form couldn’t be reloaded: ' + e.message + '\nReload the page before making more changes.');
+        showAlert('Saved, but the form couldn’t be reloaded: ' + e.message + '\nReload the page before making more changes. ');
+        document.getElementById('cfb-alert').append(h('button', { type: 'button', class: 'cfb-btn', onclick: () => window.location.reload() }, 'Reload the form'));
         meta.fatal = true;
     }
     saving = false; render();
