@@ -282,6 +282,27 @@ class TroubleshootingTest(DayOfTestBase):
         self.assertEqual(self.iac.amount_due(), Decimal('45.00'))
         self.assertEqual(FinancialAidRequest.objects.filter(user=self.student, program=self.program).count(), 1)
 
+    def test_finaid_application_status_shown(self):
+        self.assertContains(self.client.get(self.page()), '(no application)')
+        #   Opening the form (or "I do not want to request financial aid") isn't applying
+        request = FinancialAidRequest.objects.create(program=self.program, user=self.student, done=True)
+        self.assertContains(self.client.get(self.page()), '(no application)')
+        request.reduced_lunch = True
+        request.extra_explaination = 'Three siblings at Splash'
+        request.done = False
+        request.save()
+        self.assertContains(self.client.get(self.page()), '(application started, not submitted)')
+        request.done = True
+        request.save()
+        response = self.client.get(self.page())
+        self.assertContains(response, 'applied, not approved')
+        self.assertContains(response, 'Three siblings at Splash')
+        self.assertContains(response, 'Says the program fee is a barrier:</b> yes')
+        self.post('troubleshooting_finaid', {'amount_max': '0.00', 'percent': '100', 'reason': 'Lost the form'})
+        response = self.client.get(self.page())
+        self.assertContains(response, '(approved)')
+        self.assertContains(response, 'by %s' % self.admin.username)
+
     def test_finaid_requires_reason_and_fresh_balance(self):
         self.post('troubleshooting_finaid', {'amount_max': '0', 'percent': '100', 'reason': ''})
         self.assertIsNone(self.iac.latest_finaid_grant())

@@ -18,6 +18,7 @@ from esp.accounting.models import Receipt, Transfer
 from esp.middleware import ESPError
 from esp.program.controllers import dayof, dayof_payments, receipts
 from esp.program.controllers.dayof_payments import result_text as dayof_payments_result_text
+from esp.program.models import FinancialAidRequest
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
 from esp.users.models import ESPUser, Record
 from esp.users.views import search_for_user
@@ -46,6 +47,7 @@ def student_summary(program, student):
                          'at_checkin': p.checkin_record_id is not None,
                          'recorded_by': (p.recorded_by.username if p.recorded_by else '')})
     grant = iac.latest_finaid_grant()
+    finaid_request = FinancialAidRequest.objects.filter(program=program, user=student).order_by('-id').first()
     balance = iac.amount_due()
     return {
         'items': items,
@@ -60,7 +62,26 @@ def student_summary(program, student):
         'checked_in': program.isCheckedIn(student),
         'ever_checked_in': Record.objects.filter(user=student, program=program, event__name='attended').exists(),
         'checkin_payment': dayof.checkin_payment(program, student),
+        #   Their aid application, if any (what the finaid approval page shows)
+        'finaid_request': finaid_request,
+        'finaid_status': finaid_status(finaid_request, grant),
     }
+
+
+def finaid_status(request, grant):
+    """ Where a student's financial aid stands, in a few words. Opening the
+    application form makes a request, and so does its "I do not want to
+    request financial aid" button, so a request without answers isn't an
+    application. (The fields' names are older than the form's questions:
+    reduced_lunch holds "Would the program fee pose a barrier?", and
+    extra_explaination their explanation.) """
+    if grant is not None:
+        return 'approved'
+    if request is None or not (request.reduced_lunch or (request.extra_explaination or '').strip()):
+        return 'no application'
+    if not request.done:
+        return 'application started, not submitted'
+    return 'applied, not approved'
 
 
 def summary_fingerprint(summary):

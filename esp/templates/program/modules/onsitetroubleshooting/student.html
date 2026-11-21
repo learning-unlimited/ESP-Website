@@ -73,9 +73,20 @@
 </details>
 
 <details class="dayof-section">
-  <summary>Financial aid</summary>
+  <summary>Financial aid <small class="muted">({{ summary.finaid_status }})</small></summary>
   <div class="dayof-section-body">
-  {% if summary.grant %}<p>Current grant: {{ summary.grant.terms }}</p>{% endif %}
+  {% with req=summary.finaid_request %}
+  {% if summary.finaid_status != 'no application' %}
+  <div class="dayof-finaid-app">
+    <div><b>Application:</b> {% if summary.grant %}<span class="text-success">{% else %}<span class="text-error">{% endif %}{{ summary.finaid_status }}</span></div>
+    <div><b>Says the program fee is a barrier:</b> {{ req.reduced_lunch|yesno:"yes,no" }}</div>
+    {% if req.extra_explaination %}<div><b>Explanation:</b> {{ req.extra_explaination|linebreaksbr }}</div>{% endif %}
+  </div>
+  {% else %}
+  <p class="muted">{{ student.first_name }} didn't apply for financial aid. Granting it here creates an application.</p>
+  {% endif %}
+  {% endwith %}
+  {% if summary.grant %}<p>Current grant: {{ summary.grant.terms }}{% if summary.grant.granted_by %}, by {{ summary.grant.granted_by.username }}{% endif %} ({{ summary.grant.timestamp|date:"M j, g:i A" }})</p>{% endif %}
   <form method="post" action="troubleshooting_finaid" id="finaid-form" class="dayof-form">{% csrf_token %}
     <input type="hidden" name="user" value="{{ student.id }}" />
     <input type="hidden" name="expected_balance" value="{{ summary.balance_str }}" />
