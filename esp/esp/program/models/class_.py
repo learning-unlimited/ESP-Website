@@ -1026,9 +1026,11 @@ class ClassSection(models.Model):
         user = teacher
         if meeting_times is None:
             meeting_times = self.meeting_times.all()
+        meeting_times = list(meeting_times)
         for sec in user.getTaughtSections(self.parent_program, include_cancelled = False).exclude(id=self.id):
             for time in sec.meeting_times.all():
-                if meeting_times.filter(id = time.id).exists():
+                # Compare actual times so overlapping blocks of different types conflict
+                if any(mt.start < time.end and time.start < mt.end for mt in meeting_times):
                     return (sec, time)
 
         return None
@@ -1979,11 +1981,13 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def conflicts(self, teacher):
         user = teacher
+        my_sections = [(sec.id, list(sec.meeting_times.all())) for sec in self.sections.all()]
         for cls in user.getTaughtClasses(self.parent_program, include_cancelled = False):
             for section in cls.get_sections():
                 for time in section.meeting_times.all():
-                    for sec in self.sections.all().exclude(id=section.id):
-                        if sec.meeting_times.filter(id = time.id).exists():
+                    # Compare actual times so overlapping blocks of different types conflict
+                    for sec_id, times in my_sections:
+                        if sec_id != section.id and any(t.start < time.end and time.start < t.end for t in times):
                             return True
 
         #   Check that adding this teacher as a coteacher would not overcommit them
