@@ -33,7 +33,9 @@ async function load() {
     $('#slips').replaceChildren(...current.map(d => el('div', { class: 'slip-card' },
       el('h3', {}, `Slip ${d.slip_no} of ${d.n_in_set}`, el('span', { class: 'hint' }, `${d.bag_number ? `bag ${d.bag_number} · ` : ''}${d.n_checks} checks · ${money(d.total)}`)),
       el('a', { class: 'button primary', href: apiUrl('deposits', d.id, 'format=pdf'), target: '_blank', rel: 'noopener' }, 'Print ticket guide + check lists (PDF)'),
+      printPanel(d),
       slipView(d.id))));
+    window.espPrintPanel.init();
   } else if (batch.finalized) {
     $('#program').textContent = batch.program_name;
     $('#treasurer').textContent = settings.treasurer_name;
@@ -46,6 +48,33 @@ async function load() {
   $('#old').replaceChildren(...old.map(d => el('div', { class: 'slip-card' },
     el('h3', {}, `Set ${d.set_no} · slip ${d.slip_no} of ${d.n_in_set}`, el('span', { class: 'hint' }, `discarded ${when(d.superseded_at)}`)),
     slipView(d.id))));
+}
+
+// Each slip's print panel: a copy of the page's standard one (#slip-print-panel), sending that slip's PDF to the
+// location chosen there.
+function printPanel(d) {
+  const box = document.getElementById('slip-print-panel').content.firstElementChild.cloneNode(true);
+  // (ids, and the labels pointing at them, made unique to this slip)
+  box.querySelectorAll('[id]').forEach(e => { e.id += '-' + d.id; });
+  box.querySelectorAll('label[for]').forEach(e => { e.htmlFor += '-' + d.id; });
+  const panel = box.querySelector('.print-panel');
+  const button = panel.querySelector('.print-panel-button');
+  button.classList.add('primary');    // (this page's own button style; its stylesheet whitens other buttons)
+  const msg = panel.querySelector('.print-panel-message');
+  button.addEventListener('click', async () => {
+    button.disabled = true;
+    msg.className = 'print-panel-message hint';
+    msg.textContent = 'Sending…';
+    try {
+      msg.textContent = (await api(apiUrl('deposits', d.id, 'op=print'), { method: 'POST', json: window.espPrintPanel.values(panel) })).message;
+    } catch (e) {
+      msg.className = 'print-panel-message text-error';
+      msg.textContent = e.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+  return box;
 }
 
 // Split the checks (scan order) into slips of at most `max`.

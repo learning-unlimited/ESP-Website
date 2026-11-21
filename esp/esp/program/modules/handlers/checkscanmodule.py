@@ -217,7 +217,10 @@ class CheckScanModule(ProgramModuleObj):
     @needs_admin
     @_api
     def checkscan_api_deposits(self, request, tl, one, two, module, extra, prog):
-        """GET: slips (?batch=<id> to limit).  GET id: one slip's detail, or ?format=pdf|txt (&download=1)."""
+        """GET: slips (?batch=<id> to limit).  GET id: one slip's detail, or ?format=pdf|txt (&download=1).
+        POST id ?op=print: print its PDF on a day-of print location (JSON body: the print panel's fields)."""
+        if request.method == 'POST' and extra and request.GET.get('op') == 'print':
+            return self._print_slip(request, prog, cs.get_slip(prog, extra))
         if request.method != 'GET':
             _not_allowed()
         if not extra:
@@ -237,6 +240,27 @@ class CheckScanModule(ProgramModuleObj):
             'attachment' if request.GET.get('download') else 'inline', cs.slip_file_name(slip, fmt))
         resp['Cache-Control'] = NO_CACHE
         return resp
+
+    @staticmethod
+    def _print_slip(request, prog, slip):
+        from esp.program.controllers import dayof, printing
+        if slip.superseded_at is not None:
+            raise cs.CheckScanError(409, 'this deposit slip was discarded; print a current one')
+        (location, copies, settings, errors) = printing.print_panel_values(_body(request), copies=False)
+        if errors:
+            raise cs.CheckScanError(400, ' '.join(errors))
+        detail = cs.slip_detail(slip)
+        try:
+            job = printing.queue('deposit_slip', prog, location, deposit_slip=slip,
+                                 title='Deposit slip %d of %d (batch %d)' % (slip.slip_no, detail['n_in_set'],
+                                                                         slip.batch.number),
+                                 requested_by=dayof.real_user(request), settings=settings)
+        except printing.PrintingError as e:
+            raise cs.CheckScanError(409, str(e))
+        cs.audit(request.user, 'deposit slip printed', slip=slip.uid, location=location.name, job=job.id)
+        warning = printing.trouble_warning(job)
+        return _json({'message': 'Sent %s to %s (job #%d).%s' % (job.describe(), location.name, job.id,
+                                                                  ' ' + warning if warning else '')})
 
     class Meta:
         proxy = True

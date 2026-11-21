@@ -1,0 +1,10 @@
+{% comment %}One print job on the Printers page (job, location; finished: show when it finished).{% endcomment %}
+<div class="pr-job"><small>
+  <b>#{{ job.id }}</b>
+  {% if job.status == 'sent' %}<span class="label label-info">printing</span>{% elif job.status == 'queued' and job.refusals >= 2 %}<span class="label label-warning">refused &times;{{ job.refusals }}</span>{% elif job.status == 'queued' %}<span class="label">waiting</span>{% elif job.status == 'printed' %}<span class="label label-success">printed</span>{% elif job.status == 'failed' %}<span class="label label-important">failed</span>{% else %}<span class="label">{{ job.get_status_display|lower }}</span>{% endif %}
+  {{ job.describe }}{% if job.printer and job.printer != location %} <span class="muted">(for {{ job.printer.name }})</span>{% endif %}
+  <br /><span class="muted">{% if job.pages %}{{ job.pages }} page{{ job.pages|pluralize }}{% else %}? pages{% endif %}{% if job.copies > 1 %} &times; {{ job.copies }} copies{% endif %}
+  &middot; {% if job.requested_by %}{{ job.requested_by.username }}{% else %}unknown{% endif %}
+  &middot; sent {{ job.time_requested|time:"g:i A" }}{% if finished and job.time_executed %}, {% if job.status == 'printed' %}printed{% else %}last tried{% endif %} {{ job.time_executed|time:"g:i A" }}{% endif %} ({{ job.time_requested|timesince }} ago)</span>
+  {% if job.error %}<br /><span class="text-error">{{ job.error }}</span>{% endif %}
+</small></div>

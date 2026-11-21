@@ -1,4 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+{% load printing %}
 <html>
 <head>
 <title>Live Registration Status</title>
@@ -108,13 +109,7 @@
 <input id="schedule_checkin_print" class="control_button" type="button" value="Check in &amp; print" style="display: none;"/>
 <input id="status_switch" class="control_button" type="button" value="Return to status view"/>
 <input id="reload_button" class="control_button" type="button" value="Refresh data" onclick="refresh_counts();"/>
-<br />Select a printer:
-<select id="printer_selector" class="control_button">
-    <option value="">Default printer</option>
-    {% for printer in printers %}
-    <option value="{{ printer }}">{{ printer }}</option>
-    {% endfor %}
-</select>
+<div id="grid-print-panel">{% print_panel copies=False submit=False button="" settings=False %}</div>
 </div>
 
 <div id='compact-classes-body' class='compact-classes' style="z-index:-900;">

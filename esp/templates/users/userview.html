@@ -12,6 +12,7 @@
 {% endblock %}
 
 {% block content %}
+{% include "program/modules/dayof/messages.html" %}
 <h1>User Information</h1>
 <div class="clearfix">
 {% if not user.is_active %} <b>This user has been deactivated.</b> {% endif %}

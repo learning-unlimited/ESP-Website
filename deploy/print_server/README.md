@@ -71,6 +71,36 @@ PostScript or PCL driver. Installed drivers so far:
   a missing library shows only as the job stopping, with the filter's status
   127 in `/var/log/cups/error_log`.
 
+## How PDFs reach older printers
+
+A printer that isn't driverless (it gets its model's own driver, or a generic
+PostScript or PCL one) is printed to raw on port 9100 when that's open
+(`socket://<printer>:9100`), not over IPP: such a printer's IPP server takes a
+whole job in one HTTP request and can drop a large one partway, which makes
+CUPS stop the queue (an HP CP4525 dropped a 70 MB job twice over IPP; over
+9100 it printed in 40 s). Its IPP is still used to ask what it supports.
+
+A queue with the model's own driver or a generic PostScript one gets
+`pdftops-renderer-default=pdftocairo`: CUPS turns PDFs into PostScript with
+Cairo rather than Ghostscript, whose output for PDFs with images or
+transparency is enormous (a 1.1 MB Google Slides map became 70 MB per job,
+which an HP CP4525 dropped partway through over IPP; Cairo made 2 MB). On a
+sample of real jobs (schedules, receipts, deposit slips, and PDFs from Word,
+Canva, Firefox and Google) Cairo's output was 2-35x smaller and rendered the
+same. Copies are never repeated in the data: the filters ask the printer for
+them (`NumCopies` in the PostScript or the raster header).
+
+## Stopped queues
+
+When a printer drops a job partway through (e.g. a color job whose PostScript
+is too large for it), CUPS's backend exits with "stop printer", and CUPS then
+stops (disables) the whole queue, whatever its `printer-error-policy`: every
+job waits until the queue is re-enabled. The website's print worker sees this
+(the queue's state is `stopped`), re-enables the queue (`POST
+/queues/<queue>/enable`, which runs `cupsenable`), and decides what to do with
+the job: see `_queue_stopped` in `esp/esp/program/controllers/printing.py`. By
+hand: `sudo cupsenable <queue>`.
+
 ## Website settings (`local_settings.py`)
 
     PRINT_SERVER = {

@@ -7,6 +7,7 @@
     
 {% include "users/student_schedule.html" %}
 {% if request.user.onsite_local %}
+{% include "program/modules/dayof/messages.html" %}
 <center>
 <a target="_new" href="/onsite/{{program.getUrlBase}}/studentschedule">Get Student Schedule</a>
 <br />

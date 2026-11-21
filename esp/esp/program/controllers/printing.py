@@ -17,6 +17,7 @@ PrinterChange.
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import io
 import json
 import logging
 import re
@@ -39,6 +40,9 @@ LAPTOP_TIMEOUT = timedelta(seconds=60)
 #   this long before trying it again for that location
 STUCK_AFTER = timedelta(seconds=90)
 RETRY_AFTER = timedelta(seconds=20)
+#   A job that stopped the print server's queue twice waits behind the
+#   others, and is tried again at most this often (see _queue_stopped)
+REFUSED_RETRY = timedelta(minutes=5)
 DEFAULT_NAME = 'Default'
 
 
@@ -140,6 +144,7 @@ def claim_for_laptop(location, recorded_by, take_over=False):
     loc.laptop_claimed_by = recorded_by
     loc.laptop_last_seen = timezone.now()
     loc.save()
+    _forget_refusals(loc)
     log(loc, 'took over with a laptop' if previous != 'nothing' else 'laptop connected',
         'Replaced %s.' % previous if previous != 'nothing' else '', recorded_by)
     return loc.laptop_token
@@ -199,6 +204,7 @@ def connect_network(location, address, info, uri, recorded_by, take_over=False):
     if not keep_settings:
         loc.settings_json = json.dumps(default_settings(info))
     loc.save()
+    _forget_refusals(loc)
     detail = '%s at %s' % (info.get('model') or 'printer', loc.network_address)
     if previous != 'nothing':
         detail += '; replaced %s' % previous
@@ -216,6 +222,7 @@ def disconnect(location, recorded_by):
     _clear(loc)
     loc.network_address = loc.network_uri = loc.network_info = ''
     loc.save()
+    _forget_refusals(loc)
     log(loc, 'disconnected', 'Was %s.' % previous, recorded_by)
 
 
@@ -273,7 +280,7 @@ def clean_settings(location, settings):
     info = json.loads(location.network_info or '{}')
     clean = {}
     for (key, capability) in SETTING_CAPABILITIES:
-        value = (settings.get(key) or '').strip()
+        value = str(settings.get(key) or '').strip()
         if value:
             if value not in info.get(capability, []):
                 raise PrintingError('This printer doesn\'t support %s = %s.' % (key, value))
@@ -344,20 +351,156 @@ def check_can_print(location=None):
     if is_connected(location) or is_connected(default):
         return
     where = 'Default' if location.is_default else '%s or Default' % location.name
-    raise PrintingError('Nothing is printing for %s right now, so it wasn\'t sent. Connect a printer or a laptop '
-                        'on the Printers page, then try again.' % where)
+    raise PrintingError('No printer is currently connected for %s, so it wasn\'t sent. Connect a printer or a '
+                        'laptop on the Printer Setup page, then try again.' % where)
+
+
+def count_pages(pdf):
+    """ The number of pages in a PDF (bytes), or None if it can't be read. """
+    try:
+        from pypdf import PdfReader
+        return len(PdfReader(io.BytesIO(pdf), strict=False).pages)
+    except Exception:
+        return None
 
 
 def queue(kind, program, location=None, user=None, receipt=None, file=None, title='',
-          requested_by=None, copies=1, settings=None):
+          requested_by=None, copies=1, settings=None, deposit_slip=None, document=None):
     """ Queues a job, refusing (PrintingError) if nothing would print it.
-    settings: the job's own printer settings (see clean_settings). """
+    What it prints: user's schedule, receipt, file (an uploaded PDF),
+    deposit_slip, or document (what render_<kind> makes it from, e.g. a QR
+    code sign's title, link and caption). settings: the job's own printer
+    settings (see clean_settings). """
     if location is None:
         location = default_location()
     check_can_print(location)
-    return PrintRequest.objects.create(kind=kind, program=program, printer=location, user=user, receipt=receipt,
-                                       file=file, title=title[:200], requested_by=requested_by, copies=copies,
-                                       settings_json=json.dumps(settings) if settings else '')
+    pages = None
+    if file is not None:
+        file.seek(0)
+        pages = count_pages(file.read())
+        file.seek(0)
+    elif kind == 'test':
+        pages = 2
+    with transaction.atomic():
+        job = PrintRequest.objects.create(kind=kind, program=program, printer=location, user=user, receipt=receipt,
+                                          file=file, deposit_slip=deposit_slip, title=title[:200],
+                                          document_json=json.dumps(document) if document else '',
+                                          requested_by=requested_by, copies=copies, pages=pages,
+                                          settings_json=json.dumps(settings) if settings else '')
+        if kind in QUICK_TO_RENDER:
+            #   (counts its pages; a document that can't be made isn't queued)
+            try:
+                render(job)
+            except PrintingError:
+                raise
+            except Exception as e:
+                logger.exception('Could not make print job %d', job.id)
+                raise PrintingError('Could not make the document: %s' % e)
+    return job
+
+
+def queue_test_page(location, recorded_by):
+    """ Queues the test page for whatever prints for the location (behind
+    its waiting jobs, like anything else). """
+    location = Printer.objects.get(id=location.id)
+    if not is_connected(location):
+        raise PrintingError('No printer is currently connected for %s, so there is nothing to test.' % location.name)
+    job = queue('test', None, location, requested_by=recorded_by)
+    log(location, 'test page queued', 'Job #%d.' % job.id, recorded_by)
+    return job
+
+
+def trouble_warning(job):
+    """ A note for whoever queued the job if what will print it has trouble
+    right now (blank if not). """
+    location = job.printer if job.printer and is_connected(job.printer) else default_location()
+    location = Printer.objects.get(id=location.id)
+    if location.mode == 'network' and location.trouble:
+        return '%s has trouble printing right now (%s); it will print once that clears.' % (
+            location.name, location.trouble)
+    if not is_connected(location):
+        return 'No printer is currently connected for %s; it will print once one is.' % location.name
+    return ''
+
+
+#   The print panel (program/modules/dayof/print_panel.html): where to print,
+#   that printer's settings, and (for some documents) copies
+
+MAX_COPIES = 999
+
+
+def print_panel_values(data, copies=True):
+    """ (location, copies, settings, errors) from a print panel's fields in
+    data (request.POST, or a JSON body). copies=False: always 1. Settings
+    left blank keep the location's own. """
+    errors = []
+    location = Printer.objects.active().filter(id=_int(data.get('location'))).first()
+    if location is None:
+        errors.append('Choose where to print.')
+    count = 1
+    if copies:
+        count = _int(data.get('copies') or 1)
+        if not 1 <= count <= MAX_COPIES:
+            errors.append('Copies must be from 1 to %d.' % MAX_COPIES)
+    settings = {}
+    if location is not None and location.mode == 'network':
+        try:
+            settings = clean_settings(location, data)
+        except PrintingError as e:
+            errors.append(str(e))
+    return (location, count, settings, errors)
+
+
+def _int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def print_panel_locations():
+    """ What the print panel shows for each location: whether something
+    prints there, its trouble, and (network printers) what its printer can
+    do and its own settings. """
+    out = []
+    for location in Printer.objects.active().order_by('-is_default', 'name'):
+        info = json.loads(location.network_info or '{}') if location.mode == 'network' else {}
+        out.append({
+            'id': location.id, 'name': location.name, 'is_default': location.is_default,
+            'connected': is_connected(location), 'mode': location.mode,
+            'trouble': location.trouble if location.mode == 'network' else '',
+            'capabilities': {key: info.get(capability, []) for (key, capability) in SETTING_CAPABILITIES}
+            if location.mode == 'network' else {},
+            'settings': location_settings(location) if location.mode == 'network' else {},
+        })
+    return out
+
+
+def open_jobs(location):
+    """ The jobs the location's printer has or will print (oldest first),
+    for the Printers page: the one at the printer, then those waiting. A
+    location with nothing connected lists its own waiting jobs (which the
+    Default location prints). """
+    if not is_connected(location):
+        return list(PrintRequest.objects.filter(printer=location, status='queued').order_by('id').select_related(
+            'printer', 'user', 'receipt', 'requested_by'))
+    if location.mode == 'network':
+        sent = _in_flight(location)
+    else:
+        sent = PrintRequest.objects.filter(status='sent', server_job=laptop_job_tag(location))
+    jobs = list(sent.order_by('id').select_related('printer', 'user', 'receipt', 'requested_by'))
+    waiting = jobs_for(location)
+    if location.mode == 'network':
+        waiting = waiting.order_by('refusals', 'id')     # (as the print worker sends them)
+    jobs += list(waiting.select_related('printer', 'user', 'receipt', 'requested_by'))
+    return jobs
+
+
+def recent_jobs(location, count=20):
+    """ The location's last finished jobs (printed, failed or cancelled),
+    newest first, for the Printers page. """
+    return list(PrintRequest.objects.filter(printer=location, status__in=('printed', 'failed', 'cancelled')).order_by(
+        '-id').select_related('printer', 'user', 'receipt', 'requested_by')[:count])
 
 
 def jobs_for(location):
@@ -485,17 +628,52 @@ def render_pdf(job):
         job.file.close()
 
 
+def render_qr(job):
+    from esp.program.controllers import qr_sign
+    sign = json.loads(job.document_json)
+    return qr_sign.sign_pdf(sign['title'], sign['link'], sign['caption'])
+
+
+def render_deposit_slip(job):
+    from esp.program.controllers import checkscan, checkscan_pdf
+    if job.deposit_slip is None:
+        raise PrintingError('The deposit slip is gone.')
+    if job.deposit_slip.superseded_at is not None:
+        #   (its set was discarded and prepared again since it was queued)
+        raise PrintingError('This deposit slip was discarded; print a current one.')
+    return checkscan_pdf.build(checkscan.slip_detail(job.deposit_slip))
+
+
+def render_test(job):
+    location = job.printer or default_location()
+    how = {'network': 'network printer', 'laptop': 'laptop'}.get(location.mode, 'printer')
+    return test_page_pdf(location, job.requested_by, how, job_settings(job))
+
+
 #   To add a kind of document: a choice in PrintRequest.KIND_CHOICES and a
-#   renderer here
+#   renderer here (a document made when queued is a file: render_pdf)
 RENDERERS = {
     'schedule': render_schedule,
     'receipt': render_receipt,
     'pdf': render_pdf,
+    'qr': render_qr,
+    'deposit_slip': render_deposit_slip,
+    'test': render_test,
 }
 
 
+#   Made in a moment, so queue() makes them once to count their pages
+QUICK_TO_RENDER = ('qr', 'deposit_slip')
+
+
 def render(job):
-    return RENDERERS[job.kind](job)
+    pdf = RENDERERS[job.kind](job)
+    if job.pages is None:
+        pages = count_pages(pdf)
+        if pages:
+            PrintRequest.objects.filter(id=job.id).update(pages=pages)
+            job.pages = pages
+    return pdf
 
 
 #   Network printing (the print worker)
@@ -520,11 +698,14 @@ def send_to_network_printer(location, pdf, job_name, copies=1, settings=None):
 
 
 def _record_result(location, ok, error=''):
+    now = timezone.now()
     Printer.objects.filter(id=location.id).update(
-        last_result='ok' if ok else 'failed', last_result_at=timezone.now(), last_error=error[:1000])
+        last_result='ok' if ok else 'failed', last_result_at=now, last_error=error[:1000])
+    if ok:
+        Printer.objects.filter(id=location.id).update(last_ok_at=now)
 
 
-def test_page_pdf(location, recorded_by, how):
+def test_page_pdf(location, recorded_by, how, settings=None):
     """ A two-page test: printed two-sided, page 2 should be on the back of
     page 1, the same way up. how says what printed it. """
     from reportlab.lib.pagesizes import letter
@@ -537,7 +718,8 @@ def test_page_pdf(location, recorded_by, how):
             (1, 'Test page: %s' % location.name, [
                 'Printed %s by %s' % (how, recorded_by.username if recorded_by else 'unknown'),
                 'Sent %s' % timezone.now().strftime('%Y-%m-%d %H:%M'),
-                'Settings: %s' % (location.settings_json or '{}') if how == 'network printer' else '',
+                'Settings: %s' % json.dumps(location_options(location, settings), sort_keys=True)
+                if how == 'network printer' else '',
                 'If this page is two-sided, the back should read the same way up.']),
             (2, 'Back of the test page', [
                 'If you can read this the right way up after turning the sheet over',
@@ -556,18 +738,6 @@ def test_page_pdf(location, recorded_by, how):
         c.showPage()
     c.save()
     return out.getvalue()
-
-
-def test_page(location, recorded_by):
-    """ Sends the test page to a network printer. """
-    try:
-        send_to_network_printer(location, test_page_pdf(location, recorded_by, 'network printer'), 'Test page')
-    except print_server.PrintServerError as e:
-        _record_result(location, False, str(e))
-        log(location, 'test page failed', str(e), recorded_by)
-        raise PrintingError('The test page failed: %s' % e)
-    _record_result(location, True)
-    log(location, 'test page sent', '', recorded_by)
 
 
 def _in_flight(location):
@@ -589,9 +759,18 @@ def _recall_network_jobs(location, cancel=False):
             pass    # unreachable, or the queue is about to be deleted anyway
         job.status = 'cancelled' if cancel else 'queued'
         job.server_job = ''
+        #   Whatever prints it next starts afresh
+        job.refusals = 0
+        job.refused_at = None
         job.save()
         count += 1
     return count
+
+
+def _forget_refusals(location):
+    """ Whatever prints for the location changed: its jobs' refusals were
+    by another printer, so they start afresh. """
+    jobs_for(location).filter(refusals__gt=0).update(refusals=0, refused_at=None)
 
 
 def _set_trouble(location, message):
@@ -623,8 +802,11 @@ def _check_in_flight(location, job):
         return True
     if state['state'] == 'completed':
         mark_printed(job)
+        _record_result(location, True)
         _set_trouble(location, '')
         return True
+    if state['state'] in ('pending', 'held', 'processing', 'stopped') and state.get('printer_state') == 'stopped':
+        return _queue_stopped(location, job, state)
     if state['state'] in ('canceled', 'aborted'):
         mark_printed(job, ok=False, error='The print server %s it (%s).' % (
             'cancelled' if state['state'] == 'canceled' else 'gave up on', ', '.join(state.get('reasons', []))))
@@ -636,18 +818,79 @@ def _check_in_flight(location, job):
     return False
 
 
+def _queue_stopped(location, job, state):
+    """ CUPS stopped the location's queue while printing job: its backend
+    gave up on the printer (e.g. the printer dropped the connection partway
+    through a large job), and CUPS then holds every job until the queue is
+    re-enabled. Re-enables it (what disconnecting and reconnecting used to
+    do) and decides what to do with the job. It's failed only when it must
+    be the job, not the printer: it stopped the queue before, the printer
+    printed something else since, and it stopped the queue again. A job
+    that stops it twice waits behind the others (they show whether the
+    printer works) and is tried again every REFUSED_RETRY. Returns whether
+    the location is free for the next job. """
+    name = print_server.queue_name(location)
+    why = state.get('printer_message') or ', '.join(state.get('printer_reasons', [])) or 'the printer stopped'
+    loc = Printer.objects.get(id=location.id)
+    previous = job.refused_at
+    printed_since = previous is not None and loc.last_ok_at is not None and loc.last_ok_at > previous
+    refusals = job.refusals + 1
+    if printed_since:
+        print_server.cancel_job(name, job.server_job)
+        changes = {'status': 'failed', 'error': 'The printer refused it %d times (%s), and printed other jobs in '
+                   'between, so it\'s this document: it may be too large or complex for this printer (try fewer '
+                   'copies, black and white, or another printer).' % (refusals, why)}
+        outcome = 'failed it: the printer printed other jobs in between'
+        free = True
+    elif refusals >= 2:
+        #   Maybe the job, maybe the printer: let the others go first
+        print_server.cancel_job(name, job.server_job)
+        changes = {'status': 'queued', 'server_job': '',
+                   'error': 'The printer refused it %d times (%s); trying the other jobs first.' % (refusals, why)}
+        outcome = 'moved it behind the other jobs'
+        free = True
+    else:
+        #   CUPS sends it again once the queue is enabled
+        changes = {'error': 'The printer refused it (%s); trying again.' % why}
+        outcome = 'trying it again'
+        free = False
+    #   Only if it's still at the printer (not cancelled by staff meanwhile)
+    PrintRequest.objects.filter(id=job.id, status='sent').update(refusals=refusals, refused_at=timezone.now(),
+                                                                 **changes)
+    #   If this fails, the next pass enables it before sending anything (or
+    #   a job still there stops it again)
+    _needs_enable.add(location.id)
+    print_server.enable_queue(name)
+    _needs_enable.discard(location.id)
+    _record_result(location, False, 'The printer refused %s: %s' % (job.describe(), why))
+    _set_trouble(location, 'Printer refused %s (%s); %s.' % (job.describe(), why, outcome))
+    log(location, 'queue restarted', 'The printer refused %s (%s); %s.' % (job.describe(), why, outcome))
+    return free
+
+
+#   Locations whose stopped queue this worker couldn't re-enable yet
+_needs_enable = set()
+
+
 def _network_pass(location):
     """ One pass for a network location: checks on the job the print server
     has, and sends the next one once that has printed. Returns how many it
     sent. Raises PrintServerError if the print server fails. """
+    if location.id in _needs_enable:
+        print_server.enable_queue(print_server.queue_name(location))
+        _needs_enable.discard(location.id)
     for job in _in_flight(location):
         if not _check_in_flight(location, job):
             return 0
     while True:
         with transaction.atomic():
-            job = jobs_for(location).select_for_update(skip_locked=True).first()
+            #   Jobs that stopped the queue twice go last, and wait a while between tries
+            job = jobs_for(location).exclude(
+                refusals__gte=2, refused_at__gt=timezone.now() - REFUSED_RETRY).order_by(
+                'refusals', 'id').select_for_update(skip_locked=True).first()
             if job is None:
-                _set_trouble(location, '')
+                if not jobs_for(location).exists():
+                    _set_trouble(location, '')
                 return 0
             job.status = 'sent'
             job.attempts += 1
@@ -677,7 +920,8 @@ def _network_pass(location):
             raise
         if server_job:
             job.server_job = server_job
-            job.error = ''
+            if not job.refusals:
+                job.error = ''      # (a refused job keeps saying so until it's done)
             job.save()
         else:
             mark_printed(job)       # no job id to follow up on

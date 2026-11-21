@@ -1,0 +1,85 @@
+{% extends "main.html" %}
+{% load printing %}
+
+{% block title %}QR code sign{% endblock %}
+{% block content_title %}QR code sign{% endblock %}
+
+{% block stylesheets %}{{ block.super }}<link rel="stylesheet" type="text/css" href="/media/styles/dayof.css" />
+<style type="text/css">
+  .qr-preview { max-width: 340px; margin: 0 auto 12px; }
+  .qr-preview-page { border: 1px solid #ccc; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15); background: #fff;
+                     aspect-ratio: 8.5 / 11; }
+  .qr-preview-page img { width: 100%; height: 100%; display: block; }
+  .qr-preview-error { min-height: 1.5em; }
+  #qr-title { font-weight: bold; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% include "program/modules/dayof/messages.html" %}
+
+<p>Makes a letter-size sign with a title, a large QR code of a link, and the link written under it (e.g. the waiver
+link for check-in tables). The text and the code are as large as fit the page. Download it as a PDF, or print it on a
+day-of print location (set up on the <a href="/manage/printers/">Printer Setup</a> page).</p>
+
+<div class="qr-preview">
+  <div class="qr-preview-page"><img id="qr-preview-img" alt="Preview of the sign" hidden /></div>
+  <div class="qr-preview-error text-error"><small id="qr-preview-error"></small></div>
+</div>
+
+<form method="post" class="dayof-form well" id="qr-form">{% csrf_token %}
+  <div class="control-group"><label for="qr-title">Title (optional; each line is its own line on the sign)</label>
+    <textarea id="qr-title" name="title" class="input-xlarge" rows="2" maxlength="{{ max_title }}" placeholder="e.g. Student Waiver">{{ fields.title }}</textarea></div>
+  <div class="control-group"><label for="qr-link">Link in the QR code</label>
+    <input type="url" id="qr-link" name="link" class="input-xxlarge" maxlength="{{ max_link }}" value="{{ fields.link|default:'https://' }}" pattern="https://.+" title="A link starting with https://" required /></div>
+  <div class="control-group"><label for="qr-caption">Caption under the code</label>
+    <input type="text" id="qr-caption" name="caption" class="input-xlarge" maxlength="{{ max_caption }}" value="{{ fields.caption }}" />
+    <div><small class="muted">Blank: the link without https://, for people who type it in.</small></div></div>
+  <p><button type="submit" name="action" value="download" class="btn"><span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span> Download PDF</button></p>
+  <hr />
+  {% print_panel legend="Printer settings for this sign" %}
+</form>
+
+<script type="text/javascript">
+(function () {
+    var form = document.getElementById('qr-form');
+    var title = document.getElementById('qr-title'), link = document.getElementById('qr-link');
+    var caption = document.getElementById('qr-caption');
+    var img = document.getElementById('qr-preview-img'), error = document.getElementById('qr-preview-error');
+    var timer = null, latest = 0, url = null;
+
+    // The default caption, as the placeholder
+    function placeholder() {
+        caption.placeholder = link.value.trim().replace(/^https:\/\//i, '').replace(/\/+$/, '');
+    }
+
+    // The preview: the server lays the sign out (the same layout as the PDF) and sends it as SVG
+    function preview() {
+        var request = ++latest;
+        var query = new URLSearchParams({preview: '1', title: title.value, link: link.value, caption: caption.value});
+        fetch('?' + query.toString(), {credentials: 'same-origin'}).then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (request !== latest) { return; }     // a newer one is on its way
+                error.textContent = data.error || '';
+                if (data.svg) {
+                    if (url) { URL.revokeObjectURL(url); }
+                    url = URL.createObjectURL(new Blob([data.svg], {type: 'image/svg+xml'}));
+                    img.src = url;
+                    img.hidden = false;
+                }
+            }).catch(function () {
+                if (request === latest) { error.textContent = 'Could not update the preview.'; }
+            });
+    }
+    function changed() {
+        placeholder();
+        clearTimeout(timer);
+        timer = setTimeout(preview, 250);
+    }
+    [title, link, caption].forEach(function (field) { field.addEventListener('input', changed); });
+    placeholder();
+    preview();
+})();
+</script>
+{% endblock %}

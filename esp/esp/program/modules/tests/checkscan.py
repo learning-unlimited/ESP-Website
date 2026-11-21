@@ -399,6 +399,40 @@ class CheckScanSlipsTest(CheckScanTestBase):
         self.assertIn('inline', r['Content-Disposition'])
         self.assertIn('attachment', self.get('deposits', dep, 'format=pdf&download=1')['Content-Disposition'])
 
+    def test_print_slip(self):
+        from esp.program.controllers import printing
+        from esp.utils.models import PrintRequest
+        upload_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, upload_dir, True)
+        uploads = override_settings(PRINT_UPLOAD_DIR=upload_dir)
+        uploads.enable()
+        self.addCleanup(uploads.disable)
+        b = self.new_batch()
+        self.ready_check(b, '150', '700')
+        self.post('batches', b, 'op=finalize')
+        dep = self.post('batches', b, 'op=slips', body=slips_body((1, '', '0'))).json()['ids'][0]
+        self.assertContains(self.client.get('%scheckscan_slips/%s' % (self.base, b)), 'class="print-panel"')
+        default = printing.default_location()
+        r = self.post('deposits', dep, 'op=print', body={'location': default.id})
+        self.assertEqual(r.status_code, 409)
+        self.assertIn('No printer is currently connected', r.json()['error'])
+        self.assertEqual(self.post('deposits', dep, 'op=print', body={'location': 'nowhere'}).status_code, 400)
+        printing.claim_for_laptop(default, self.admin)
+        #   One copy, whatever is asked
+        r = self.post('deposits', dep, 'op=print', body={'location': default.id, 'copies': '7'})
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertIn('Deposit slip 1 of 1', r.json()['message'])
+        job = PrintRequest.objects.get(kind='deposit_slip')
+        self.assertEqual((job.copies, job.program, job.requested_by), (1, self.program, self.admin))
+        self.assertTrue(printing.render(job).startswith(b'%PDF'))
+        self.assertTrue(TreasuryAuditEntry.objects.filter(action='deposit slip printed').exists())
+        #   A discarded slip isn't printed, even one queued before it was discarded
+        self.post('batches', b, 'op=discard')
+        self.assertEqual(self.post('deposits', dep, 'op=print', body={'location': default.id}).status_code, 409)
+        job = PrintRequest.objects.get(id=job.id)      # (as the print worker loads it)
+        with self.assertRaisesRegex(printing.PrintingError, 'discarded'):
+            printing.render(job)
+
 
 class DevTreasuryKeyScriptTest(SimpleTestCase):
     """deploy/make_dev_treasury_key.sh gives a dev VM a throwaway key pair, once, and never touches a real key."""

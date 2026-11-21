@@ -78,10 +78,13 @@ details.dayof-section details > summary { cursor: pointer; }
 .dayof-center { text-align: center; }
 
 /* Print control (schedule / receipt print buttons) */
-.print-control select { margin-bottom: 0; }
-.print-control-message { font-weight: bold; margin-left: 6px; }
+.print-panel-message { font-weight: bold; margin-left: 6px; }
 
 /* Troubleshooting extra costs form */
 .dayof-extracosts td > ul { list-style-type: none; padding: 0; }
 .dayof-instructions { margin-bottom: 2.5em; }
 .dayof-student-name { margin-top: 0; margin-bottom: 4px; }
+
+/* Printers page: each location's open print jobs */
+.pr-jobs { margin: 6px 0; }
+.pr-job { padding: 3px 0; border-top: 1px solid #eee; }

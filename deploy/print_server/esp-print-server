@@ -30,6 +30,10 @@ accepted so old queues can be removed).
     DELETE /queues/<queue>/jobs/<job>
                                   cancels the job (fine if it already finished)
     GET    /queues/<queue>        lpstat -l -p <queue>, as {"status": "..."}
+    POST   /queues/<queue>/enable restarts the queue (cupsenable) after CUPS stopped it, which it
+                                  does when its backend gives up on the printer partway through a
+                                  job (e.g. the printer drops the connection), whatever the
+                                  queue's error policy
 
 Errors reply {"error": "..."}: 400 for a bad request, 401 without the
 token, 404 when the queue doesn't exist, 502 when CUPS fails.
@@ -391,13 +395,20 @@ def probe(address):
     info = summarize(groups.get(PRINTER_ATTRIBUTES, {}), ipp2)
     if info['driver'] != 'everywhere':
         #   Not driverless: if SNMP says what model it is, use its own driver
-        device = snmp_device_id(urlsplit(uri).hostname)
+        host = urlsplit(uri).hostname
+        device = snmp_device_id(host)
         if device.get('MDL'):
             info['model'] = info['model'] or device['MDL']
             if info['driver'] == 'postscript' or 'POSTSCRIPT' in device.get('CMD', '').upper():
                 ppd = model_ppd(device['MDL'])
                 if ppd:
                     info['driver'] = 'model:' + ppd
+        if info['driver'] and port_open(host, 9100):
+            #   and send it the driver's output raw on port 9100 rather than over
+            #   IPP: an older printer's IPP server takes a job in one HTTP request,
+            #   and dropped a large one partway (CUPS then stops the queue); port
+            #   9100 took the same 70 MB job in 40 s
+            uri = 'socket://%s:9100' % ('[%s]' % host if ':' in host else host)
     return {'uri': uri, 'info': info}
 
 
@@ -419,6 +430,13 @@ def create_queue(queue, uri, description, driver):
     run(['lpadmin', '-p', queue, '-E', '-v', uri, '-m', model, '-D', description,
          '-o', 'printer-error-policy=retry-current-job'])
     if model != 'everywhere':
+        #   Render PDFs to PostScript with Cairo, not Ghostscript (the default):
+        #   Ghostscript rasterizes pages with images or transparency, so a 1 MB
+        #   PDF (a Google map) became 70 MB of PostScript, which an older
+        #   printer's IPP server dropped partway through. Cairo's output for the
+        #   same documents was 2-35x smaller and printed the same. (Only matters
+        #   for drivers that take PostScript; raster ones never use it.)
+        run(['lpadmin', '-p', queue, '-o', 'pdftops-renderer-default=pdftocairo'])
         options = run(['lpoptions', '-p', queue, '-l'])
         for name in DUPLEX_UNIT_OPTIONS:
             if re.search(r'^%s/' % re.escape(name), options, re.M):
@@ -526,6 +544,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply(200, {'queue': queue})
             elif len(parts) == 2 and method == 'GET':
                 self.reply(200, {'status': run(['lpstat', '-l', '-p', queue])})
+            elif len(parts) == 3 and parts[2] == 'enable' and method == 'POST':
+                run(['cupsenable', queue])
+                self.reply(200, {'queue': queue})
             elif len(parts) == 4 and parts[2] == 'jobs' and method in ('GET', 'DELETE'):
                 job = parts[3]
                 if not JOB.match(job) or not job.startswith(queue + '-'):

@@ -24,11 +24,11 @@
     <strong>{{ location.name }}</strong>
     {% if location.connected and location.mode == 'network' %}<span class="label label-success">Network printer</span>
     {% elif location.connected and location.mode == 'laptop' %}<span class="label label-success">Laptop</span>
-    {% else %}<span class="label label">Nothing connected</span>{% endif %}
+    {% else %}<span class="label label">Not connected</span>{% endif %}
     <span class="pull-right"><b>{{ location.waiting }}</b> waiting</span>
   </div>
   <div class="dayof-box-body">
-  {% if location.is_default %}<div><small class="muted">(Default &mdash; also prints for any location with nothing connected)</small></div>{% endif %}
+  {% if location.is_default %}<div><small class="muted">(Default &mdash; also prints for any location with no printer connected)</small></div>{% endif %}
   <div class="pr-status">
     {% if location.connected and location.mode == 'network' %}
       {{ location.network_address }}{% if location.info.model %} ({{ location.info.model }}){% endif %}{% if location.info.driver == 'postscript' %} <small class="muted">&middot; generic PostScript driver</small>{% elif location.info.driver == 'pcl' %} <small class="muted">&middot; generic PCL driver</small>{% elif location.info.driver and location.info.driver != 'everywhere' %} <small class="muted">&middot; model's own driver</small>{% endif %}
@@ -42,6 +42,14 @@
   <small>Jobs wait here and print once it's fixed. To print them elsewhere now, take over with a laptop.</small></div>
   {% endif %}
   {% if location.oldest_waiting %}<div><small class="muted">Oldest waiting job: requested {{ location.oldest_waiting|timesince }} ago</small></div>{% endif %}
+  {% if location.open_jobs %}
+  <div class="pr-jobs">
+    <div><small><b>{% if location.connected %}Print jobs{% else %}Waiting here (Default prints these){% endif %}</b></small></div>
+    {% for job in location.open_jobs %}
+    {% include "program/modules/onsiteprintschedules/job_row.html" %}
+    {% endfor %}
+  </div>
+  {% endif %}
   {% if location.last_result %}
   <div><small class="muted">Last result: {{ location.last_result }}{% if location.last_result_at %}, {{ location.last_result_at|timesince }} ago{% endif %}</small></div>
   {% endif %}
@@ -93,6 +101,10 @@
         </div>
       </details>
     {% else %}
+      <form method="post" action="printers_action">{% csrf_token %}
+        <input type="hidden" name="location" value="{{ location.id }}" /><input type="hidden" name="action" value="test" />
+        <button type="submit" class="btn">Test page</button>
+      </form>
       <a class="btn" href="printers_laptop?location={{ location.id }}&amp;take_over=1">Take over via USB with this laptop</a>
       <form method="post" action="printers_action">{% csrf_token %}
         <input type="hidden" name="location" value="{{ location.id }}" /><input type="hidden" name="action" value="disconnect" />
@@ -117,8 +129,19 @@
     {% endif %}
   </div>
 
+  {% if location.recent_jobs %}
   <details class="dayof-section">
-  <summary>History</summary>
+  <summary>Recent jobs</summary>
+  <div class="dayof-section-body">
+    {% for job in location.recent_jobs %}
+    {% include "program/modules/onsiteprintschedules/job_row.html" with finished=True %}
+    {% endfor %}
+    </div>
+  </details>
+  {% endif %}
+
+  <details class="dayof-section">
+  <summary>Connection history</summary>
   <div class="dayof-section-body">
     {% for c in location.history %}
     <div><small class="muted">{{ c.timestamp|date:"M j, g:i a" }} &middot; <b>{{ c.action }}</b>{% if c.detail %}: {{ c.detail }}{% endif %} &middot; {% if c.recorded_by %}{{ c.recorded_by.username }}{% endif %}</small></div>

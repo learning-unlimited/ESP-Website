@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+from django.contrib import messages
 from django.http     import HttpResponseRedirect, HttpResponseNotAllowed, Http404
 from django.utils.http import is_safe_url
 from esp.middleware import ESPError
@@ -81,9 +82,13 @@ class OnsiteClassSchedule(ProgramModuleObj):
                 raise Http404
         recorded_by = dayof.real_user(request)
         try:
-            printing.queue('schedule', prog, location, user=user, requested_by=recorded_by)
+            job = printing.queue('schedule', prog, location, user=user, requested_by=recorded_by)
         except printing.PrintingError as e:
             raise ESPError(str(e), log=False)
+        messages.success(request, 'Sent %s to %s (job #%d).' % (job.describe(), job.printer.name, job.id))
+        warning = printing.trouble_warning(job)
+        if warning:
+            messages.warning(request, warning)
         redirect = request.POST.get('next', '')
         if not is_safe_url(redirect, allowed_hosts={request.get_host()}):
             redirect = '/learn/%s/studentreg' % self.program.getUrlBase()

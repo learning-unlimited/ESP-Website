@@ -1462,21 +1462,11 @@ def print_pdf(request):
     schedules and receipts go through). """
     from django.contrib import messages
     from esp.program.controllers import dayof, printing
-    from esp.utils.models import Printer
     if request.method == 'POST':
         files = request.FILES.getlist('files')
-        location = Printer.objects.active().filter(id=request.POST.get('location') or 0).first()
-        try:
-            copies = int(request.POST.get('copies') or 1)
-        except ValueError:
-            copies = 0
-        errors = []
-        if location is None:
-            errors.append('Choose where to print.')
+        (location, copies, settings, errors) = printing.print_panel_values(request.POST)
         if not files:
             errors.append('Choose at least one PDF.')
-        if not 1 <= copies <= 999:
-            errors.append('Copies must be from 1 to 999.')
         if sum(f.size for f in files) > PRINT_PDF_MAX_BYTES:
             errors.append('The files add up to more than %d MB; send them in smaller batches.'
                           % (PRINT_PDF_MAX_BYTES // (1024 * 1024)))
@@ -1484,13 +1474,6 @@ def print_pdf(request):
             if not f.read(5).startswith(b'%PDF'):
                 errors.append('%s isn\'t a PDF.' % f.name)
             f.seek(0)
-        settings = {}
-        if location is not None and location.mode == 'network':
-            #   This print only; blank fields keep the location's own settings
-            try:
-                settings = printing.clean_settings(location, request.POST)
-            except printing.PrintingError as e:
-                errors.append(str(e))
         if not errors:
             try:
                 printing.check_can_print(location)
@@ -1502,29 +1485,76 @@ def print_pdf(request):
         else:
             try:
                 with transaction.atomic():      # all of them or none
-                    for f in files:
-                        printing.queue('pdf', None, location, file=f, title=f.name, copies=copies,
-                                       requested_by=dayof.real_user(request), settings=settings)
+                    jobs = [printing.queue('pdf', None, location, file=f, title=f.name, copies=copies,
+                                           requested_by=dayof.real_user(request), settings=settings)
+                            for f in files]
             except printing.PrintingError as e:
                 messages.error(request, str(e))
             else:
                 messages.success(request, 'Sent %d %s (%d %s each) to %s.' % (
                     len(files), 'file' if len(files) == 1 else 'files', copies, 'copy' if copies == 1 else 'copies',
                     location.name))
+                warning = printing.trouble_warning(jobs[0])
+                if warning:
+                    messages.warning(request, warning)
                 return HttpResponseRedirect(request.path)
-    locations = list(Printer.objects.active().order_by('-is_default', 'name'))
-    #   For the settings fields: what each network printer can do, and its own settings
-    printer_data = {}
-    for l in locations:
-        if l.mode == 'network':
-            info = json.loads(l.network_info or '{}')
-            printer_data[l.id] = {
-                'capabilities': {key: info.get(capability, []) for (key, capability) in printing.SETTING_CAPABILITIES},
-                'settings': printing.location_settings(l)}
     return render_to_response('program/print_pdf.html', request, {
-        'locations': locations,
-        'printer_data': json.dumps(printer_data).replace('<', '\\u003c'),
-        'setting_fields': (('sides', 'Sides'), ('color_mode', 'Color mode'), ('quality', 'Quality'),
-                           ('media', 'Paper'), ('scaling', 'Scaling')),
         'max_mb': PRINT_PDF_MAX_BYTES // (1024 * 1024),
     })
+
+
+@admin_required
+def qr_code(request):
+    """ Makes a QR code sign (a title, the code, a caption: e.g. a waiver
+    link for check-in tables), to download as a PDF or print on a day-of
+    print location. """
+    from django.contrib import messages
+    from six.moves.urllib.parse import urlencode
+    from esp.program.controllers import dayof, printing, qr_sign
+    if request.GET.get('preview'):
+        #   The live preview, as the page's fields stand (JSON: the SVG, or what's wrong)
+        try:
+            svg = qr_sign.sign_svg(*qr_sign.clean(request.GET.get('title'), request.GET.get('link'),
+                                                  request.GET.get('caption')))
+        except qr_sign.QRSignError as e:
+            return HttpResponse(json.dumps({'error': str(e)}), content_type='application/json')
+        return HttpResponse(json.dumps({'svg': svg}), content_type='application/json')
+    #   (after printing, the page comes back with the sign's fields in the query string)
+    fields = {key: (request.POST if request.method == 'POST' else request.GET).get(key, '')
+              for key in ('title', 'link', 'caption')}
+    if request.method == 'POST':
+        errors = []
+        try:
+            (title, link, caption) = qr_sign.clean(fields['title'], fields['link'], fields['caption'])
+        except qr_sign.QRSignError as e:
+            errors.append(str(e))
+        printing_it = request.POST.get('action') == 'print'
+        if printing_it:
+            (location, copies, settings, panel_errors) = printing.print_panel_values(request.POST)
+            errors += panel_errors
+        if not errors:
+            name = ' '.join(qr_sign.title_lines(title)) or caption
+            file_name = re.sub(r'[^A-Za-z0-9.-]+', '-', 'qr-%s' % name).strip('-')[:80] + '.pdf'
+            if not printing_it:
+                response = HttpResponse(qr_sign.sign_pdf(title, link, caption), content_type='application/pdf')
+                response['Content-Disposition'] = 'attachment; filename="%s"' % file_name
+                return response
+            try:
+                job = printing.queue('qr', None, location, document={'title': title, 'link': link, 'caption': caption},
+                                     title='QR code: %s' % name, copies=copies,
+                                     requested_by=dayof.real_user(request), settings=settings)
+            except printing.PrintingError as e:
+                errors.append(str(e))
+            else:
+                messages.success(request, 'Sent the QR code (%d %s) to %s (job #%d).' % (
+                    copies, 'copy' if copies == 1 else 'copies', location.name, job.id))
+                warning = printing.trouble_warning(job)
+                if warning:
+                    messages.warning(request, warning)
+                #   So reloading the page doesn't print it again
+                return HttpResponseRedirect('%s?%s' % (request.path, urlencode(fields)))
+        for e in errors:
+            messages.error(request, e)
+    return render_to_response('program/qr_code.html', request, {
+        'fields': fields, 'max_link': qr_sign.MAX_LINK, 'max_title': qr_sign.MAX_TITLE,
+        'max_caption': qr_sign.MAX_CAPTION})

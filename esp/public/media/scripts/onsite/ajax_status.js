@@ -276,12 +276,11 @@ function update_checkin_print_button()
 function print_schedule(check_in)
 {
     var student_id = state.student_id;
-    //  .val(): a <select> has no value attribute, so attr("value") was always Default
-    printer_name = $j("#printer_selector").val();
     printing_url = program_base_url + "printschedule_status";
-    var student_data = { 'user' : state.student_id }
-    if (printer_name)
-        student_data.printer = printer_name
+    //  Where to print, and that printer's settings (the print panel)
+    var panel = document.querySelector('#grid-print-panel .print-panel');
+    var student_data = panel ? window.espPrintPanel.values(panel) : {};
+    student_data.user = state.student_id;
     if (check_in === true)
         student_data.check_in = 'true';
     result = $j.ajax({

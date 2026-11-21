@@ -1,4 +1,5 @@
 {% extends "program/modules/checkscanmodule/base.html" %}
+{% load printing %}
 
 {% block title %}Deposit slips - {{ program.niceName }}{% endblock %}
 
@@ -47,4 +48,15 @@
       <div id="old" class="slips-grid"></div>
     </details>
   </section>
+{% endblock %}
+
+{% block checkscan_extra %}
+{# Each slip card gets a copy of this (slips.js) #}
+<template id="slip-print-panel">
+  <div class="slip-print">
+    <h4>Print on a day-of printer</h4>
+    {% print_panel copies=False submit=False sides="one-sided" legend="Printer settings" button="Print this slip" %}
+  </div>
+</template>
+<script type="text/javascript" src="/media/scripts/onsite/print_panel.js"></script>
 {% endblock %}

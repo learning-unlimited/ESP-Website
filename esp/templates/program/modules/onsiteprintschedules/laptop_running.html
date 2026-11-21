@@ -25,7 +25,7 @@
     // Closing the page doesn't release the location at once: the server frees it once this page stops
     // checking in (60 seconds), or someone can take over from the Printers page.
     var LOCATION = {{ location.id }};
-    var BASE = '/onsite/{{ program.getUrlBase }}/';
+    var BASE = '{{ printers_base|escapejs }}';
     var PRINTERS_URL = '{{ printers_url|escapejs }}';
     var NAME = '{{ location.name|escapejs }}';
     var match = window.location.hash.match(/token=([^&]+)/);

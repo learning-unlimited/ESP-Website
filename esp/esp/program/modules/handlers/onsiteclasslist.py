@@ -357,7 +357,16 @@ class OnSiteClassList(ProgramModuleObj):
             return resp
 
         printer = request.POST.get('printer', None)
-        if printer:
+        settings = {}
+        if request.POST.get('location'):
+            #   The print panel's fields: where, and its settings for this job
+            (printer, _, settings, errors) = printing.print_panel_values(request.POST, copies=False)
+            if errors:
+                result['message'] = ' '.join(errors)
+                json.dump(result, resp)
+                return resp
+        elif printer:
+            #   (by name, as the page used to send it)
             printer = Printer.objects.active().filter(name=printer).first()
             if printer is None:
                 result['message'] = 'Unknown printer location %s.' % request.POST.get('printer')
@@ -380,13 +389,15 @@ class OnSiteClassList(ProgramModuleObj):
             result['checked_in'] = True
         recorded_by = dayof.real_user(request)
         try:
-            req = printing.queue('schedule', prog, printer, user=user_obj, requested_by=recorded_by)
+            req = printing.queue('schedule', prog, printer, user=user_obj, requested_by=recorded_by, settings=settings)
         except printing.PrintingError as e:
             #   (the printer went away since the check above)
             result['message'] = '%s%s' % (str(e), checkin_note)
             json.dump(result, resp)
             return resp
-        result['message'] = "Submitted %s's schedule for printing (print request #%s).%s" % (user_obj.name(), req.id, checkin_note)
+        warning = printing.trouble_warning(req)
+        result['message'] = "Submitted %s's schedule for printing (print request #%s).%s%s" % (
+            user_obj.name(), req.id, checkin_note, ' ' + warning if warning else '')
 
         json.dump(result, resp)
         return resp
@@ -396,7 +407,6 @@ class OnSiteClassList(ProgramModuleObj):
     def classchange_grid(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['timeslots'] = prog.getTimeSlots()
-        context['printers'] = Printer.objects.active().exclude(is_default=True).values_list('name', flat=True)
         context['initial_student'] = request.GET.get('student_id', '')
         #   Off by default: checking in records what the student owes as paid,
         #   so only when the volunteer means to (see update_schedule_json)

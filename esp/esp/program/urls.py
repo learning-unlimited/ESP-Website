@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from django.conf.urls import url
 
-from esp.program import views
+from esp.program import printer_views, views
 import esp.users.views.merge
 
 urlpatterns = [
@@ -19,6 +19,10 @@ urlpatterns = [
     url(r'^manage/usersearch/?$', views.usersearch),
     url(r'^manage/flushcache/?$', views.flushcache),
     url(r'^manage/printpdf/?$', views.print_pdf),
+    url(r'^manage/qrcode/?$', views.qr_code),
+    #   The Printers page; its links and scripts are relative to it, so the trailing slash matters
+    url(r'^manage/printers/$', printer_views.printers),
+    url(r'^manage/printers/(?P<view>printers_[a-z_]+)$', printer_views.dispatch),
     url(r'^manage/emails/?$', views.emails),
     url(r'^manage/catsflagsrecs/?(?P<section>[^/]*)/?$', views.catsflagsrecs),
     url(r'^manage/tags/?(?P<section>[^/]*)/?$', views.tags),

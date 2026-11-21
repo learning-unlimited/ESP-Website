@@ -1,0 +1,35 @@
+{% comment %}
+  The print panel ({% print_panel %} in templatetags/printing.py): put it inside the form that prints, or read its
+  fields with espPrintPanel.values(panel) from a script. Fields: location, copies (if shown), and the settings (if
+  shown: in a section collapsed unless settings_open).
+{% endcomment %}
+<div class="print-panel" id="{{ panel_id }}">
+  <script type="application/json" class="print-panel-data">{{ data_json|safe }}</script>
+  <div class="control-group"><label for="{{ panel_id }}-location">Print to</label>
+    <select id="{{ panel_id }}-location" name="location" class="input-xlarge print-panel-location">
+      {% for l in locations %}<option value="{{ l.id }}">{{ l.name }}{% if l.is_default %} (default){% endif %}{% if not l.connected %} &mdash; not connected{% elif l.trouble %} &mdash; not printing{% endif %}</option>{% endfor %}
+    </select>
+    <div class="print-panel-status"><small></small></div>
+  </div>
+  {% if copies %}
+  <div class="control-group"><label for="{{ panel_id }}-copies">Copies</label>
+    <input type="number" id="{{ panel_id }}-copies" name="copies" class="input-mini" min="1" max="{{ max_copies }}" value="1" /></div>
+  {% endif %}
+  {% if settings %}
+  <details class="print-panel-settings-box"{% if settings_open %} open{% endif %}>
+    <summary>{{ legend }}</summary>
+    <fieldset class="print-panel-settings" hidden>
+      {% for key, label in setting_fields %}
+      <div class="control-group" data-setting="{{ key }}"><label>{{ label }} <select name="{{ key }}"></select></label></div>
+      {% endfor %}
+    </fieldset>
+    <p class="print-panel-no-settings muted" hidden><small>This location isn't printing from a network printer, so its
+    printer's own settings (or, from a laptop, the browser's print dialog) decide sides, color and paper.</small></p>
+  </details>
+  {% endif %}
+  {% if button %}
+  <p><button type="{% if submit %}submit{% else %}button{% endif %}" name="action" value="print" class="btn btn-primary print-panel-button"><span class="glyphicon glyphicon-print" aria-hidden="true"></span> {{ button }}</button>
+    <span class="print-panel-message"></span></p>
+  {% endif %}
+</div>
+<script type="text/javascript" src="/media/scripts/onsite/print_panel.js"></script>

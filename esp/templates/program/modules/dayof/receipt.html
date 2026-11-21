@@ -1,4 +1,5 @@
 {% extends "main.html" %}
+{% load printing %}
 
 {% block title %}Receipt {{ content.number }}{% endblock %}
 
@@ -48,7 +49,36 @@
   <a class="btn" href="{{ urls.back }}"><span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span> Back</a>
   {% if urls.remake and not content.void %}<a class="btn" href="{{ urls.remake }}"><span class="glyphicon glyphicon-repeat" aria-hidden="true"></span> Remake this receipt</a>{% endif %}
 </div>
-<div class="well well-small">{% include "program/modules/dayof/print_control.html" with kind="receipt" object_id=receipt.id label="Print receipt" %}</div>
+<div class="well well-small" id="receipt-print" data-url="/onsite/{{ program.getUrlBase }}/printers_queue" data-receipt="{{ receipt.id }}">{% csrf_token %}
+  {% print_panel copies=False submit=False button="Print receipt" %}
+</div>
+<script type="text/javascript">
+(function () {
+    // The print panel's button queues this receipt on the chosen location
+    var box = document.getElementById('receipt-print'), panel = box.querySelector('.print-panel');
+    var button = panel.querySelector('.print-panel-button'), msg = panel.querySelector('.print-panel-message');
+    button.addEventListener('click', function () {
+        var data = new URLSearchParams(window.espPrintPanel.values(panel));
+        data.set('kind', 'receipt');
+        data.set('receipt', box.getAttribute('data-receipt'));
+        button.disabled = true;
+        msg.className = 'print-panel-message muted';
+        msg.textContent = 'Sending...';
+        fetch(box.getAttribute('data-url'), {
+            method: 'POST', credentials: 'same-origin', body: data,
+            headers: {'X-CSRFToken': box.querySelector('input[name=csrfmiddlewaretoken]').value}
+        }).then(function (r) {
+            return r.json().then(function (body) { return {ok: r.ok, body: body}; });
+        }).then(function (r) {
+            msg.className = 'print-panel-message ' + (r.ok ? 'text-success' : 'text-error');
+            msg.textContent = r.ok ? r.body.message : (r.body.error || 'Could not queue it. Try again.');
+        }).catch(function () {
+            msg.className = 'print-panel-message text-error';
+            msg.textContent = 'Could not queue it. Try again.';
+        }).then(function () { button.disabled = false; });
+    });
+})();
+</script>
 
 {% if not content.void %}
 <form method="post" action="{{ urls.void }}">

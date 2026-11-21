@@ -127,6 +127,12 @@ def job_status(name, job):
     return _request('GET', '/queues/%s/jobs/%s' % (name, job), PROBE_TIMEOUT)
 
 
+def enable_queue(name):
+    """ Restarts a queue CUPS stopped (its printer failed a job), so it
+    prints its jobs again. """
+    _request('POST', '/queues/%s/enable' % name, TIMEOUT)
+
+
 def cancel_job(name, job):
     """ Cancels a job in the print server's CUPS; fine if it already finished. """
     _request('DELETE', '/queues/%s/jobs/%s' % (name, job), TIMEOUT)

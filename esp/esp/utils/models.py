@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import json
 import os
 import secrets
 import time
@@ -130,6 +131,8 @@ class Printer(models.Model):
     last_result = models.CharField(max_length=20, blank=True, default='')
     last_result_at = models.DateTimeField(blank=True, null=True)
     last_error = models.TextField(blank=True, default='')
+    #   When a job last printed (network printers; see printing._queue_stopped)
+    last_ok_at = models.DateTimeField(blank=True, null=True)
     #   Network printer: what is stopping jobs (print server unreachable, the
     #   printer not responding or out of paper...) and since when; blank when
     #   all is well
@@ -178,6 +181,9 @@ class PrintRequest(models.Model):
         ('schedule', 'Student schedule'),
         ('receipt', 'Receipt'),
         ('pdf', 'Uploaded PDF'),
+        ('test', 'Test page'),
+        ('qr', 'QR code'),
+        ('deposit_slip', 'Deposit slip'),
     )
     STATUS_CHOICES = (
         ('queued', 'Waiting to print'),
@@ -189,11 +195,20 @@ class PrintRequest(models.Model):
     printer = models.ForeignKey(Printer, blank=True, null=True)     #   Blank means the Default location.
     kind = models.CharField(max_length=20, choices=KIND_CHOICES, default='schedule')
     program = models.ForeignKey('program.Program', blank=True, null=True, on_delete=models.CASCADE)
-    #   What to print: a student's schedule, a receipt, or an uploaded PDF
+    #   What to print, made when it prints (so only an upload is kept as a
+    #   file): a student's schedule, a receipt, a deposit slip, a QR code sign
+    #   (document_json: its title, link and caption), an uploaded PDF, or a
+    #   test page for the location printing it
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
     receipt = models.ForeignKey('accounting.Receipt', blank=True, null=True, on_delete=models.CASCADE)
     file = models.FileField(upload_to='%Y/%m/', storage=PrintUploadStorage(), blank=True, null=True)
+    deposit_slip = models.ForeignKey('program.DepositSlip', blank=True, null=True, related_name='+',
+                                     on_delete=models.SET_NULL)
+    document_json = models.TextField(blank=True, default='')
     copies = models.PositiveIntegerField(default=1)
+    #   Pages in one copy: counted when queued for a file, when first
+    #   rendered otherwise (blank until then, or if it couldn't be counted)
+    pages = models.PositiveIntegerField(blank=True, null=True)
     #   Settings for this job (JSON, like Printer.settings_json) over the
     #   printing location's own; those its printer can't do are skipped
     settings_json = models.TextField(blank=True, default='')
@@ -204,15 +219,27 @@ class PrintRequest(models.Model):
     #   A network job's id in the print server's CUPS (e.g. esp-01jd3k8w6p0b2c4d5e6f7g8h9j-12)
     #   while it is 'sent', until CUPS says it printed
     server_job = models.CharField(max_length=100, blank=True, default='')
+    #   Network printing: how many times this job stopped the print server's
+    #   queue (the printer dropped or refused it), and when it last did; see
+    #   esp.program.controllers.printing._queue_stopped
+    refusals = models.PositiveIntegerField(default=0)
+    refused_at = models.DateTimeField(blank=True, null=True)
     requested_by = AjaxForeignKey(ESPUser, blank=True, null=True, related_name='+', on_delete=models.SET_NULL)
     time_requested = models.DateTimeField(auto_now_add=True)
     time_executed = models.DateTimeField(blank=True, null=True)
 
     def describe(self):
+        """ What this is, for staff (the Printers page, messages) and as the
+        print server's job title. """
         if self.title:
             return self.title
         if self.kind == 'schedule' and self.user_id:
             return 'Schedule for %s' % self.user.name()
         if self.kind == 'receipt' and self.receipt_id:
-            return 'Receipt %d' % self.receipt.number
+            content = json.loads(self.receipt.lines_json or '{}')
+            paid = content.get('paid')
+            return 'Receipt %d for %s%s' % (self.receipt.number, self.receipt.payer_name or 'a sale',
+                                           ' ($%s paid)' % paid if paid and paid != '0.00' else '')
+        if self.kind == 'test' and self.printer_id:
+            return 'Test page for %s' % self.printer.name
         return self.get_kind_display()
