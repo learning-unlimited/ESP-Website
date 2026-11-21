@@ -20,6 +20,11 @@ from esp.themes.controllers import ThemeController
 from esp.themes import settings as themes_settings
 from io import open
 
+def worker_css_file():
+    """A compiled-CSS filename unique to this xdist worker, so tests running
+    in parallel don't overwrite each other's output."""
+    return f'theme_compiled_test_{os.environ.get("PYTEST_XDIST_WORKER", "main")}.css'
+
 class ThemesTest(TestCase):
 
     def setUp(self):
@@ -33,8 +38,7 @@ class ThemesTest(TestCase):
 
         #   Redirect compiled CSS output to avoid disturbing installed setup
         self._css_file = themes_settings.COMPILED_CSS_FILE
-        worker_id = os.environ.get('PYTEST_XDIST_WORKER', 'main')
-        themes_settings.COMPILED_CSS_FILE = f'theme_compiled_test_{worker_id}.css'
+        themes_settings.COMPILED_CSS_FILE = worker_css_file()
 
     def tearDown(self):
 
@@ -366,7 +370,7 @@ class ScssPipelineTest(TestCase):
 
     def setUp(self):
         self._css_file = themes_settings.COMPILED_CSS_FILE
-        themes_settings.COMPILED_CSS_FILE = 'theme_compiled_test.css'
+        themes_settings.COMPILED_CSS_FILE = worker_css_file()
         self.tc = ThemeController()
         self.css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
 
@@ -486,7 +490,7 @@ class DropletsFooterStylingTest(TestCase):
 
     def setUp(self):
         self._css_file = themes_settings.COMPILED_CSS_FILE
-        themes_settings.COMPILED_CSS_FILE = 'theme_compiled_test.css'
+        themes_settings.COMPILED_CSS_FILE = worker_css_file()
         self.tc = ThemeController()
         self.css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
         if not self.tc.has_scss('droplets'):
@@ -653,7 +657,7 @@ class EspOverriddenBehaviorTest(TestCase):
 
     def setUp(self):
         self._css_file = themes_settings.COMPILED_CSS_FILE
-        themes_settings.COMPILED_CSS_FILE = 'theme_compiled_test.css'
+        themes_settings.COMPILED_CSS_FILE = worker_css_file()
         self.tc = ThemeController()
         self.css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
         scss_themes = [n for n in self.tc.get_theme_names() if self.tc.has_scss(n)]

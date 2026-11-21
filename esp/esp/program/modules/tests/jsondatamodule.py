@@ -37,6 +37,9 @@ from collections import Counter
 
 from django.utils.html import escape
 
+from datetime import datetime
+
+from esp.cal.models import Event, EventType
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.models import ClassSubject
@@ -370,3 +373,57 @@ class JSONDataModuleTest(ProgramFrameworkTest):
         for sec in cls_data.get('sections', []):
             self.assertIn('room', sec,
                           "class_admin_info must include per-section 'room' for admins")
+
+
+class TimeslotLabelTest(ProgramFrameworkTest):
+    """
+    Timeslot labels built in SQL must be unambiguous: both the start and the
+    end time need an AM/PM marker (PostgreSQL's HH is a 12-hour format, so
+    9:00 AM and 9:00 PM would otherwise both render as 09:00).
+    """
+
+    def setUp(self):
+        super().setUp()
+        # Replace the default timeslots with blocks covering morning,
+        # a block spanning noon, afternoon and evening.
+        Event.objects.filter(program=self.program).delete()
+        event_type = EventType.get_from_desc('Class Time Block')
+        for start, end in [
+            (datetime(2222, 7, 7, 9, 0), datetime(2222, 7, 7, 10, 0)),
+            (datetime(2222, 7, 7, 11, 30), datetime(2222, 7, 7, 12, 30)),
+            (datetime(2222, 7, 7, 13, 0), datetime(2222, 7, 7, 14, 0)),
+            (datetime(2222, 7, 7, 21, 0), datetime(2222, 7, 7, 22, 0)),
+        ]:
+            Event.objects.create(
+                program=self.program, event_type=event_type, start=start,
+                end=end, short_description=start.strftime('%H:%M'),
+                description=start.strftime('%H:%M'))
+        self.expected_suffixes = [
+            '09:00 AM -- 10:00 AM',
+            '11:30 AM -- 12:30 PM',
+            '01:00 PM -- 02:00 PM',
+            '09:00 PM -- 10:00 PM',
+        ]
+        self.client.login(username=self.admins[0].username, password='password')
+
+    def _assert_labels(self, labels):
+        self.assertEqual(len(labels), len(self.expected_suffixes))
+        for label, suffix in zip(labels, self.expected_suffixes):
+            self.assertTrue(
+                label.endswith(suffix),
+                'Label %r should end with %r' % (label, suffix))
+        # A 9 AM block and a 9 PM block must no longer look alike.
+        self.assertNotEqual(labels[0].split(' -- ')[0],
+                            labels[3].split(' -- ')[0])
+
+    def test_json_timeslots_labels_have_meridiem_on_both_ends(self):
+        response = self.client.get('/json/%s/timeslots' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        timeslots = sorted(response.json()['timeslots'], key=lambda t: t['start'])
+        self._assert_labels([t['label'] for t in timeslots])
+
+    def test_onsite_catalog_status_labels_have_meridiem_on_both_ends(self):
+        response = self.client.get('/onsite/%s/catalog_status' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        # timeslots are (id, label, start_millis), ordered by start
+        self._assert_labels([t[1] for t in response.json()['timeslots']])

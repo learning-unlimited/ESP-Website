@@ -1466,6 +1466,17 @@ class MonthDayWidgetTest(TestCase):
         self.assertEqual(
             datetime.datetime.strptime(str(cleaned), '%Y-%m-%d').date(), cleaned)
 
+    def test_a_submitted_querydict_is_read(self):
+        """A real POST is a QueryDict, whose values are stored as lists."""
+        from django.http import QueryDict
+
+        field = self._field()
+        data = QueryDict(
+            'grade_increment_date_month=7&grade_increment_date_day=31')
+        cleaned = field.clean(field.widget.value_from_datadict(
+            data, {}, 'grade_increment_date'))
+        self.assertEqual((cleaned.month, cleaned.day), (7, 31))
+
     def test_a_saved_date_is_stored_the_way_its_consumer_reads_it(self):
         from esp.program.forms import TagSettingsForm
         import datetime
