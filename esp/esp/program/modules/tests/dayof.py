@@ -850,6 +850,38 @@ class PrintingTest(DayOfTestBase):
         self.assertTrue(self.client.login(username=self.student.username, password='password'))
         self.assertNotEqual(self.client.get(url).status_code, 200)
 
+    def test_print_pdf_settings(self):
+        """ Printer settings for one upload: over the location's own, only
+        what its printer can do, and skipped by a printer that can't. """
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from esp.utils.models import PrintRequest
+        info = {'model': 'X', 'sides': ['one-sided', 'two-sided-long-edge'], 'color_modes': ['color', 'monochrome']}
+        printing.connect_network(self.desk, 'printer.example', info, 'ipp://printer.example/ipp/print', self.admin)
+        self.desk.refresh_from_db()
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+        page = self.client.get('/manage/printpdf/')
+        self.assertEqual(json.loads(page.context['printer_data'])[str(self.desk.id)]['settings'],
+                         {'sides': 'two-sided-long-edge', 'color_mode': 'monochrome'})
+
+        def upload(**extra):
+            return self.client.post('/manage/printpdf/', dict(
+                {'files': [SimpleUploadedFile('a.pdf', b'%PDF-1.4', 'application/pdf')], 'location': self.desk.id},
+                **extra), follow=True)
+        self.assertContains(upload(color_mode='rainbow'), 'support color_mode = rainbow')
+        self.assertFalse(PrintRequest.objects.exists())
+        self.assertContains(upload(sides='', color_mode='color'), 'Sent 1 file')
+        job = PrintRequest.objects.get()
+        self.assertEqual(printing.job_settings(job), {'color_mode': 'color'})
+        printing.send_to_network_printer(self.desk, b'%PDF-1.4', 'a.pdf', settings=printing.job_settings(job))
+        self.assertEqual(sorted(self.server.call_args[1]['params']['o']),
+                         ['print-color-mode=color', 'sides=two-sided-long-edge'])
+        #   Printed by a printer without color (e.g. Default's): skipped
+        printing.connect_network(self.other, 'mono.example', {'model': 'Y', 'color_modes': ['monochrome']},
+                                 'ipp://mono.example/ipp/print', self.admin)
+        self.other.refresh_from_db()
+        printing.send_to_network_printer(self.other, b'%PDF-1.4', 'a.pdf', settings=printing.job_settings(job))
+        self.assertEqual(self.server.call_args[1]['params']['o'], ['print-color-mode=monochrome'])
+
     def fake_print_server(self, location):
         """ Makes the faked print server act like one: jobs get CUPS ids, and
         their state is self.job_state. """

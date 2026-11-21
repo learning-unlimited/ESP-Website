@@ -276,7 +276,8 @@ function update_checkin_print_button()
 function print_schedule(check_in)
 {
     var student_id = state.student_id;
-    printer_name = $j("#printer_selector").attr("value");
+    //  .val(): a <select> has no value attribute, so attr("value") was always Default
+    printer_name = $j("#printer_selector").val();
     printing_url = program_base_url + "printschedule_status";
     var student_data = { 'user' : state.student_id }
     if (printer_name)

@@ -1484,6 +1484,13 @@ def print_pdf(request):
             if not f.read(5).startswith(b'%PDF'):
                 errors.append('%s isn\'t a PDF.' % f.name)
             f.seek(0)
+        settings = {}
+        if location is not None and location.mode == 'network':
+            #   This print only; blank fields keep the location's own settings
+            try:
+                settings = printing.clean_settings(location, request.POST)
+            except printing.PrintingError as e:
+                errors.append(str(e))
         if not errors:
             try:
                 printing.check_can_print(location)
@@ -1497,7 +1504,7 @@ def print_pdf(request):
                 with transaction.atomic():      # all of them or none
                     for f in files:
                         printing.queue('pdf', None, location, file=f, title=f.name, copies=copies,
-                                       requested_by=dayof.real_user(request))
+                                       requested_by=dayof.real_user(request), settings=settings)
             except printing.PrintingError as e:
                 messages.error(request, str(e))
             else:
@@ -1505,7 +1512,19 @@ def print_pdf(request):
                     len(files), 'file' if len(files) == 1 else 'files', copies, 'copy' if copies == 1 else 'copies',
                     location.name))
                 return HttpResponseRedirect(request.path)
+    locations = list(Printer.objects.active().order_by('-is_default', 'name'))
+    #   For the settings fields: what each network printer can do, and its own settings
+    printer_data = {}
+    for l in locations:
+        if l.mode == 'network':
+            info = json.loads(l.network_info or '{}')
+            printer_data[l.id] = {
+                'capabilities': {key: info.get(capability, []) for (key, capability) in printing.SETTING_CAPABILITIES},
+                'settings': printing.location_settings(l)}
     return render_to_response('program/print_pdf.html', request, {
-        'locations': Printer.objects.active().order_by('-is_default', 'name'),
+        'locations': locations,
+        'printer_data': json.dumps(printer_data).replace('<', '\\u003c'),
+        'setting_fields': (('sides', 'Sides'), ('color_mode', 'Color mode'), ('quality', 'Quality'),
+                           ('media', 'Paper'), ('scaling', 'Scaling')),
         'max_mb': PRINT_PDF_MAX_BYTES // (1024 * 1024),
     })

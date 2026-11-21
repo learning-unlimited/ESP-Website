@@ -176,6 +176,9 @@ class PrintRequest(models.Model):
     receipt = models.ForeignKey('accounting.Receipt', blank=True, null=True, on_delete=models.CASCADE)
     file = models.FileField(upload_to='%Y/%m/', storage=PrintUploadStorage(), blank=True, null=True)
     copies = models.PositiveIntegerField(default=1)
+    #   Settings for this job (JSON, like Printer.settings_json) over the
+    #   printing location's own; those its printer can't do are skipped
+    settings_json = models.TextField(blank=True, default='')
     title = models.CharField(max_length=200, blank=True, default='')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='queued', db_index=True)
     error = models.TextField(blank=True, default='')

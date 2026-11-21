@@ -21,6 +21,14 @@ Printers page connects the locations to printers.</p>
     </select></div>
   <div class="control-group"><label for="pdf-copies">Copies</label>
     <input type="number" id="pdf-copies" name="copies" class="input-mini" min="1" max="999" value="1" /></div>
+  <fieldset id="pdf-settings" hidden>
+    <legend>Printer settings for these files</legend>
+    {% for key, label in setting_fields %}
+    <div class="control-group" data-setting="{{ key }}"><label>{{ label }} <select name="{{ key }}"></select></label></div>
+    {% endfor %}
+  </fieldset>
+  <p id="pdf-settings-none" class="muted" hidden>This location isn't printing from a network printer, so its printer's
+  own settings (or, from a laptop, the browser's print dialog) decide sides, color and paper.</p>
   <p><button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-print" aria-hidden="true"></span> Print</button></p>
 </form>
 
@@ -38,6 +46,33 @@ Printers page connects the locations to printers.</p>
         }
     });
     input.addEventListener('change', function () { input.setCustomValidity(''); });
+
+    // Settings fields for the chosen location's network printer, starting from its own settings
+    var printers = {{ printer_data|safe }}, locSelect = document.getElementById('pdf-location');
+    function showSettings() {
+        var data = printers[locSelect.value], fieldset = document.getElementById('pdf-settings');
+        fieldset.hidden = !data;
+        document.getElementById('pdf-settings-none').hidden = !!data;
+        fieldset.querySelectorAll('[data-setting]').forEach(function (group) {
+            var key = group.getAttribute('data-setting'), select = group.querySelector('select');
+            var values = data ? (data.capabilities[key] || []) : [];
+            var own = data ? data.settings[key] : '';
+            select.innerHTML = '';
+            var first = document.createElement('option');
+            first.value = '';
+            first.textContent = own ? 'location setting (' + own + ')' : 'printer default';
+            select.appendChild(first);
+            values.forEach(function (v) {
+                var option = document.createElement('option');
+                option.value = v;
+                option.textContent = v;
+                select.appendChild(option);
+            });
+            group.hidden = !values.length;
+        });
+    }
+    locSelect.addEventListener("change", showSettings);
+    showSettings();
 })();
 </script>
 {% endblock %}

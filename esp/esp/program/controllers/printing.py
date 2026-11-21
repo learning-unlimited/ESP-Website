@@ -251,23 +251,33 @@ def release_laptop(location, token):
 SETTING_VALUE = re.compile(r'^[A-Za-z0-9._-]{1,60}$')
 
 
-@transaction.atomic
-def save_settings(location, settings, recorded_by):
-    loc = Printer.objects.select_for_update().get(id=location.id)
-    info = json.loads(loc.network_info or '{}')
-    allowed = {'sides': info.get('sides', []), 'color_mode': info.get('color_modes', []),
-               'quality': info.get('qualities', []), 'media': info.get('media', []),
-               'scaling': info.get('scaling', [])}
+#   Each setting, and the printer capability (in network_info) listing its values
+SETTING_CAPABILITIES = (('sides', 'sides'), ('color_mode', 'color_modes'), ('quality', 'qualities'),
+                        ('media', 'media'), ('scaling', 'scaling'))
+
+
+def clean_settings(location, settings):
+    """ The non-blank settings (a dict like the settings form's fields),
+    checked against what the location's printer can do; raises
+    PrintingError otherwise. """
+    info = json.loads(location.network_info or '{}')
     clean = {}
-    for (key, options) in allowed.items():
+    for (key, capability) in SETTING_CAPABILITIES:
         value = (settings.get(key) or '').strip()
         if value:
-            if value not in options:
+            if value not in info.get(capability, []):
                 raise PrintingError('This printer doesn\'t support %s = %s.' % (key, value))
             if not SETTING_VALUE.match(value):
                 #   (what the print server accepts as an option value)
                 raise PrintingError('%s = %s can\'t be sent to the print server.' % (key, value))
             clean[key] = value
+    return clean
+
+
+@transaction.atomic
+def save_settings(location, settings, recorded_by):
+    loc = Printer.objects.select_for_update().get(id=location.id)
+    clean = clean_settings(loc, settings)
     old = loc.settings_json
     loc.settings_json = json.dumps(clean)
     loc.save()
@@ -288,8 +298,23 @@ SETTING_OPTIONS = {'sides': 'sides', 'color_mode': 'print-color-mode', 'media': 
                    'scaling': 'print-scaling'}
 
 
-def location_options(location):
+def job_settings(job):
+    try:
+        return json.loads(job.settings_json or '{}')
+    except ValueError:
+        return {}
+
+
+def location_options(location, overrides=None):
+    """ The location's settings as print options, with overrides (a job's
+    own settings) over them, skipping any the location's printer can't do
+    (e.g. a job for another location that Default is printing). """
     settings = location_settings(location)
+    info = json.loads(location.network_info or '{}')
+    for (key, capability) in SETTING_CAPABILITIES:
+        value = (overrides or {}).get(key)
+        if value and value in info.get(capability, []) and SETTING_VALUE.match(value):
+            settings[key] = value
     options = {SETTING_OPTIONS[key]: value for (key, value) in settings.items() if key in SETTING_OPTIONS and value}
     if settings.get('quality') in QUALITY:
         options['print-quality'] = QUALITY[settings['quality']]
@@ -314,13 +339,15 @@ def check_can_print(location=None):
 
 
 def queue(kind, program, location=None, user=None, receipt=None, file=None, title='',
-          requested_by=None, copies=1):
-    """ Queues a job, refusing (PrintingError) if nothing would print it. """
+          requested_by=None, copies=1, settings=None):
+    """ Queues a job, refusing (PrintingError) if nothing would print it.
+    settings: the job's own printer settings (see clean_settings). """
     if location is None:
         location = default_location()
     check_can_print(location)
     return PrintRequest.objects.create(kind=kind, program=program, printer=location, user=user, receipt=receipt,
-                                       file=file, title=title[:200], requested_by=requested_by, copies=copies)
+                                       file=file, title=title[:200], requested_by=requested_by, copies=copies,
+                                       settings_json=json.dumps(settings) if settings else '')
 
 
 def jobs_for(location):
@@ -463,12 +490,13 @@ def render(job):
 
 #   Network printing (the print worker)
 
-def send_to_network_printer(location, pdf, job_name, copies=1):
+def send_to_network_printer(location, pdf, job_name, copies=1, settings=None):
     """ Hands the PDF to the location's CUPS queue (remaking the queue if it
-    has gone, e.g. the print server was rebuilt). Raises
+    has gone, e.g. the print server was rebuilt), with the location's
+    settings and, over them, settings (the job's own). Raises
     print_server.PrintServerError. """
     name = print_server.queue_name(location.id)
-    options = location_options(location)
+    options = location_options(location, settings)
     if copies > 1:
         options['copies'] = copies
     try:
@@ -623,7 +651,8 @@ def _network_pass(location):
             mark_printed(job, ok=False, error='Could not make the document: %s' % e)
             continue
         try:
-            server_job = send_to_network_printer(location, pdf, job.describe(), copies=job.copies)
+            server_job = send_to_network_printer(location, pdf, job.describe(), copies=job.copies,
+                                                 settings=job_settings(job))
         except print_server.PrintServerError as e:
             if e.job_refused:
                 #   This job is the problem (e.g. an option the print server
