@@ -58,4 +58,5 @@ from esp.program.modules.tests.checkscan import (CheckScanAccessTest, CheckScanB
                                                  CheckScanSlipsTest, DevTreasuryKeyScriptTest)
 from esp.program.modules.tests.dayof import (CheckInStudentTest, RecorderTest, CheckInViewsTest,
                                              BackfillPaymentMethodTest, TroubleshootingTest, DayOfCardTest,
-                                             HelpDeskSalesTest, ReceiptTest)
+                                             HelpDeskSalesTest, ReceiptTest, PrintingTest,
+                                             PrintServerClientTest, PrintServerScriptTest)

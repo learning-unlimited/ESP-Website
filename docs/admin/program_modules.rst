@@ -786,9 +786,9 @@ With this module, you can search for a user and view what optional items (e.g. m
 Automatically Print schedules for Onsite reg (OnsitePrintSchedules)
 -------------------------------------------------------------------
 
-This module supports unattended automated schedule printing: from the class change grid or student registration, your volunteers will be able to queue up a student's schedule to be printed at a shared printer.  This is useful when you have many volunteers helping students in parallel.  Include it with your program and run the poll_schedules.sh script on the computer that is connected to the shared printer (this script will need to be modified slightly for your particular operating system and program).
+This module supports unattended schedule (and receipt) printing: from the class change grid, check-in, troubleshooting or student registration, your volunteers can queue up a student's schedule to be printed at a shared print location.  This is useful when you have many volunteers helping students in parallel.
 
-If you have multiple printers, you will need to specify them using the admin interface (/admin/utils/printer/).
+Set up print locations on the module's Printers page (/onsite/<program>/printschedules).  Each location prints either from a laptop with a USB printer (open the location's "Print via USB from this laptop" page there and leave it running) or, if your site has a print server configured (PRINT_SERVER in local_settings.py; see deploy/print_server/README.md), from a network printer.  The Default location also prints jobs for any location with nothing connected.  Admins can also print arbitrary PDFs at /manage/printpdf.
 
 Onsite New Registration (OnSiteRegister)
 ----------------------------------------

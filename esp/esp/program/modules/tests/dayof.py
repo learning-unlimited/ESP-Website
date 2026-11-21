@@ -18,7 +18,8 @@ from datetime import timedelta
 from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
 from esp.accounting.models import (CybersourcePostback, DayOfCardCheckout, HelpdeskPriceChange, OnsiteSale,
                                    Receipt, Transfer)
-from esp.program.controllers import dayof, dayof_payments
+from esp.program.controllers import dayof, dayof_payments, printing
+from esp.utils import print_server
 from esp.program.models import FinancialAidRequest
 from esp.program.modules.handlers.creditcardmodule_cybersource import CreditCardModule_Cybersource
 from esp.program.tests import ProgramFrameworkTest
@@ -171,6 +172,7 @@ class CheckInViewsTest(DayOfTestBase):
         data = {'user': self.student.id, 'sections': '[]', 'check_in': 'true'}
         #   Not by GET (anything could trigger that cross-site)
         self.assertEqual(self.client.get(self.onsite_url('update_schedule_json'), data).status_code, 405)
+        self.assertEqual(self.client.get(self.onsite_url('printschedule_status'), data).status_code, 405)
         self.assertFalse(self.program.isCheckedIn(self.student))
         response = self.client.post(self.onsite_url('update_schedule_json'), data)
         self.assertEqual(response.status_code, 200)
@@ -188,6 +190,25 @@ class CheckInViewsTest(DayOfTestBase):
         self.assertFalse(self.checkin_payments().exists())
         #   The grid's "check in" box starts unticked
         self.assertNotContains(self.client.get(self.onsite_url('classchange_grid')), 'id="check_in_student" checked')
+
+    def test_grid_print_checks_in_only_when_asked(self):
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+        #   Nothing connected: refused before checking anyone in
+        response = self.client.post(self.onsite_url('printschedule_status'),
+                                   {'user': self.student.id, 'check_in': 'true'})
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertIn('Nothing is printing', data['message'])
+        self.assertNotIn('checked_in', data)       # so the grid keeps its "Check in & print" button
+        self.assertFalse(self.program.isCheckedIn(self.student))
+        printing.claim_for_laptop(printing.default_location(), self.admin)
+        self.client.post(self.onsite_url('printschedule_status'), {'user': self.student.id})
+        self.assertFalse(self.program.isCheckedIn(self.student))
+        response = self.client.post(self.onsite_url('printschedule_status'),
+                                   {'user': self.student.id, 'check_in': 'true'})
+        self.assertTrue(self.program.isCheckedIn(self.student))
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertIn('Recorded $80.00', data['message'])
+        self.assertTrue(data['checked_in'])
 
     def test_grid_register_ties_payment_to_checkin(self):
         """ Registering a student from the class change grid checks them in
@@ -651,3 +672,652 @@ class ReceiptTest(DayOfTestBase):
         pdf = self.client.get('%s?receipt=%d' % (self.onsite_url('helpdesk_receipt_pdf'), receipt.id))
         self.assertTrue(pdf.content.startswith(b'%PDF'))
         self.assertEqual(self.client.get(self.onsite_url('helpdesk_sales')).status_code, 200)
+
+
+FAKE_PRINT_SERVER = {'url': 'https://print.example:8631', 'token': 'secret'}
+
+
+@override_settings(PRINT_SERVER=FAKE_PRINT_SERVER)
+class PrintingTest(DayOfTestBase):
+    def setUp(self, *args, **kwargs):
+        super(PrintingTest, self).setUp(*args, **kwargs)
+        from esp.utils.models import Printer
+        self.default = printing.default_location()
+        self.desk = Printer.objects.create(name='Help desk')
+        self.other = Printer.objects.create(name='Check-in A')
+        #   Never touch a real print server: _request(method, path, timeout, **kwargs) is faked
+        self.server = mock.patch('esp.utils.print_server._request', return_value={'job': 'esp-location-1-3'}).start()
+        self.addCleanup(mock.patch.stopall)
+
+    def test_one_connection_per_location_and_take_over(self):
+        token = printing.claim_for_laptop(self.desk, self.admin)
+        self.desk.refresh_from_db()
+        with self.assertRaises(printing.PrintingError):
+            printing.claim_for_laptop(self.desk, self.onsite)
+        with self.assertRaises(printing.PrintingError):
+            printing.connect_network(self.desk, '10.0.0.9', {'model': 'X'},
+                                     'ipp://10.0.0.9/ipp/print', self.admin)
+        new_token = printing.claim_for_laptop(self.desk, self.onsite, take_over=True)
+        self.assertNotEqual(token, new_token)
+        #   The old laptop is told who took over (by recorded_by's username)
+        with self.assertRaisesRegex(printing.PrintingError, 'onsite'):
+            printing.next_job_for_laptop(self.desk, token)
+        self.assertIsNone(printing.next_job_for_laptop(self.desk, new_token))
+
+    def test_stale_laptop_is_released(self):
+        from esp.utils.models import Printer
+        token = printing.claim_for_laptop(self.desk, self.admin)
+        Printer.objects.filter(id=self.desk.id).update(
+            laptop_last_seen=timezone.now() - printing.LAPTOP_TIMEOUT - timedelta(seconds=5))
+        self.desk.refresh_from_db()
+        self.assertFalse(printing.is_connected(self.desk))
+        #   Someone else can claim it without taking over
+        printing.claim_for_laptop(self.desk, self.onsite)
+        with self.assertRaises(printing.PrintingError):
+            printing.next_job_for_laptop(self.desk, token)
+
+    def test_release(self):
+        token = printing.claim_for_laptop(self.desk, self.admin)
+        self.assertTrue(printing.release_laptop(self.desk, token))
+        self.desk.refresh_from_db()
+        self.assertEqual(self.desk.mode, 'none')
+
+    def test_default_takes_unattended_jobs_only(self):
+        printing.claim_for_laptop(self.desk, self.admin)
+        default_token = printing.claim_for_laptop(self.default, self.admin)
+        desk_job = printing.queue('schedule', self.program, self.desk, user=self.student)
+        other_job = printing.queue('schedule', self.program, self.other, user=self.student)
+        default_job = printing.queue('schedule', self.program, None, user=self.student)
+        got = []
+        while True:
+            job = printing.next_job_for_laptop(self.default, default_token)
+            if job is None:
+                break
+            got.append(job.id)
+        self.assertEqual(sorted(got), sorted([other_job.id, default_job.id]))
+        desk_job.refresh_from_db()
+        self.assertEqual(desk_job.status, 'queued')
+
+    def test_laptop_only_gets_its_own_jobs_once(self):
+        token = printing.claim_for_laptop(self.desk, self.admin)
+        printing.claim_for_laptop(self.default, self.admin)
+        job = printing.queue('schedule', self.program, self.desk, user=self.student)
+        printing.queue('schedule', self.program, self.other, user=self.student)
+        self.assertEqual(printing.next_job_for_laptop(self.desk, token), job)
+        self.assertIsNone(printing.next_job_for_laptop(self.desk, token))
+
+    def test_laptop_protocol_views(self):
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+        self.assertEqual(self.client.get(self.onsite_url('printschedules')).status_code, 200)
+        self.assertEqual(self.client.get(self.onsite_url('printers_laptop'),
+                                         {'location': self.desk.id}).status_code, 200)
+        token = json.loads(self.client.post(self.onsite_url('printers_claim'),
+                                            {'location': self.desk.id}).content.decode('utf-8'))['token']
+        self.assertContains(self.client.get(self.onsite_url('printers_laptop_run'), {'location': self.desk.id}),
+                            "I AM THE THING THAT MAKES SCHEDULE PRINTING WORK, DON'T TOUCH ME")
+        printing.queue('receipt', self.program, self.desk, receipt=self._receipt())
+        data = json.loads(self.client.post(self.onsite_url('printers_poll'),
+                                           {'location': self.desk.id, 'token': token}).content.decode('utf-8'))
+        pdf = self.client.get(data['pdf'])
+        self.assertTrue(pdf.content.startswith(b'%PDF'))
+        from esp.utils.models import PrintRequest
+        #   Only that laptop (with its token) can fetch it or say it's done
+        pdf_url = self.onsite_url('printers_job_pdf')
+        self.assertEqual(self.client.get(pdf_url, {'location': self.desk.id, 'job': data['job']}).status_code, 404)
+        self.assertEqual(self.client.get(pdf_url, {'location': self.other.id, 'job': data['job'],
+                                                   'token': token}).status_code, 404)
+        self.client.post(self.onsite_url('printers_done'), {'location': self.desk.id, 'job': data['job'], 'ok': '1'})
+        self.assertEqual(PrintRequest.objects.get(id=data['job']).status, 'sent')
+        self.client.post(self.onsite_url('printers_done'), {'location': self.desk.id, 'job': data['job'], 'ok': '1',
+                                                            'token': token})
+        self.assertEqual(PrintRequest.objects.get(id=data['job']).status, 'printed')
+        #   Someone else takes over: this laptop is told to stop
+        self.client.post(self.onsite_url('printers_claim'), {'location': self.desk.id, 'take_over': '1'})
+        response = self.client.post(self.onsite_url('printers_poll'), {'location': self.desk.id, 'token': token})
+        self.assertEqual(response.status_code, 409)
+
+    def _receipt(self):
+        from esp.program.controllers import receipts
+        dayof.check_in_student(self.program, self.student, self.admin)
+        items = [t.id for t in receipts.student_items(self.program, self.student)]
+        return receipts.create_receipt(self.program, receipts.student_receipt_content(
+            self.program, self.student, items), self.admin, user=self.student)
+
+    def test_printschedule_security(self):
+        """ LU #6280: POST only, no printing for others without onsite
+        access, no open redirect, unknown printer is a 404. """
+        from esp.utils.models import PrintRequest
+        url = self.onsite_url('printschedule')
+        #   Nothing connected: refused, saying so
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+        self.assertIn(b'Nothing is printing for Default', self.client.post(url, {'user': self.student.id}).content)
+        response = self.client.post(self.onsite_url('printers_queue'), {'kind': 'schedule', 'user': self.student.id})
+        self.assertEqual(response.status_code, 409)
+        self.assertIn('Nothing is printing for Default', response.json()['error'])
+        self.assertFalse(PrintRequest.objects.exists())
+        self.client.logout()
+        printing.claim_for_laptop(self.default, self.admin)
+        self.assertTrue(self.client.login(username=self.student.username, password='password'))
+        self.assertEqual(self.client.get(url, {'user': self.admin.id}).status_code, 405)
+        other = [s for s in self.students if s != self.student][0]
+        self.assertEqual(self.client.post(url, {'user': other.id}).status_code, 404)
+        self.assertEqual(self.client.post(url, {'printer': 'nonexistent'}).status_code, 404)
+        response = self.client.post(url, {'next': 'https://example.com/'})
+        self.assertNotIn('example.com', response['Location'])
+        self.assertEqual(PrintRequest.objects.filter(user=self.student).count(), 1)
+        self.client.logout()
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+        self.client.post(url, {'user': other.id, 'printer': self.desk.name})
+        self.assertTrue(PrintRequest.objects.filter(user=other, printer=self.desk, program=self.program).exists())
+
+    def test_print_pdf_page(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from esp.utils.models import PrintRequest
+        url = '/manage/printpdf/'
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+        self.assertContains(self.client.get(url), 'Print PDFs')
+
+        def upload(name='notes.pdf', data=b'%PDF-1.4 test', **extra):
+            return self.client.post(url, dict({'files': [SimpleUploadedFile(name, data, 'application/pdf')],
+                                               'location': self.desk.id, 'copies': '2'}, **extra), follow=True)
+        #   Nothing connected, or not a PDF: refused
+        self.assertContains(upload(), 'Nothing is printing for Help desk or Default')
+        printing.claim_for_laptop(self.desk, self.admin)
+        self.assertContains(upload(name='x.pdf', data=b'hello'), "x.pdf isn&#39;t a PDF")
+        self.assertFalse(PrintRequest.objects.exists())
+        self.assertContains(upload(copies='1000'), 'Copies must be from 1 to 999')
+        self.assertContains(upload(), 'Sent 1 file (2 copies each) to Help desk')
+        job = PrintRequest.objects.get(kind='pdf')
+        self.assertEqual(job.copies, 2)
+        #   Kept outside the public media directory, and deleted once printed
+        from django.conf import settings
+        self.assertTrue(job.file.path.startswith(settings.PRINT_UPLOAD_DIR))
+        self.assertEqual(printing.render(job), b'%PDF-1.4 test')
+        path = job.file.path
+        printing.mark_printed(job)
+        job.refresh_from_db()
+        self.assertFalse(os.path.exists(path))
+        self.assertEqual((job.status, job.file.name, job.title), ('printed', '', 'notes.pdf'))
+        self.client.logout()
+        self.assertTrue(self.client.login(username=self.student.username, password='password'))
+        self.assertNotEqual(self.client.get(url).status_code, 200)
+
+    def fake_print_server(self, location):
+        """ Makes the faked print server act like one: jobs get CUPS ids, and
+        their state is self.job_state. """
+        queue = print_server.queue_name(location.id)
+        self.job_state = {'state': 'processing', 'reasons': [], 'printer_reasons': [], 'printer_message': ''}
+        self.job_count = 0
+
+        def request(method, path, timeout, **kwargs):
+            if method == 'POST' and path == '/queues/%s/jobs' % queue:
+                self.job_count += 1
+                return {'job': '%s-%d' % (queue, self.job_count)}
+            if method == 'GET' and path.startswith('/queues/%s/jobs/' % queue):
+                if isinstance(self.job_state, Exception):
+                    raise self.job_state
+                return self.job_state
+            return {}
+        self.server.side_effect = request
+        return queue
+
+    def test_copies_go_to_the_print_server_as_one_job(self):
+        printing.connect_network(self.desk, 'printer.example', {'model': 'X'}, 'ipp://printer.example/ipp/print',
+                                 self.admin)
+        self.desk.refresh_from_db()
+        printing.send_to_network_printer(self.desk, b'%PDF-1.4', 'Notes', copies=3)
+        self.assertIn('copies=3', self.server.call_args[1]['params']['o'])
+
+    def test_network_worker(self):
+        from esp.utils.models import Printer, PrintRequest
+        info = {'model': 'Brother X', 'sides': ['one-sided', 'two-sided-long-edge']}
+        printing.connect_network(self.desk, 'printer.example', info, 'ipp://printer.example/ipp/print',
+                                 self.admin)
+        queue = print_server.queue_name(self.desk.id)
+        (args, kwargs) = self.server.call_args
+        self.assertEqual((args[0], args[1]), ('PUT', '/queues/%s' % queue))
+        self.assertEqual(kwargs['json'], {'uri': 'ipp://printer.example/ipp/print', 'description': 'Help desk',
+                                          'driver': 'everywhere'})
+        self.desk.refresh_from_db()
+        self.assertEqual(printing.location_settings(self.desk), {'sides': 'two-sided-long-edge'})
+        first = printing.queue('receipt', self.program, self.desk, receipt=self._receipt())
+        second = printing.queue('receipt', self.program, self.desk, receipt=self._receipt())
+        #   Print server down: the jobs wait, the location shows why, and
+        #   the worker backs off before trying again
+        self.server.side_effect = print_server.PrintServerError('Couldn\'t reach the print server.')
+        printing.run_network_jobs_once()
+        first.refresh_from_db()
+        self.desk.refresh_from_db()
+        self.assertEqual(first.status, 'queued')
+        self.assertIn('Print server', self.desk.trouble)
+        self.assertIsNotNone(self.desk.trouble_since)
+        calls = self.server.call_count
+        printing.run_network_jobs_once()
+        self.assertEqual(self.server.call_count, calls)
+        printing._retry_at.clear()
+        #   Back up: one job at a time goes to the print server, and counts
+        #   as printed only once CUPS says so
+        self.fake_print_server(self.desk)
+        self.assertEqual(printing.run_network_jobs_once(), 1)
+        (args, kwargs) = [c for c in self.server.call_args_list if c[0][0] == 'POST'][-1]
+        self.assertEqual(args[1], '/queues/%s/jobs' % queue)
+        self.assertTrue(kwargs['data'].startswith(b'%PDF'))
+        self.assertEqual(kwargs['params']['o'], ['sides=two-sided-long-edge'])
+        first.refresh_from_db()
+        self.desk.refresh_from_db()
+        self.assertEqual((first.status, first.server_job, self.desk.trouble), ('sent', queue + '-1', ''))
+        self.assertEqual(printing.run_network_jobs_once(), 0)
+        #   Stuck at the printer: shown as the printer's trouble
+        PrintRequest.objects.filter(id=first.id).update(time_executed=timezone.now() - timedelta(minutes=5))
+        self.job_state['printer_message'] = 'Out of paper'
+        self.assertEqual(printing.run_network_jobs_once(), 0)
+        self.desk.refresh_from_db()
+        self.assertEqual(self.desk.trouble, 'Printer: Out of paper')
+        #   Printed: the next one goes, and the trouble clears
+        self.job_state = {'state': 'completed', 'reasons': []}
+        self.assertEqual(printing.run_network_jobs_once(), 1)
+        first.refresh_from_db()
+        second.refresh_from_db()
+        self.desk.refresh_from_db()
+        self.assertEqual((first.status, second.status, second.server_job, self.desk.trouble),
+                         ('printed', 'sent', queue + '-2', ''))
+        #   CUPS lost it: sent again; CUPS gave up: failed
+        self.job_state = print_server.PrintServerError('CUPS has no job %s-2.' % queue)
+        self.assertEqual(printing.run_network_jobs_once(), 1)
+        second.refresh_from_db()
+        self.assertEqual((second.status, second.server_job, second.attempts), ('sent', queue + '-3', 2))
+        self.job_state = {'state': 'aborted', 'reasons': ['job-aborted-by-system']}
+        printing.run_network_jobs_once()
+        second.refresh_from_db()
+        self.assertEqual(second.status, 'failed')
+        self.assertIn('job-aborted-by-system', second.error)
+        self.assertEqual(Printer.objects.get(id=self.desk.id).trouble, '')
+
+    def test_refused_job_fails_and_the_next_prints(self):
+        from esp.utils.models import Printer
+        printing.connect_network(self.desk, 'printer.example', {'model': 'X', 'media': ['na_letter_8.5x11in', 'odd size']},
+                                 'ipp://printer.example/ipp/print', self.admin)
+        self.desk.refresh_from_db()
+        queue = print_server.queue_name(self.desk.id)
+        bad = printing.queue('receipt', self.program, self.desk, receipt=self._receipt())
+        good = printing.queue('receipt', self.program, self.desk, receipt=self._receipt())
+        sent = []
+
+        def request(method, path, timeout, **kwargs):
+            if method == 'POST':
+                if not sent:
+                    sent.append('refused')
+                    raise print_server.PrintServerError('Bad title or option.', 400)
+                sent.append('ok')
+                return {'job': queue + '-1'}
+            return {}
+        self.server.side_effect = request
+        self.assertEqual(printing.run_network_jobs_once(), 1)
+        bad.refresh_from_db()
+        good.refresh_from_db()
+        self.assertEqual((bad.status, good.status), ('failed', 'sent'))
+        self.assertIn('Bad title or option', bad.error)
+        self.assertIn('refused', Printer.objects.get(id=self.desk.id).last_error)
+        #   An outage (unreachable, 5xx) or a wrong token still keeps jobs waiting
+        for error in (print_server.PrintServerError("Couldn't reach the print server."),
+                      print_server.PrintServerError('CUPS failed', 502), print_server.PrintServerError('token', 401)):
+            self.assertFalse(error.job_refused)
+        self.assertTrue(print_server.PrintServerError('x', 400).job_refused)
+        #   Settings the print server wouldn't accept are refused when saved
+        with self.assertRaisesRegex(printing.PrintingError, "can't be sent"):
+            printing.save_settings(self.desk, {'media': 'odd size'}, self.admin)
+        printing.save_settings(self.desk, {'media': 'na_letter_8.5x11in'}, self.admin)
+
+    def test_network_jobs_recalled(self):
+        printing.connect_network(self.desk, 'printer.example', {'model': 'X'}, 'ipp://printer.example/ipp/print',
+                                 self.admin)
+        self.desk.refresh_from_db()
+        queue = self.fake_print_server(self.desk)
+        job = printing.queue('receipt', self.program, self.desk, receipt=self._receipt())
+        printing.run_network_jobs_once()
+        job.refresh_from_db()
+        self.assertEqual(job.status, 'sent')
+        #   A laptop taking over gets the job the printer was stuck on
+        token = printing.claim_for_laptop(self.desk, self.admin, take_over=True)
+        self.assertIn(mock.call('DELETE', '/queues/%s/jobs/%s-1' % (queue, queue), print_server.TIMEOUT),
+                      self.server.call_args_list)
+        job.refresh_from_db()
+        self.assertEqual((job.status, job.server_job), ('queued', ''))
+        self.assertEqual(printing.next_job_for_laptop(self.desk, token), job)
+        #   "Cancel all waiting" cancels the one at the print server too
+        printing.connect_network(self.desk, 'printer.example', {'model': 'X'}, 'ipp://printer.example/ipp/print',
+                                 self.admin)
+        self.desk.refresh_from_db()
+        job = printing.queue('receipt', self.program, self.desk, receipt=self._receipt())
+        printing.run_network_jobs_once()
+        self.assertEqual(printing.discard_waiting(self.desk, self.admin), 1)
+        job.refresh_from_db()
+        self.assertEqual(job.status, 'cancelled')
+
+    def test_trouble_shown(self):
+        printing.connect_network(self.desk, 'printer.example', {'model': 'X'}, 'ipp://printer.example/ipp/print',
+                                 self.admin)
+        printing._set_trouble(self.desk, 'Printer: Out of paper')
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+        response = self.client.post(self.onsite_url('printers_queue'), {'location': self.desk.id, 'kind': 'schedule',
+                                                                          'user': self.student.id})
+        self.assertIn('Out of paper', response.json()['message'])
+        printing.queue('receipt', self.program, self.desk, receipt=self._receipt())
+        response = self.client.get(self.onsite_url('printschedules'))
+        self.assertContains(response, 'Not printing')
+        self.assertContains(response, 'Oldest waiting job')
+
+    def test_queue_remade_if_missing_and_removed_on_take_over(self):
+        printing.connect_network(self.desk, 'printer.example', {'model': 'X'}, 'ipp://printer.example/ipp/print',
+                                 self.admin)
+        self.desk.refresh_from_db()
+        self.server.side_effect = [print_server.PrintServerError('lp: The printer or class does not exist.'),
+                                   {}, {'job': 'x-1'}]
+        self.assertEqual(printing.send_to_network_printer(self.desk, b'%PDF-1.4', 'Test'), 'x-1')
+        self.assertEqual([c[0][0] for c in self.server.call_args_list[-3:]], ['POST', 'PUT', 'POST'])
+        self.server.side_effect = None
+        #   A laptop taking over from the network printer (the setup page's
+        #   view) drops the print server's queue
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+        response = self.client.post(self.onsite_url('printers_claim'), {'location': self.desk.id, 'take_over': '1'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.server.call_args[0][:2],
+                         ('DELETE', '/queues/%s' % print_server.queue_name(self.desk.id)))
+        self.desk.refresh_from_db()
+        self.assertEqual(self.desk.mode, 'laptop')
+
+    def test_connect_older_printers(self):
+        #   The driver probe() chose goes to the print server...
+        printing.connect_network(self.desk, 'old.example', {'model': 'Old', 'driver': 'postscript'},
+                                 'ipp://old.example/ipp', self.admin)
+        self.assertEqual(self.server.call_args[1]['json']['driver'], 'postscript')
+        #   ...and a printer that takes nothing it can send is refused
+        with self.assertRaisesRegex(printing.PrintingError, "doesn't take anything"):
+            printing.connect_network(self.other, 'odd.example', {'driver': None, 'formats': ['text/plain']},
+                                     'ipp://odd.example/ipp', self.admin)
+
+    def test_connect_fails_cleanly(self):
+        self.server.side_effect = print_server.PrintServerError('lpadmin: Unable to query printer')
+        with self.assertRaisesRegex(printing.PrintingError, 'Unable to query printer'):
+            printing.connect_network(self.desk, 'printer.example', {'model': 'X'},
+                                     'ipp://printer.example/ipp/print', self.admin)
+        self.desk.refresh_from_db()
+        self.assertEqual(self.desk.mode, 'none')
+
+    def test_probe_and_page_without_print_server(self):
+        self.server.return_value = {'uri': 'ipp://p/ipp/print', 'info': {'model': 'X'}}
+        self.assertEqual(printing.probe('p'), ('ipp://p/ipp/print', {'model': 'X'}))
+        self.assertEqual(self.server.call_args[1]['params'], {'address': 'p'})
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+        self.assertContains(self.client.get(self.onsite_url('printschedules')), 'Connect network printer')
+        with override_settings(PRINT_SERVER=None):
+            response = self.client.get(self.onsite_url('printschedules'))
+            self.assertNotContains(response, 'Connect network printer')
+            self.assertContains(response, 'no print server configured')
+
+    def test_archive_and_restore(self):
+        from esp.program.templatetags.printing import print_locations
+        printing.connect_network(self.other, 'printer.example', {'model': 'X'}, 'ipp://printer.example/ipp/print',
+                                 self.admin)
+        job = printing.queue('receipt', self.program, self.other, receipt=self._receipt())
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+        archive = {'location': self.other.id, 'action': 'archive'}
+        self.client.post(self.onsite_url('printers_action'), archive)
+        self.other.refresh_from_db()
+        self.assertFalse(self.other.archived)       # jobs waiting
+        job.status = 'cancelled'
+        job.save()
+        self.client.post(self.onsite_url('printers_action'), archive)
+        self.other.refresh_from_db()
+        #   Archived: disconnected (queue removed), hidden, kept with its jobs
+        self.assertEqual((self.other.archived, self.other.mode), (True, 'none'))
+        self.assertEqual(self.server.call_args[0][:2], ('DELETE', '/queues/%s' % print_server.queue_name(self.other.id)))
+        self.assertNotIn(self.other, print_locations())
+        self.assertTrue(type(job).objects.filter(id=job.id).exists())
+        with self.assertRaises(printing.PrintingError):
+            printing.queue('schedule', self.program, self.other, user=self.student)
+        with self.assertRaises(printing.PrintingError):
+            printing.claim_for_laptop(self.other, self.admin)
+        response = self.client.get(self.onsite_url('printschedules'))
+        self.assertContains(response, 'Archived locations (1)')
+        #   A new location may reuse the name; then the old one can't come back until renamed
+        self.client.post(self.onsite_url('printers_action'), {'action': 'add_location', 'name': 'Check-in A'})
+        with self.assertRaisesRegex(printing.PrintingError, 'Another location'):
+            printing.restore(self.other, self.admin)
+        type(self.other).objects.filter(archived=False, name='Check-in A').update(name='Check-in A2')
+        self.client.post(self.onsite_url('printers_action'), {'location': self.other.id, 'action': 'restore'})
+        self.other.refresh_from_db()
+        self.assertFalse(self.other.archived)
+        with self.assertRaises(printing.PrintingError):
+            printing.archive(self.default, self.admin)
+
+    def test_test_page_pdf(self):
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+        response = self.client.get(self.onsite_url('printers_test_pdf'), {'location': self.desk.id})
+        self.assertTrue(response.content.startswith(b'%PDF'))
+
+
+class PrintServerClientTest(TestCase):
+    """ esp.utils.print_server, the website's side of the print server's API. """
+
+    def response(self, status, data):
+        reply = mock.Mock(status_code=status)
+        reply.json.return_value = data
+        return reply
+
+    @override_settings(PRINT_SERVER={'url': 'https://print.example:8631/', 'token': 'secret'})
+    def test_requests(self):
+        with mock.patch('esp.utils.print_server.requests.request',
+                        return_value=self.response(200, {'job': 'q-4'})) as call:
+            self.assertEqual(print_server.print_pdf('esp-location-3', b'%PDF-1.4', 'Receipt 4',
+                                                    {'sides': 'two-sided-long-edge'}), 'q-4')
+        (args, kwargs) = call.call_args
+        self.assertEqual(args, ('POST', 'https://print.example:8631/queues/esp-location-3/jobs'))
+        self.assertEqual(kwargs['headers'], {'Authorization': 'Bearer secret'})
+        self.assertEqual(kwargs['params'], {'title': 'Receipt 4', 'o': ['sides=two-sided-long-edge']})
+        self.assertEqual((kwargs['data'], kwargs['verify']), (b'%PDF-1.4', True))
+        #   Errors come back with the server's message, so a missing queue is recognized
+        missing = self.response(404, {'error': 'lp: The printer or class does not exist.'})
+        with mock.patch('esp.utils.print_server.requests.request', return_value=missing):
+            with self.assertRaises(print_server.PrintServerError) as raised:
+                print_server.print_pdf('esp-location-3', b'%PDF-1.4')
+        self.assertTrue(print_server.queue_missing(raised.exception))
+        with mock.patch('esp.utils.print_server.requests.request',
+                        side_effect=print_server.requests.exceptions.ConnectionError()):
+            with self.assertRaisesRegex(print_server.PrintServerError, 'reach the print server'):
+                print_server.add_queue('esp-location-3', 'ipp://10.0.0.9/ipp/print')
+
+    @override_settings(PRINT_SERVER={'url': 'https://print.example:8631/', 'token': 'secret'})
+    def test_client_keeps_the_status(self):
+        reply = mock.Mock(status_code=400)
+        reply.json.return_value = {'error': 'Bad title or option.'}
+        with mock.patch('esp.utils.print_server.requests.request', return_value=reply):
+            with self.assertRaises(print_server.PrintServerError) as raised:
+                print_server.print_pdf('esp-location-3', b'%PDF-1.4')
+        self.assertEqual(raised.exception.status, 400)
+        self.assertTrue(raised.exception.job_refused)
+
+    @override_settings(PRINT_SERVER=None)
+    def test_not_configured(self):
+        self.assertFalse(print_server.configured())
+        with self.assertRaisesRegex(print_server.PrintServerError, 'PRINT_SERVER'):
+            print_server.probe('10.0.0.9')
+
+
+def load_print_server_script():
+    """ deploy/print_server/esp-print-server, which runs on the print server
+    (not part of the website), loaded as a module. """
+    import importlib.machinery
+    import importlib.util
+    import os
+    path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', 'deploy', 'print_server',
+                        'esp-print-server')
+    loader = importlib.machinery.SourceFileLoader('esp_print_server', os.path.normpath(path))
+    module = importlib.util.module_from_spec(importlib.util.spec_from_loader('esp_print_server', loader))
+    loader.exec_module(module)
+    return module
+
+
+class PrintServerScriptTest(TestCase):
+    """ The print server itself, run on localhost without TLS, with CUPS
+    and printers faked. """
+
+    def setUp(self):
+        import threading
+        self.script = load_print_server_script()
+        self.httpd = self.script.ThreadingHTTPServer(('127.0.0.1', 0), self.script.Handler)
+        self.httpd.token = 'secret'
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+        self.addCleanup(self.httpd.server_close)
+        self.addCleanup(self.httpd.shutdown)
+        self.url = 'http://127.0.0.1:%d' % self.httpd.server_address[1]
+        self.run_cups = mock.patch.object(self.script, 'run',
+                                          return_value='request id is esp-location-2-7 (1 file(s))').start()
+        #   (what a new queue supports comes from this host's CUPS)
+        mock.patch.object(self.script, 'queue_info', return_value={'sides': ['one-sided']}).start()
+        self.addCleanup(mock.patch.stopall)
+
+    def call(self, method, path, token='secret', **kwargs):
+        import requests
+        headers = {'Authorization': 'Bearer %s' % token} if token else {}
+        response = requests.request(method, self.url + path, headers=headers, timeout=10, **kwargs)
+        return (response.status_code, response.json())
+
+    def test_api(self):
+        self.assertEqual(self.call('GET', '/queues/esp-location-2', token='wrong')[0], 401)
+        self.assertEqual(self.call('GET', '/queues/esp-location-2', token=None)[0], 401)
+        #   Only esp-location-<n> queues, ipp(s) printer URIs, simple options, PDFs
+        self.assertEqual(self.call('DELETE', '/queues/somebody-elses-printer')[0], 400)
+        self.assertEqual(self.call('PUT', '/queues/esp-location-2', json={'uri': 'file:/etc/passwd'})[0], 400)
+        self.assertEqual(self.call('POST', '/queues/esp-location-2/jobs', data=b'not a pdf')[0], 400)
+        self.assertEqual(self.call('POST', '/queues/esp-location-2/jobs', data=b'%PDF-1.4',
+                                   params={'o': 'sides=two sided; rm -rf'})[0], 400)
+        self.run_cups.assert_not_called()
+        self.assertEqual(self.call('PUT', '/queues/esp-location-2', json={'uri': 'ipp://10.0.0.9/ipp/print',
+                                                                          'description': 'Help desk'}),
+                         (200, {'queue': 'esp-location-2', 'info': {'sides': ['one-sided']}}))
+        self.assertEqual(self.run_cups.call_args[0][0],
+                         ['lpadmin', '-p', 'esp-location-2', '-E', '-v', 'ipp://10.0.0.9/ipp/print', '-m',
+                          'everywhere', '-D', 'Help desk', '-o', 'printer-error-policy=retry-current-job'])
+        #   An older printer gets a generic driver; only known drivers
+        self.call('PUT', '/queues/esp-location-2', json={'uri': 'ipp://10.0.0.9/ipp', 'driver': 'postscript'})
+        self.assertIn('drv:///sample.drv/generic.ppd', [arg for c in self.run_cups.call_args_list for arg in c[0][0]])
+        self.assertEqual(self.call('PUT', '/queues/esp-location-2', json={'uri': 'ipp://10.0.0.9/ipp',
+                                                                          'driver': '/etc/passwd'})[0], 400)
+        self.assertEqual(self.call('POST', '/queues/esp-location-2/jobs', data=b'%PDF-1.4',
+                                   params={'title': 'Receipt 4', 'o': ['sides=two-sided-long-edge']}),
+                         (200, {'job': 'esp-location-2-7'}))
+        (args, kwargs) = self.run_cups.call_args
+        self.assertEqual(args[0], ['lp', '-d', 'esp-location-2', '-t', 'Receipt 4', '-o',
+                                   'sides=two-sided-long-edge'])
+        self.assertEqual(kwargs['stdin'], b'%PDF-1.4')
+        self.run_cups.side_effect = self.script.Refused(404, 'lp: The printer or class does not exist.')
+        self.assertEqual(self.call('DELETE', '/queues/esp-location-2'),
+                         (404, {'error': 'lp: The printer or class does not exist.'}))
+
+    def test_jobs(self):
+        script = self.script
+        job = {script.JOB_ATTRIBUTES: {'job-state': [5], 'job-state-reasons': ['job-printing']}}
+        printer = {script.PRINTER_ATTRIBUTES: {'printer-state': [4], 'printer-state-reasons': ['media-empty-error'],
+                                               'printer-state-message': ['Out of paper']}}
+        with mock.patch.object(script, 'ipp_post', side_effect=[(0, job), (0, printer)]) as ipp:
+            self.assertEqual(self.call('GET', '/queues/esp-location-2/jobs/esp-location-2-7'), (200, {
+                'state': 'processing', 'reasons': ['job-printing'], 'printer_state': 'printing',
+                'printer_reasons': ['media-empty-error'], 'printer_message': 'Out of paper'}))
+        self.assertEqual([c[0][0] for c in ipp.call_args_list],
+                         ['http://localhost:631/jobs/7', 'http://localhost:631/printers/esp-location-2'])
+        with mock.patch.object(script, 'ipp_post', return_value=(script.NOT_FOUND, {})):
+            (status, data) = self.call('GET', '/queues/esp-location-2/jobs/esp-location-2-7')
+        self.assertEqual(status, 404)
+        self.assertIn('CUPS has no job', data['error'])
+        #   Only that queue's jobs
+        self.assertEqual(self.call('GET', '/queues/esp-location-2/jobs/esp-location-3-7')[0], 400)
+        self.assertEqual(self.call('DELETE', '/queues/esp-location-2/jobs/7; rm')[0], 400)
+        self.assertEqual(self.call('DELETE', '/queues/esp-location-2/jobs/esp-location-2-7'),
+                         (200, {'job': 'esp-location-2-7'}))
+        self.assertEqual(self.run_cups.call_args[0][0], ['cancel', 'esp-location-2-7'])
+        #   Cancelling a finished job is fine
+        self.run_cups.side_effect = script.Refused(502, 'cancel: Job #7 is already completed - can\'t cancel.')
+        self.assertEqual(self.call('DELETE', '/queues/esp-location-2/jobs/esp-location-2-7')[0], 200)
+
+    def test_model_drivers(self):
+        script = self.script
+        lpinfo = ('drv:///sample.drv/generic.ppd Generic PostScript Printer\n'
+                  'postscript-hp:0/ppd/hplip/HP/hp-color_laserjet_cp4520_series-ps.ppd '
+                  'HP Color LaserJet CP4020-CP4520 Series Postscript (recommended)\n')
+        snmp = ('network socket://10.0.0.9:9100 "HP Color LaserJet CP4520 Series" "x" '
+                '"MFG:Hewlett-Packard;CMD:PJL,PCL,POSTSCRIPT;MDL:HP Color LaserJet CP4520 Series;" ""\n')
+        self.run_cups.side_effect = lambda args, stdin=None: lpinfo if args[0] == 'lpinfo' else snmp
+        self.assertEqual(script.snmp_device_id('10.0.0.9')['MDL'], 'HP Color LaserJet CP4520 Series')
+        ppd = 'postscript-hp:0/ppd/hplip/HP/hp-color_laserjet_cp4520_series-ps.ppd'
+        self.assertEqual(script.model_ppd('HP Color LaserJet CP4520 Series'), ppd)
+        self.assertIsNone(script.model_ppd('Canon LBP6230/6240'))
+        #   An IPP 1.1 PostScript printer gets its model's driver
+        reply = (0, {script.PRINTER_ATTRIBUTES: {'document-format-supported': ['application/postscript']}})
+        with mock.patch.object(script, 'ipp_post', side_effect=[(script.VERSION_NOT_SUPPORTED, {}), reply]):
+            info = script.probe('10.0.0.9')['info']
+        self.assertEqual((info['driver'], info['model']), ('model:' + ppd, 'HP Color LaserJet CP4520 Series'))
+        #   Only installed drivers; a duplex unit is marked fitted
+        self.run_cups.side_effect = lambda args, stdin=None: (
+            lpinfo if args[0] == 'lpinfo' else 'HPOption_Duplexer/Duplex Unit: True *False\n')
+        script.create_queue('esp-location-2', 'ipp://10.0.0.9/ipp', 'Desk', 'model:' + ppd)
+        self.assertIn(['lpadmin', '-p', 'esp-location-2', '-o', 'HPOption_Duplexer=True'],
+                      [c[0][0] for c in self.run_cups.call_args_list])
+        with self.assertRaises(script.Refused):
+            script.create_queue('esp-location-2', 'ipp://10.0.0.9/ipp', 'Desk', 'model:/etc/passwd')
+
+    def test_choose_driver_and_ipp_1_1(self):
+        script = self.script
+        self.assertEqual(script.choose_driver(['image/urf', 'application/pdf'], True), 'everywhere')
+        self.assertEqual(script.choose_driver(['application/pdf'], False), None)
+        self.assertEqual(script.choose_driver(['text/plain', 'application/postscript', 'application/vnd.hp-PCL'],
+                                              False), 'postscript')
+        self.assertEqual(script.choose_driver(['application/vnd.hp-PCL'], False), 'pcl')
+        #   A printer refusing IPP 2.0 is asked again in 1.1
+        replies = [(script.VERSION_NOT_SUPPORTED, {}),
+                   (0, {script.PRINTER_ATTRIBUTES: {'document-format-supported': ['application/postscript']}})]
+        with mock.patch.object(script, 'ipp_post', side_effect=replies) as ipp:
+            result = script.probe('10.0.0.9')
+        self.assertEqual(result['info']['driver'], 'postscript')
+        self.assertEqual([c[0][1][:2] for c in ipp.call_args_list], [b'\x02\x00', b'\x01\x01'])
+
+    def test_probe(self):
+        import struct
+        script = self.script
+        self.assertEqual(script.normalize_address('10.1.2.3'), 'ipp://10.1.2.3/ipp/print')
+        self.assertEqual(script.normalize_address('printer.mit.edu:8631'), 'ipp://printer.mit.edu:8631/ipp/print')
+        self.assertEqual(script.http_url('ipps://p.mit.edu/ipp/print'), 'https://p.mit.edu:631/ipp/print')
+        with self.assertRaises(script.Refused):
+            script.normalize_address('not a printer!')
+        #   The request is valid IPP (a request's op-id sits where a reply's status does)
+        (status, groups) = script.decode_response(script.encode_request('ipp://h/ipp/print', request_id=9))
+        self.assertEqual(status, script.GET_PRINTER_ATTRIBUTES)
+        self.assertEqual(groups[script.OPERATION_ATTRIBUTES]['printer-uri'], ['ipp://h/ipp/print'])
+
+        def attr(tag, name, values):
+            out = b''
+            for (i, value) in enumerate(values if isinstance(values, list) else [values]):
+                data = struct.pack('>i', value) if isinstance(value, int) else value.encode('utf-8')
+                key = name.encode('utf-8') if i == 0 else b''
+                out += struct.pack('>BH', tag, len(key)) + key + struct.pack('>H', len(data)) + data
+            return out
+        reply = struct.pack('>BBHI', 2, 0, 0, 1) + struct.pack('>B', script.PRINTER_ATTRIBUTES)
+        reply += attr(0x41, 'printer-make-and-model', 'Brother HL-L2350DW')
+        reply += attr(script.ENUM, 'printer-state', 3)
+        reply += attr(0x49, 'document-format-supported', ['image/urf', 'image/pwg-raster'])
+        reply += attr(script.KEYWORD, 'sides-supported', ['one-sided', 'two-sided-long-edge'])
+        reply += attr(script.ENUM, 'print-quality-supported', [4, 5])
+        #   a collection is skipped
+        reply += struct.pack('>BH', script.BEG_COLLECTION, len(b'media-col-default')) + b'media-col-default' + \
+            struct.pack('>H', 0)
+        reply += attr(0x4A, '', 'media-size')
+        reply += struct.pack('>BHH', script.END_COLLECTION, 0, 0)
+        reply += struct.pack('>B', script.END_OF_ATTRIBUTES)
+        info = script.summarize(script.decode_response(reply)[1][script.PRINTER_ATTRIBUTES])
+        self.assertEqual((info['model'], info['state'], info['formats'], info['qualities']),
+                         ('Brother HL-L2350DW', 'idle', ['image/urf', 'image/pwg-raster'], ['normal', 'high']))
+        #   Through the API
+        with mock.patch.object(script, 'probe', return_value={'uri': 'ipp://p/ipp/print', 'info': info}) as probe:
+            self.assertEqual(self.call('GET', '/probe', params={'address': 'p'})[1]['info']['model'],
+                             'Brother HL-L2350DW')
+        probe.assert_called_with('p')

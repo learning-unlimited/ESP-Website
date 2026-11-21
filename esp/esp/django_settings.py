@@ -74,6 +74,10 @@ LOGIN_REDIRECT_URL = '/'
 # esp-dev use this default (owned by www-data, mode 700), and the Vagrant dev VM does too: fab creates it
 # (see ensure_environment() in fabfile.py).
 TREASURY_DATA_DIR = '/var/lib/esp-treasury'
+# Where PDFs uploaded for printing (/manage/printpdf) are kept until they print.  Like TREASURY_DATA_DIR: not
+# under MEDIA_ROOT, outside the checkout, writable by the web server and the print worker (fab creates it on
+# the dev VM).
+PRINT_UPLOAD_DIR = '/var/lib/esp-print-uploads'
 # The treasurer's ASCII-armored OpenPGP public key, which browsers encrypt scans to.  None means
 # <TREASURY_DATA_DIR>/treasurer.asc.
 TREASURY_PUBLIC_KEY_FILE = None

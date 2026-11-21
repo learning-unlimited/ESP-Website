@@ -1,0 +1,43 @@
+{% extends "main.html" %}
+
+{% block title %}Print PDFs{% endblock %}
+{% block content_title %}Print PDFs{% endblock %}
+
+{% block stylesheets %}{{ block.super }}<link rel="stylesheet" type="text/css" href="/media/styles/dayof.css" />{% endblock %}
+
+{% block content %}
+
+{% include "program/modules/dayof/messages.html" %}
+
+<p>Prints PDFs on a day-of print location, through the same queue as schedules and receipts. Each program's onsite
+Printers page connects the locations to printers.</p>
+
+<form method="post" enctype="multipart/form-data" class="dayof-form well">{% csrf_token %}
+  <div class="control-group"><label for="pdf-files">PDF files (up to {{ max_mb }} MB altogether)</label>
+    <input type="file" id="pdf-files" name="files" accept="application/pdf,.pdf" multiple required /></div>
+  <div class="control-group"><label for="pdf-location">Print to</label>
+    <select id="pdf-location" name="location" class="input-xlarge">
+      {% for l in locations %}<option value="{{ l.id }}">{{ l.name }}{% if l.is_default %} (default){% endif %}{% if l.mode == 'none' %} &mdash; nothing connected{% endif %}</option>{% endfor %}
+    </select></div>
+  <div class="control-group"><label for="pdf-copies">Copies</label>
+    <input type="number" id="pdf-copies" name="copies" class="input-mini" min="1" max="999" value="1" /></div>
+  <p><button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-print" aria-hidden="true"></span> Print</button></p>
+</form>
+
+<script type="text/javascript">
+(function () {
+    // The server (nginx) refuses a bigger upload with a bare error page, so check here first
+    var form = document.querySelector('form.dayof-form'), input = document.getElementById('pdf-files');
+    form.addEventListener('submit', function (e) {
+        var total = 0;
+        for (var i = 0; i < input.files.length; i++) { total += input.files[i].size; }
+        if (total > {{ max_mb }} * 1024 * 1024) {
+            e.preventDefault();
+            input.setCustomValidity('These add up to more than {{ max_mb }} MB; send them in smaller batches.');
+            input.reportValidity();
+        }
+    });
+    input.addEventListener('change', function () { input.setCustomValidity(''); });
+})();
+</script>
+{% endblock %}

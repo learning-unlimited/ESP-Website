@@ -48,6 +48,7 @@
   <a class="btn" href="{{ urls.back }}"><span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span> Back</a>
   {% if urls.remake and not content.void %}<a class="btn" href="{{ urls.remake }}"><span class="glyphicon glyphicon-repeat" aria-hidden="true"></span> Remake this receipt</a>{% endif %}
 </div>
+<div class="well well-small">{% include "program/modules/dayof/print_control.html" with kind="receipt" object_id=receipt.id label="Print receipt" %}</div>
 
 {% if not content.void %}
 <form method="post" action="{{ urls.void }}">

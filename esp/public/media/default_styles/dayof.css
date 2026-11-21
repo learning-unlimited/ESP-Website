@@ -1,4 +1,4 @@
-/* Day-of pages (troubleshooting, help desk sales, receipts, card payment).
+/* Day-of pages (troubleshooting, help desk sales, printers, receipts, card payment).
    Layered on the site's Bootstrap 3 classes; only what Bootstrap lacks lives here. */
 
 
@@ -30,6 +30,14 @@ details.dayof-section details > summary { cursor: pointer; }
 .dayof-ledger { margin-bottom: 0; }
 .dayof-ledger td:first-child { width: 100%; }
 .dayof-ledger .dayof-amount, .dayof-ledger th.text-right { text-align: right; white-space: nowrap; }
+
+/* Printers */
+.pr-err, .pr-probe-result.pr-err { color: #a94442; }
+.dayof-printer-heading .label { margin-left: 6px; font-weight: normal; }
+.dayof-printer-address { max-width: 100%; }
+
+/* Laptop printing */
+.lp-err { color: #a94442; }
 
 /* Help desk sales */
 .dayof-items td { vertical-align: middle !important; }

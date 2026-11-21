@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+<title>On-Site Schedule Printer</title>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-migrate-3.3.2.{% if not settings.DEBUG %}min.{% endif %}js"></script>
+<script type="text/javascript" src="/media/scripts/common.js"></script>
+</head>
+<body>
+{% csrf_token %}
+<div id="page_rest">
+<h1 id="banner">I AM THE THING THAT MAKES SCHEDULE PRINTING WORK, DON'T TOUCH ME</h1>
+<p>Printing for: <b>{{ location.name }}</b></p>
+<h2 id="stopped" style="color: #a33; display: none"></h2>
+<div style="height: 20em; overflow-y: auto; border: 1px solid black; padding: 0.5em">
+<div id="log">Log of print requests (view <a href="/admin/utils/printrequest/?o=-3">all print requests on the admin panel</a>):</div>
+</div>
+<p><button type="button" id="release">Stop printing here</button></p>
+</div>
+<iframe id="auto_reload_blob" src="about:blank" style="visibility: hidden"></iframe>
+<script type="text/javascript">
+(function ($) {
+    // The token comes from printers_laptop (claimed there) in the URL fragment, so a reload keeps printing.
+    // Closing the page doesn't release the location at once: the server frees it once this page stops
+    // checking in (60 seconds), or someone can take over from the Printers page.
+    var LOCATION = {{ location.id }};
+    var BASE = '/onsite/{{ program.getUrlBase }}/';
+    var PRINTERS_URL = '{{ printers_url|escapejs }}';
+    var NAME = '{{ location.name|escapejs }}';
+    var match = window.location.hash.match(/token=([^&]+)/);
+    var token = match ? decodeURIComponent(match[1]) : null;
+    var polling = false, timer = null;
+
+    // Browsers slow a background tab's timers to about once a minute, which would let the
+    // location auto-release (60 seconds without a check-in); a worker's timers aren't slowed.
+    var worker = null, nextTick = 0, tickCallbacks = {};
+    try {
+        worker = new Worker(URL.createObjectURL(new Blob(
+            ['onmessage = function (e) { setTimeout(function () { postMessage(e.data.id); }, e.data.ms); };'],
+            {type: 'text/javascript'})));
+        worker.onmessage = function (e) { var f = tickCallbacks[e.data]; delete tickCallbacks[e.data]; if (f) { f(); } };
+    } catch (e) { worker = null; }
+    function later(f, ms) {
+        if (!worker) { return setTimeout(f, ms); }
+        var id = ++nextTick;
+        tickCallbacks[id] = f;
+        worker.postMessage({id: id, ms: ms});
+        return id;
+    }
+    function cancel(id) { if (worker) { delete tickCallbacks[id]; } else { clearTimeout(id); } }
+
+    function csrf() {
+        var v = $('input[name=csrfmiddlewaretoken]').first().val();
+        if (v) { return v; }
+        var m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : '';
+    }
+    function post(view, data) {
+        return $.ajax({url: BASE + view, type: 'POST', data: data, headers: {'X-CSRFToken': csrf()}});
+    }
+    function log(text, isErr) {
+        var entry = $('<div>').text('[' + new Date().toLocaleTimeString() + '] ' + text);
+        if (isErr) { entry.css('color', '#a33'); }
+        entry.insertAfter('#log');
+    }
+    function stopAll(message) {
+        polling = false;
+        cancel(timer);
+        token = null;
+        $('#stopped').text(message).show();
+        $('#release').text('Back to Printers');
+    }
+
+    function poll() {
+        if (!polling) { return; }
+        post('printers_poll', {location: LOCATION, token: token}).done(function (r) {
+            if (r.job) { printJob(r); } else { timer = later(poll, 5000); }
+        }).fail(function (xhr) {
+            if (xhr.status === 409) {
+                var msg = 'This laptop is no longer printing for ' + NAME + '.';
+                try { msg = JSON.parse(xhr.responseText).stop || msg; } catch (e) {}
+                stopAll(msg);
+            } else {
+                log('Could not reach the server; trying again.', true);
+                timer = later(poll, 5000);
+            }
+        });
+    }
+
+    function finish(job, ok, error, title) {
+        post('printers_done', {location: LOCATION, token: token || '', job: job, ok: ok ? 1 : 0, error: error || ''}).always(function () {
+            timer = later(poll, 1000);
+        });
+        log((ok ? 'Executed print request #' + job + ': ' : 'FAILED print request #' + job + ': ') + title +
+            (error ? ' (' + error + ')' : ''), !ok);
+    }
+
+    function printJob(r) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', r.pdf + '&q=' + new Date().getTime());
+        xhr.responseType = 'blob';
+        xhr.onload = function () {
+            if (xhr.status === 200 && xhr.response && xhr.response.size > 0) {
+                var blob = new Blob([xhr.response], {type: 'application/pdf'});
+                var frame = document.getElementById('auto_reload_blob');
+                frame.src = URL.createObjectURL(blob);
+                // The setTimeout is needed because if we try to print
+                // immediately, the previous schedule is printed instead.
+                var left = Math.max(1, r.copies || 1);
+                var printOne = function () {
+                    try {
+                        if (!frame.contentWindow) { throw new Error('no print frame'); }
+                        frame.contentWindow.print();
+                    } catch (e) {
+                        finish(r.job, false, String(e), r.title);
+                        return;
+                    }
+                    left -= 1;
+                    if (left > 0) { later(printOne, 1000); } else { finish(r.job, true, '', r.title); }
+                };
+                later(printOne, 1000);
+            } else {
+                finish(r.job, false, 'Could not download the document (HTTP ' + xhr.status + ').', r.title);
+            }
+        };
+        xhr.onerror = function () { finish(r.job, false, 'Could not download the document.', r.title); };
+        xhr.send();
+    }
+
+    $('#release').on('click', function () {
+        if (!token) { window.location = PRINTERS_URL; return; }
+        var t = token;
+        stopAll('Stopped printing for ' + NAME + '.');
+        post('printers_release', {location: LOCATION, token: t || ''}).always(function () {
+            window.location = PRINTERS_URL;
+        });
+    });
+
+    if (!token) {
+        stopAll('Not printing: start printing from the Printers page.');
+    } else {
+        log('Started printing for ' + NAME + '.');
+        polling = true;
+        poll();
+    }
+})(jQuery);
+</script>
+</body>
+</html>

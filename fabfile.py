@@ -213,9 +213,21 @@ def ensure_environment():
     # created by anything else. `install -d` is an idempotent mkdir -p that also
     # sets the owner and mode.
     sudo("install -d -o vagrant -g vagrant -m 700 /var/lib/esp-treasury")
+    # PDFs uploaded for printing (PRINT_UPLOAD_DIR), likewise kept out of public media
+    sudo("install -d -o vagrant -g vagrant -m 700 /var/lib/esp-print-uploads")
     # Scanning needs a public key to encrypt to. If there isn't one, make a throwaway
     # (insecure, and labelled so) pair so a dev VM works out of the box. No-op otherwise.
     run(env.rbase + "deploy/make_dev_treasury_key.sh")
+
+    ensure_print_worker()
+
+    # Keep the clock right. Vagrant boxes ship with NTP off and the VM's clock
+    # drifts (e.g. across host suspends), which breaks TLS to services with
+    # new certificates ("certificate is not yet valid").
+    with settings(hide("everything"), warn_only=True):
+        ntp = sudo("timedatectl show -p NTP --value").strip()
+    if ntp != "yes":
+        sudo("timedatectl set-ntp true")
 
     # Are we running emptydb() or loaddb() right now? If so, skip the database
     # check.
@@ -427,6 +439,41 @@ def dumpdb(filename="devsite_django.sql"):
     sudo("PGHOST=%s PGPORT=%s PGDATABASE=%s PGUSER=%s PGPASSWORD=%s pg_dump > %s%s" %
          (pipes.quote(default_db['HOST']), pipes.quote(default_db['PORT']), pipes.quote(env.dbname),
          pipes.quote(default_db['USER']), pipes.quote(default_db['PASSWORD']), pipes.quote(env.rbase), pipes.quote(filename)))
+
+def ensure_print_worker():
+    """
+    Run the day-of print worker (manage.py print_worker, which sends print jobs
+    to network printers) as a systemd service, as on esp-web: the same unit
+    (deploy/config_templates/esp-print-worker.service), but as vagrant, from the
+    synced checkout, and restarting itself when the code changes. Idempotent.
+    """
+    import io
+    with open(join(env.lbase, "deploy", "config_templates", "esp-print-worker.service")) as f:
+        unit = f.read()
+    for (prod, dev) in (("User=www-data", "User=vagrant"),
+                        ("Group=www-data", "Group=vagrant"),
+                        ("WorkingDirectory=/esp/esp", "WorkingDirectory=" + env.rbase + "esp"),
+                        ("ExecStart=/esp/env/bin/python manage.py print_worker",
+                         # manage.py looks for <checkout>/env unless VIRTUAL_ENV is set
+                         "Environment=VIRTUAL_ENV=" + env.venv.rstrip("/") + "\n" +
+                         "ExecStart=" + env.venv + "bin/python manage.py print_worker --autoreload")):
+        if prod not in unit:
+            raise ValueError("esp-print-worker.service has changed; update ensure_print_worker() in fabfile.py.")
+        unit = unit.replace(prod, dev)
+    path = "/etc/systemd/system/esp-print-worker.service"
+    with settings(hide("everything"), warn_only=True):
+        current = sudo("cat " + path)
+    if current.replace("\r\n", "\n").strip() != unit.strip():
+        put(io.StringIO(unit), path, use_sudo=True, mode=0o644)
+        sudo("systemctl daemon-reload")
+        sudo("systemctl enable esp-print-worker", quiet=True)
+        sudo("systemctl restart esp-print-worker")
+    else:
+        with settings(hide("everything"), warn_only=True):
+            active = sudo("systemctl is-active esp-print-worker").strip()
+        if active != "active":
+            sudo("systemctl enable esp-print-worker", quiet=True)
+            sudo("systemctl restart esp-print-worker")
 
 def gen_password(length):
     return "".join([random.choice(string.ascii_letters + string.digits) for i in range(length)])

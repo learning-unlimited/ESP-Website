@@ -1,0 +1,550 @@
+#!/usr/bin/env python3
+"""The website's print server (see README.md here): a small HTTPS API in
+front of this host's CUPS, so the web server needs no CUPS.
+
+Every request needs "Authorization: Bearer <token>" (the token is in
+/etc/esp-print/token). Queues must be named esp-location-<number>.
+
+    GET    /probe?address=<IP, hostname[:port] or ipp(s):// URI>
+                                  asks the printer what it is and supports (IPP
+                                  Get-Printer-Attributes, in IPP 2.0 or, for older printers,
+                                  1.1); replies {"uri": ..., "info": {...}}, where info["driver"]
+                                  is the driver a queue for it should use (see DRIVERS), or null
+                                  if it takes nothing CUPS can send it
+    PUT    /queues/<queue>        JSON {"uri": "ipp://...", "description": "...", "driver": "..."}
+                                  creates or updates the queue: driverless (IPP Everywhere) by
+                                  default, or with the model's own driver or a generic PostScript
+                                  or PCL one for printers that aren't (e.g. IPP 1.1 only);
+                                  replies {"queue": ..., "info": what the queue supports};
+                                  a job the printer can't take (off, out of paper) stays first in
+                                  line and is retried until it prints or is cancelled
+    DELETE /queues/<queue>        deletes the queue and its waiting jobs
+    POST   /queues/<queue>/jobs   body: the PDF; query: title=..., o=name=value (repeatable)
+                                  prints it (lp); replies {"job": "<queue>-<n>"}
+    GET    /queues/<queue>/jobs/<job>
+                                  the job's state in CUPS and its printer's, as {"state":
+                                  "pending|held|processing|stopped|canceled|aborted|completed",
+                                  "reasons": [...], "printer_state": ..., "printer_reasons": [...],
+                                  "printer_message": "..."}
+    DELETE /queues/<queue>/jobs/<job>
+                                  cancels the job (fine if it already finished)
+    GET    /queues/<queue>        lpstat -l -p <queue>, as {"status": "..."}
+
+Errors reply {"error": "..."}: 400 for a bad request, 401 without the
+token, 404 when the queue doesn't exist, 502 when CUPS fails.
+
+Standard library only. Configuration (environment, or the systemd unit):
+ESP_PRINT_LISTEN (default 0.0.0.0:8631), ESP_PRINT_TOKEN_FILE
+(/etc/esp-print/token), ESP_PRINT_CERT and ESP_PRINT_KEY (the TLS
+certificate and key).
+"""
+import hmac
+import json
+import os
+import random
+import re
+import ssl
+import struct
+import subprocess
+import sys
+import traceback
+import urllib.error
+import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlsplit
+
+QUEUE = re.compile(r'^esp-location-\d{1,9}$')
+JOB = re.compile(r'^esp-location-\d{1,9}-\d{1,9}$')
+URI = re.compile(r'^ipps?://[A-Za-z0-9.:\[\]_-]+(/[A-Za-z0-9._/~-]*)?$')
+OPTION = re.compile(r'^[a-z][a-z0-9-]{0,40}=[A-Za-z0-9._-]{1,60}$')
+TEXT = re.compile(r'^[^\x00-\x1f]{0,100}$')
+MAX_PDF = 50 * 1024 * 1024
+TIMEOUT = 90
+
+
+class Refused(Exception):
+    def __init__(self, status, message):
+        super().__init__(message)
+        self.status = status
+
+
+def run(args, stdin=None):
+    try:
+        result = subprocess.run(args, input=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                timeout=TIMEOUT)
+    except subprocess.TimeoutExpired:
+        raise Refused(502, '%s took more than %d seconds.' % (args[0], TIMEOUT))
+    if result.returncode != 0:
+        message = (result.stderr or result.stdout).decode('utf-8', 'replace').strip() or '%s failed.' % args[0]
+        missing = 'does not exist' in message or 'Invalid destination' in message or 'not found' in message.lower()
+        raise Refused(404 if missing else 502, message)
+    return result.stdout.decode('utf-8', 'replace')
+
+
+#   Asking a printer what it is (IPP Get-Printer-Attributes, RFC 8010/8011)
+
+GET_PRINTER_ATTRIBUTES = 0x000B
+GET_JOB_ATTRIBUTES = 0x0009
+NOT_FOUND = 0x0406
+OPERATION_ATTRIBUTES = 0x01
+JOB_ATTRIBUTES = 0x02
+END_OF_ATTRIBUTES = 0x03
+PRINTER_ATTRIBUTES = 0x04
+INTEGER, BOOLEAN, ENUM = 0x21, 0x22, 0x23
+RESOLUTION, RANGE, BEG_COLLECTION, END_COLLECTION = 0x32, 0x33, 0x34, 0x37
+IPP_NAME, KEYWORD, IPP_URI, CHARSET, LANGUAGE = 0x42, 0x44, 0x45, 0x47, 0x48
+QUALITY_NAMES = {3: 'draft', 4: 'normal', 5: 'high'}
+PRINTER_ATTRIBUTE_NAMES = [
+    'printer-make-and-model', 'printer-state', 'printer-state-reasons', 'printer-name',
+    'document-format-supported', 'sides-supported', 'print-color-mode-supported',
+    'print-quality-supported', 'media-supported', 'media-ready', 'print-scaling-supported',
+]
+PROBE_TIMEOUT = 10
+VERSION_NOT_SUPPORTED = 0x0503
+
+#   lpadmin -m for each driver a queue can use. "everywhere" (IPP Everywhere)
+#   needs an IPP 2.0 printer that takes PDF or a raster format; older printers
+#   that take PostScript or PCL get CUPS's generic drivers, and CUPS converts
+#   PDFs for them.
+DRIVERS = {
+    'everywhere': 'everywhere',
+    'postscript': 'drv:///sample.drv/generic.ppd',
+    'pcl': 'drv:///sample.drv/generpcl.ppd',
+}
+DRIVERLESS_FORMATS = ('application/pdf', 'image/pwg-raster', 'image/urf')
+#   Or "model:<PPD name>" (as lpinfo -m lists it): the maker's own driver for
+#   the model, which offers its real options (color, duplex, trays). probe()
+#   picks one when SNMP says what the printer is and a PostScript PPD for it
+#   is installed (e.g. Ubuntu's printer-driver-postscript-hp).
+MODEL_DRIVER = re.compile(r'^model:([A-Za-z0-9._:/+-]{1,200})$')
+#   Installable options that say a duplex unit is fitted, set on new queues so
+#   two-sided printing is offered (printers without one print one-sided)
+DUPLEX_UNIT_OPTIONS = ('HPOption_Duplexer', 'Option1', 'Duplexer', 'OptionDuplex')
+SNMP_BACKEND = '/usr/lib/cups/backend/snmp'
+
+
+def normalize_address(address):
+    """ What staff type (an IP, a hostname, optionally :port, or a full
+    ipp:// / ipps:// URI) as a printer URI. """
+    address = (address or '').strip()
+    if not address:
+        raise Refused(400, 'Enter the printer\'s address.')
+    if re.match(r'^ipps?://', address, re.I):
+        uri = address
+    elif re.match(r'^[A-Za-z0-9.\-]+(:\d+)?$', address):
+        uri = 'ipp://%s/ipp/print' % address
+    else:
+        raise Refused(400, 'That doesn\'t look like a printer address (an IP like 10.1.2.3 or a hostname).')
+    if not URI.match(uri):
+        raise Refused(400, 'That doesn\'t look like a printer address.')
+    return uri
+
+
+def http_url(uri):
+    """ The HTTP(S) URL to POST to for an ipp(s):// printer URI. """
+    parts = urlsplit(uri)
+    host = parts.hostname or ''
+    if ':' in host:
+        host = '[%s]' % host        # IPv6
+    try:
+        port = parts.port or 631
+    except ValueError:
+        raise Refused(400, 'Bad port in the printer address.')
+    return '%s://%s:%d%s' % ('https' if parts.scheme.lower() == 'ipps' else 'http', host, port,
+                             parts.path or '/ipp/print')
+
+
+def ipp_attr(tag, name, values):
+    if not isinstance(values, (list, tuple)):
+        values = [values]
+    out = b''
+    for (i, value) in enumerate(values):
+        data = value.encode('utf-8')
+        key = name.encode('utf-8') if i == 0 else b''
+        out += struct.pack('>BH', tag, len(key)) + key + struct.pack('>H', len(data)) + data
+    return out
+
+
+def encode_request(uri, request_id=None, operation=GET_PRINTER_ATTRIBUTES, target='printer-uri',
+                   requested=PRINTER_ATTRIBUTE_NAMES, version=(2, 0)):
+    body = struct.pack('>BBHI', version[0], version[1], operation, request_id or random.randint(1, 2 ** 31 - 1))
+    body += struct.pack('>B', OPERATION_ATTRIBUTES)
+    body += ipp_attr(CHARSET, 'attributes-charset', 'utf-8')
+    body += ipp_attr(LANGUAGE, 'attributes-natural-language', 'en')
+    body += ipp_attr(IPP_URI, target, uri)
+    body += ipp_attr(IPP_NAME, 'requesting-user-name', 'esp')
+    body += ipp_attr(KEYWORD, 'requested-attributes', requested)
+    return body + struct.pack('>B', END_OF_ATTRIBUTES)
+
+
+def ipp_post(url, body, context=None):
+    """ (status, groups) of an IPP request POSTed to url. """
+    request = urllib.request.Request(url, data=body, headers={'Content-Type': 'application/ipp'})
+    try:
+        with urllib.request.urlopen(request, timeout=PROBE_TIMEOUT, context=context) as response:
+            return decode_response(response.read())
+    except urllib.error.HTTPError as e:
+        raise Refused(502, 'The printer answered HTTP %d.' % e.code)
+    except (urllib.error.URLError, OSError) as e:
+        raise Refused(502, 'Couldn\'t reach %s (%s).' % (url, getattr(e, 'reason', e)))
+
+
+def decode_response(data):
+    """ (status code, {group tag: {attribute name: [values]}}) from an IPP
+    response. Collections are skipped. """
+    if len(data) < 8:
+        raise Refused(502, 'The printer sent an empty or truncated reply.')
+    status = struct.unpack('>H', data[2:4])[0]
+    (pos, groups, current, name, depth) = (8, {}, None, None, 0)
+    while pos < len(data):
+        tag = data[pos]
+        pos += 1
+        if tag == END_OF_ATTRIBUTES:
+            break
+        if tag < 0x10:
+            current = groups.setdefault(tag, {})
+            continue
+        if pos + 2 > len(data):
+            raise Refused(502, 'The printer sent a truncated reply.')
+        (name_len,) = struct.unpack('>H', data[pos:pos + 2])
+        attr_name = data[pos + 2:pos + 2 + name_len].decode('utf-8', 'replace')
+        pos += 2 + name_len
+        (value_len,) = struct.unpack('>H', data[pos:pos + 2])
+        raw = data[pos + 2:pos + 2 + value_len]
+        pos += 2 + value_len
+        if tag == BEG_COLLECTION:
+            depth += 1
+            continue
+        if tag == END_COLLECTION:
+            depth = max(0, depth - 1)
+            continue
+        if depth > 0:
+            continue
+        if attr_name:
+            name = attr_name
+        if current is None or name is None:
+            continue
+        if tag in (INTEGER, ENUM) and len(raw) == 4:
+            value = struct.unpack('>i', raw)[0]
+        elif tag == BOOLEAN and len(raw) == 1:
+            value = raw != b'\x00'
+        elif tag == RANGE and len(raw) == 8:
+            value = list(struct.unpack('>ii', raw))
+        elif tag == RESOLUTION and len(raw) == 9:
+            value = list(struct.unpack('>iiB', raw))
+        elif 0x40 <= tag <= 0x4F:
+            value = raw.decode('utf-8', 'replace')
+        else:
+            continue
+        current.setdefault(name, []).append(value)
+    return (status, groups)
+
+
+def choose_driver(formats, ipp2):
+    """ The DRIVERS entry for a printer that takes these document formats. """
+    formats = [f.split(';')[0].strip().lower() for f in formats]
+    if ipp2 and any(f in formats for f in DRIVERLESS_FORMATS):
+        return 'everywhere'
+    if 'application/postscript' in formats:
+        return 'postscript'
+    if 'application/vnd.hp-pcl' in formats:
+        return 'pcl'
+    return None
+
+
+def summarize(attributes, ipp2=True):
+    """ The useful part of Get-Printer-Attributes, for the website's Printers
+    page (model, state, the settings it can offer, and the driver to use). """
+    def values(name):
+        return [v for v in attributes.get(name, []) if isinstance(v, (str, int))]
+    state = (attributes.get('printer-state') or [None])[0]
+    return {
+        'driver': choose_driver(values('document-format-supported'), ipp2),
+        'model': (attributes.get('printer-make-and-model') or [''])[0],
+        'state': {3: 'idle', 4: 'printing', 5: 'stopped'}.get(state, str(state)),
+        'state_reasons': values('printer-state-reasons'),
+        'formats': values('document-format-supported'),
+        'sides': values('sides-supported'),
+        'color_modes': values('print-color-mode-supported'),
+        'qualities': [QUALITY_NAMES[q] for q in values('print-quality-supported') if q in QUALITY_NAMES],
+        'media': values('media-ready') or values('media-supported'),
+        'scaling': values('print-scaling-supported'),
+    }
+
+
+def snmp_device_id(host):
+    """ The IEEE 1284 device ID the printer gives over SNMP (CUPS's snmp
+    backend), as a dict ({'MFG': ..., 'MDL': ..., 'CMD': ...}), or {}. """
+    try:
+        output = run([SNMP_BACKEND, host])
+    except Refused:
+        return {}
+    match = re.search(r'"([^"]*MDL:[^"]*)"', output)
+    if not match:
+        return {}
+    fields = {}
+    for part in match.group(1).split(';'):
+        if ':' in part:
+            (key, value) = part.split(':', 1)
+            fields[key.strip().upper()] = value.strip()
+    return fields
+
+
+def installed_ppds():
+    """ {PPD name: description} of the drivers CUPS has (lpinfo -m). """
+    ppds = {}
+    for line in run(['lpinfo', '-m']).splitlines():
+        if ' ' in line:
+            (name, description) = line.split(' ', 1)
+            ppds[name] = description
+    return ppds
+
+
+def model_ppd(model):
+    """ The installed PostScript PPD for this model ("HP Color LaserJet CP4520
+    Series"), or None. """
+    slug = re.sub(r'[^a-z0-9]+', '_', model.lower()).strip('_')
+    for prefix in ('hp_', 'hewlett_packard_'):
+        if slug.startswith(prefix):
+            slug = slug[len(prefix):]
+    if not slug:
+        return None
+    found = [(name, description) for (name, description) in installed_ppds().items()
+             if slug in re.sub(r'[^a-z0-9]+', '_', name.lower()) and 'postscript' in description.lower()]
+    found.sort(key=lambda nd: ('recommended' not in nd[1].lower(), nd[0]))
+    return found[0][0] if found else None
+
+
+def probe(address):
+    uri = normalize_address(address)
+    #   Printers' own HTTPS certificates are self-signed
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    ipp2 = True
+    (status, groups) = ipp_post(http_url(uri), encode_request(uri), context)
+    if status == VERSION_NOT_SUPPORTED:
+        #   An older printer: ask again in IPP 1.1
+        ipp2 = False
+        (status, groups) = ipp_post(http_url(uri), encode_request(uri, version=(1, 1)), context)
+    if status > 0x00FF:
+        raise Refused(502, 'The printer refused the request (IPP status 0x%04x).' % status)
+    info = summarize(groups.get(PRINTER_ATTRIBUTES, {}), ipp2)
+    if info['driver'] != 'everywhere':
+        #   Not driverless: if SNMP says what model it is, use its own driver
+        device = snmp_device_id(urlsplit(uri).hostname)
+        if device.get('MDL'):
+            info['model'] = info['model'] or device['MDL']
+            if info['driver'] == 'postscript' or 'POSTSCRIPT' in device.get('CMD', '').upper():
+                ppd = model_ppd(device['MDL'])
+                if ppd:
+                    info['driver'] = 'model:' + ppd
+    return {'uri': uri, 'info': info}
+
+
+def queue_info(queue):
+    """ What the CUPS queue (so its driver) supports, as summarize() gives it. """
+    (status, groups) = ipp_post('%s/printers/%s' % (CUPS_URL, queue),
+                                encode_request('ipp://localhost/printers/%s' % queue))
+    return summarize(groups.get(PRINTER_ATTRIBUTES, {})) if status <= 0x00FF else {}
+
+
+def create_queue(queue, uri, description, driver):
+    if driver in DRIVERS:
+        model = DRIVERS[driver]
+    else:
+        match = MODEL_DRIVER.match(driver)
+        if not match or match.group(1) not in installed_ppds():
+            raise Refused(400, 'Unknown driver.')
+        model = match.group(1)
+    run(['lpadmin', '-p', queue, '-E', '-v', uri, '-m', model, '-D', description,
+         '-o', 'printer-error-policy=retry-current-job'])
+    if model != 'everywhere':
+        options = run(['lpoptions', '-p', queue, '-l'])
+        for name in DUPLEX_UNIT_OPTIONS:
+            if re.search(r'^%s/' % re.escape(name), options, re.M):
+                run(['lpadmin', '-p', queue, '-o', '%s=True' % name])
+    return queue_info(queue)
+
+
+#   Jobs in this host's CUPS
+
+CUPS_URL = 'http://localhost:631'
+JOB_STATES = {3: 'pending', 4: 'held', 5: 'processing', 6: 'stopped', 7: 'canceled', 8: 'aborted', 9: 'completed'}
+
+
+def job_status(queue, job):
+    """ What CUPS says about a job and its queue's printer. """
+    number = job.rsplit('-', 1)[1]
+    (status, groups) = ipp_post('%s/jobs/%s' % (CUPS_URL, number), encode_request(
+        'ipp://localhost/jobs/%s' % number, operation=GET_JOB_ATTRIBUTES, target='job-uri',
+        requested=['job-state', 'job-state-reasons']))
+    if status == NOT_FOUND:
+        raise Refused(404, 'CUPS has no job %s.' % job)
+    if status > 0x00FF:
+        raise Refused(502, 'CUPS refused the job query (IPP status 0x%04x).' % status)
+    attributes = groups.get(JOB_ATTRIBUTES, {})
+    state = (attributes.get('job-state') or [None])[0]
+    result = {'state': JOB_STATES.get(state, str(state)), 'reasons': attributes.get('job-state-reasons', [])}
+    (status, groups) = ipp_post('%s/printers/%s' % (CUPS_URL, queue), encode_request(
+        'ipp://localhost/printers/%s' % queue,
+        requested=['printer-state', 'printer-state-reasons', 'printer-state-message']))
+    printer = groups.get(PRINTER_ATTRIBUTES, {})
+    state = (printer.get('printer-state') or [None])[0]
+    result.update({
+        'printer_state': {3: 'idle', 4: 'printing', 5: 'stopped'}.get(state, str(state)),
+        'printer_reasons': [r for r in printer.get('printer-state-reasons', []) if r != 'none'],
+        'printer_message': (printer.get('printer-state-message') or [''])[0],
+    })
+    return result
+
+
+def cancel_job(job):
+    try:
+        run(['cancel', job])
+    except Refused as e:
+        #   Already finished, or gone: nothing to cancel
+        if 'already' not in str(e) and e.status != 404:
+            raise
+
+
+def read_token():
+    with open(os.environ.get('ESP_PRINT_TOKEN_FILE', '/etc/esp-print/token')) as f:
+        return f.read().strip()
+
+
+#   Seconds a client may sit idle (TLS handshake, sending a request or its
+#   body) before its connection is dropped
+CLIENT_TIMEOUT = 30
+
+
+class Handler(BaseHTTPRequestHandler):
+    server_version = 'esp-print-server'
+    timeout = CLIENT_TIMEOUT
+
+    def reply(self, status, data):
+        body = json.dumps(data).encode('utf-8')
+        self.send_response(status)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def handle_request(self, method):
+        try:
+            token = self.server.token
+            given = self.headers.get('Authorization', '')
+            if not token or not hmac.compare_digest(given.encode('utf-8'), ('Bearer ' + token).encode('utf-8')):
+                raise Refused(401, 'Missing or wrong token.')
+            url = urlsplit(self.path)
+            if url.path == '/probe' and method == 'GET':
+                self.reply(200, probe((parse_qs(url.query).get('address') or [''])[0]))
+                return
+            parts = url.path.strip('/').split('/')
+            if len(parts) < 2 or parts[0] != 'queues' or not QUEUE.match(parts[1]):
+                raise Refused(400, 'Unknown path.')
+            queue = parts[1]
+            length = int(self.headers.get('Content-Length') or 0)
+            if length < 0 or length > MAX_PDF:
+                raise Refused(400, 'Too large.' if length > 0 else 'Bad Content-Length.')
+            body = self.rfile.read(length) if length else b''
+            if len(parts) == 2 and method == 'PUT':
+                data = json.loads(body.decode('utf-8') or '{}')
+                if not isinstance(data, dict):
+                    raise Refused(400, 'The body must be a JSON object.')
+                uri = data.get('uri', '')
+                description = data.get('description', '') or queue
+                driver = data.get('driver') or 'everywhere'
+                if not URI.match(uri) or not TEXT.match(description) or not isinstance(driver, str):
+                    raise Refused(400, 'Bad printer address, description or driver.')
+                self.reply(200, {'queue': queue, 'info': create_queue(queue, uri, description, driver)})
+            elif len(parts) == 2 and method == 'DELETE':
+                run(['lpadmin', '-x', queue])
+                self.reply(200, {'queue': queue})
+            elif len(parts) == 2 and method == 'GET':
+                self.reply(200, {'status': run(['lpstat', '-l', '-p', queue])})
+            elif len(parts) == 4 and parts[2] == 'jobs' and method in ('GET', 'DELETE'):
+                job = parts[3]
+                if not JOB.match(job) or not job.startswith(queue + '-'):
+                    raise Refused(400, 'Bad job id.')
+                if method == 'GET':
+                    self.reply(200, job_status(queue, job))
+                else:
+                    cancel_job(job)
+                    self.reply(200, {'job': job})
+            elif len(parts) == 3 and parts[2] == 'jobs' and method == 'POST':
+                query = parse_qs(url.query)
+                title = (query.get('title') or ['ESP'])[0]
+                options = query.get('o', [])
+                if not TEXT.match(title) or not all(OPTION.match(o) for o in options):
+                    raise Refused(400, 'Bad title or option.')
+                if not body.startswith(b'%PDF'):
+                    raise Refused(400, 'The body must be a PDF.')
+                args = ['lp', '-d', queue, '-t', title]
+                for option in options:
+                    args += ['-o', option]
+                output = run(args, stdin=body)
+                match = re.search(r'request id is (\S+)', output)
+                self.reply(200, {'job': match.group(1) if match else ''})
+            else:
+                raise Refused(400, 'Unknown request.')
+        except Refused as e:
+            self.reply(e.status, {'error': str(e)})
+        except (ValueError, UnicodeDecodeError):
+            self.reply(400, {'error': 'Bad request.'})
+        except Exception:
+            #   A bug here: say so, rather than drop the connection
+            traceback.print_exc()
+            self.reply(500, {'error': 'The print server hit an error (see its log).'})
+
+    def do_GET(self):
+        self.handle_request('GET')
+
+    def do_PUT(self):
+        self.handle_request('PUT')
+
+    def do_DELETE(self):
+        self.handle_request('DELETE')
+
+    def do_POST(self):
+        self.handle_request('POST')
+
+    def log_message(self, format, *args):
+        sys.stderr.write('%s %s\n' % (self.address_string(), format % args))
+
+
+class TLSServer(ThreadingHTTPServer):
+    """ Does each connection's TLS handshake in its own thread, with a
+    timeout, so a client that connects and never finishes it can't hold up
+    everyone else (as wrapping the listening socket would: accept() would
+    do the handshake in the one serving thread). """
+    daemon_threads = True
+
+    def __init__(self, address, handler, context):
+        super().__init__(address, handler)
+        self.context = context
+
+    def finish_request(self, request, client_address):
+        request.settimeout(CLIENT_TIMEOUT)
+        try:
+            connection = self.context.wrap_socket(request, server_side=True)
+        except (ssl.SSLError, OSError):
+            return
+        try:
+            self.RequestHandlerClass(connection, client_address, self)
+        finally:
+            connection.close()
+
+
+def main():
+    (host, port) = os.environ.get('ESP_PRINT_LISTEN', '0.0.0.0:8631').rsplit(':', 1)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
+    context.load_cert_chain(os.environ['ESP_PRINT_CERT'], os.environ['ESP_PRINT_KEY'])
+    server = TLSServer((host, int(port)), Handler, context)
+    server.token = read_token()
+    server.serve_forever()
+
+
+if __name__ == '__main__':
+    main()

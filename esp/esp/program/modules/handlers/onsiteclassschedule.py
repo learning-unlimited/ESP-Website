@@ -33,12 +33,15 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from django.http     import HttpResponseRedirect
+from django.http     import HttpResponseRedirect, HttpResponseNotAllowed, Http404
+from django.utils.http import is_safe_url
+from esp.middleware import ESPError
+from esp.program.controllers import dayof, printing
 from esp.users.views import search_for_user
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
-from esp.utils.models import Printer, PrintRequest
+from esp.utils.models import Printer
 
 class OnsiteClassSchedule(ProgramModuleObj):
     doc = """Get and/or print a student's schedule for the program."""
@@ -55,19 +58,36 @@ class OnsiteClassSchedule(ProgramModuleObj):
 
     @aux_call
     @needs_student_in_grade
-    def printschedule(self, request, tl, one, two, module, extra, prog):#(self, request, *args, **kwargs):
-        '''Sends a schedule printing request to the schedule-printing script.  Defaults to the current (probably onsite-morphed) user, but can take a GET parameter instead.'''
-        printer = request.GET.get('printer', None)
-        if printer is not None:
-            # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
-            printer = Printer.objects.get(name=printer)
-        if 'user' in request.GET:
-            user = ESPUser.objects.get(id=request.GET['user'])
-        else:
-            user = request.user
-        redirectURL = request.GET.get('next', '/learn/%s/studentreg' % self.program.getUrlBase())
-        PrintRequest.objects.create(user=user, printer=printer)
-        return HttpResponseRedirect(redirectURL)
+    def printschedule(self, request, tl, one, two, module, extra, prog):
+        """ Queues a student's schedule for printing (POST). Defaults to the
+        current (probably onsite-morphed) user; printing someone else's
+        ('user') needs onsite or admin access. 'printer' names the location
+        (else the Default location), 'next' where to go after. """
+        if request.method != 'POST':
+            return HttpResponseNotAllowed(['POST'])
+        location = None
+        if request.POST.get('printer'):
+            location = Printer.objects.active().filter(name=request.POST['printer']).first()
+            if location is None:
+                raise Http404
+        user = request.user
+        if request.POST.get('user'):
+            try:
+                user = ESPUser.objects.get(id=int(request.POST['user']))
+            except (ValueError, ESPUser.DoesNotExist):
+                raise Http404
+            real = dayof.real_user(request)
+            if user != request.user and not (real.isOnsite(prog) or real.isAdmin(prog)):
+                raise Http404
+        recorded_by = dayof.real_user(request)
+        try:
+            printing.queue('schedule', prog, location, user=user, requested_by=recorded_by)
+        except printing.PrintingError as e:
+            raise ESPError(str(e), log=False)
+        redirect = request.POST.get('next', '')
+        if not is_safe_url(redirect, allowed_hosts={request.get_host()}):
+            redirect = '/learn/%s/studentreg' % self.program.getUrlBase()
+        return HttpResponseRedirect(redirect)
 
     @aux_call
     @needs_onsite_no_switchback

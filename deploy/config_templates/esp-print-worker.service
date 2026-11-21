@@ -1,0 +1,18 @@
+# Sends day-of print jobs to network printers (manage.py print_worker).
+# Install: sudo cp deploy/config_templates/esp-print-worker.service /etc/systemd/system/
+#          sudo systemctl daemon-reload && sudo systemctl enable --now esp-print-worker
+# Restart it after each deploy (it keeps the old code loaded until then).
+[Unit]
+Description=ESP website day-of print worker
+After=network.target postgresql.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/esp/esp
+ExecStart=/esp/env/bin/python manage.py print_worker
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

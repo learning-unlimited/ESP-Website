@@ -1,0 +1,22 @@
+[Unit]
+Description=ESP website print server (HTTPS API in front of CUPS)
+After=network-online.target cups.service
+Wants=network-online.target
+
+[Service]
+User=espprint
+Group=espprint
+Environment=ESP_PRINT_LISTEN=0.0.0.0:8631
+Environment=ESP_PRINT_TOKEN_FILE=/etc/esp-print/token
+Environment=ESP_PRINT_CERT=/etc/esp-print/cert.pem
+Environment=ESP_PRINT_KEY=/etc/esp-print/key.pem
+ExecStart=/usr/local/bin/esp-print-server
+Restart=always
+RestartSec=5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

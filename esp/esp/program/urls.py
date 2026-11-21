@@ -18,6 +18,7 @@ urlpatterns = [
     url(r'^manage/unenroll_student/?$', views.unenroll_student),
     url(r'^manage/usersearch/?$', views.usersearch),
     url(r'^manage/flushcache/?$', views.flushcache),
+    url(r'^manage/printpdf/?$', views.print_pdf),
     url(r'^manage/emails/?$', views.emails),
     url(r'^manage/catsflagsrecs/?(?P<section>[^/]*)/?$', views.catsflagsrecs),
     url(r'^manage/tags/?(?P<section>[^/]*)/?$', views.tags),

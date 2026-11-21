@@ -1,0 +1,14 @@
+{# Address + Check + Connect widget. Needs: location, take_over (optional), confirm (optional text), connect_label #}
+<div class="pr-connect" data-probe="printers_probe">
+  <input type="hidden" name="action" value="connect" />
+  <input type="hidden" name="location" value="{{ location.id }}" />
+  {% if take_over %}<input type="hidden" name="take_over" value="1" />{% endif %}
+  <div class="control-group"><label>Printer address
+    <input type="text" name="address" class="pr-address input-xlarge" placeholder="IP or hostname, e.g. 10.31.4.17" /></label></div>
+  <button type="button" class="btn pr-check">Check printer</button>
+  <div class="pr-probe-result help-block"></div>
+  {% if location.waiting %}
+  <label class="checkbox"><input type="checkbox" name="discard_waiting" value="1" /> Discard the {{ location.waiting }} job{{ location.waiting|pluralize }} already waiting</label>
+  {% endif %}
+  <button type="button" class="btn btn-primary pr-connect-btn"{% if confirm %} data-pr-confirm="{{ confirm }}"{% endif %} style="display:none">{{ connect_label|default:"Connect" }}</button>
+</div>

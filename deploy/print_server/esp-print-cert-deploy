@@ -1,0 +1,8 @@
+#!/bin/sh
+# certbot --deploy-hook for the print server: copies the renewed certificate
+# where esp-print-server (running as espprint) can read it, then restarts it.
+# certbot sets RENEWED_LINEAGE to the lineage's /etc/letsencrypt/live/ directory.
+set -e
+install -m 644 -o root -g espprint "$RENEWED_LINEAGE/fullchain.pem" /etc/esp-print/cert.pem
+install -m 640 -o root -g espprint "$RENEWED_LINEAGE/privkey.pem" /etc/esp-print/key.pem
+systemctl restart esp-print-server

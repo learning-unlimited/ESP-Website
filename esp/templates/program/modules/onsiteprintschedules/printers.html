@@ -1,0 +1,235 @@
+{% extends "main.html" %}
+
+{% block title %}Printers{% endblock %}
+
+{% block content_title %}Printers{% endblock %}
+
+{% block stylesheets %}{{ block.super }}<link rel="stylesheet" type="text/css" href="/media/styles/dayof.css" />{% endblock %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/onsite/confirm2.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<p class="muted"><small>Each location prints through one thing at a time: a network printer, or a laptop running the printing page. This page refreshes itself every 15 seconds while you are not typing.</small></p>
+{% if not network_printing %}<p class="muted"><small>Network printers aren't set up on this site (no print server configured), so locations print through laptops only.</small></p>{% endif %}
+
+{% include "program/modules/dayof/messages.html" %}
+
+{% for location in locations %}
+<div class="dayof-box" id="location-{{ location.id }}">
+  <div class="dayof-box-heading dayof-printer-heading">
+    <strong>{{ location.name }}</strong>
+    {% if location.connected and location.mode == 'network' %}<span class="label label-success">Network printer</span>
+    {% elif location.connected and location.mode == 'laptop' %}<span class="label label-success">Laptop</span>
+    {% else %}<span class="label label">Nothing connected</span>{% endif %}
+    <span class="pull-right"><b>{{ location.waiting }}</b> waiting</span>
+  </div>
+  <div class="dayof-box-body">
+  {% if location.is_default %}<div><small class="muted">(Default &mdash; also prints for any location with nothing connected)</small></div>{% endif %}
+  <div class="pr-status">
+    {% if location.connected and location.mode == 'network' %}
+      {{ location.network_address }}{% if location.info.model %} ({{ location.info.model }}){% endif %}{% if location.info.driver == 'postscript' %} <small class="muted">&middot; generic PostScript driver</small>{% elif location.info.driver == 'pcl' %} <small class="muted">&middot; generic PCL driver</small>{% elif location.info.driver and location.info.driver != 'everywhere' %} <small class="muted">&middot; model's own driver</small>{% endif %}
+    {% elif location.connected and location.mode == 'laptop' %}
+      {{ location.laptop_claimed_by.username }}, seen {{ location.laptop_last_seen|timesince }} ago
+    {% endif %}
+    {% if location.info.state and location.mode == 'network' %}<small class="muted">&middot; {{ location.info.state }}{% if location.info.state_reasons %} ({{ location.info.state_reasons|join:", " }}){% endif %}</small>{% endif %}
+  </div>
+  {% if location.trouble and location.connected and location.mode == 'network' %}
+  <div class="alert alert-error dayof-trouble"><strong>Not printing</strong> since {{ location.trouble_since|time:"g:i A" }} ({{ location.trouble_since|timesince }}): {{ location.trouble }}<br>
+  <small>Jobs wait here and print once it's fixed. To print them elsewhere now, take over with a laptop.</small></div>
+  {% endif %}
+  {% if location.oldest_waiting %}<div><small class="muted">Oldest waiting job: requested {{ location.oldest_waiting|timesince }} ago</small></div>{% endif %}
+  {% if location.last_result %}
+  <div><small class="muted">Last result: {{ location.last_result }}{% if location.last_result_at %}, {{ location.last_result_at|timesince }} ago{% endif %}</small></div>
+  {% endif %}
+  {% if location.last_error and location.last_result == 'failed' %}<div class="text-error"><small>{{ location.last_error }}</small></div>{% endif %}
+
+  <div class="dayof-actions">
+    {% if not location.connected %}
+      <a class="btn" href="printers_laptop?location={{ location.id }}">Print via USB from this laptop</a>
+      {% if network_printing %}
+      <details class="dayof-section">
+  <summary>Connect network printer</summary>
+  <div class="dayof-section-body">
+        <form method="post" action="printers_action" class="dayof-form">{% csrf_token %}
+          {% include "program/modules/onsiteprintschedules/printer_connect.html" with take_over="" confirm="" connect_label="Connect" %}
+        </form>
+        </div>
+      </details>
+      {% endif %}
+    {% elif location.mode == 'network' %}
+      <form method="post" action="printers_action">{% csrf_token %}
+        <input type="hidden" name="location" value="{{ location.id }}" /><input type="hidden" name="action" value="test" />
+        <button type="submit" class="btn">Test page</button>
+      </form>
+      <a class="btn" href="printers_laptop?location={{ location.id }}&amp;take_over=1">Take over via USB with this laptop</a>
+      <form method="post" action="printers_action">{% csrf_token %}
+        <input type="hidden" name="location" value="{{ location.id }}" /><input type="hidden" name="action" value="disconnect" />
+        <button type="button" class="btn pr-confirm" data-pr-confirm="Disconnect the printer from {{ location.name }}?">Disconnect</button>
+      </form>
+      <details class="dayof-section">
+  <summary>Change address</summary>
+  <div class="dayof-section-body">
+        <form method="post" action="printers_action" class="dayof-form">{% csrf_token %}
+          {% include "program/modules/onsiteprintschedules/printer_connect.html" with take_over="1" confirm="Change the printer address for "|add:location.name|add:"?" connect_label="Connect" %}
+        </form>
+        </div>
+      </details>
+      <details class="dayof-section">
+  <summary>Settings</summary>
+  <div class="dayof-section-body">
+        <form method="post" action="printers_action" class="dayof-form">{% csrf_token %}
+          <input type="hidden" name="location" value="{{ location.id }}" /><input type="hidden" name="action" value="settings" />
+          <div class="control-group"><label>Sides <select name="sides"><option value="">printer default</option>{% for o in location.info.sides %}<option value="{{ o }}"{% if location.settings.sides == o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></label></div>
+          <div class="control-group"><label>Color mode <select name="color_mode"><option value="">printer default</option>{% for o in location.info.color_modes %}<option value="{{ o }}"{% if location.settings.color_mode == o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></label></div>
+          <div class="control-group"><label>Quality <select name="quality"><option value="">printer default</option>{% for o in location.info.qualities %}<option value="{{ o }}"{% if location.settings.quality == o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></label></div>
+          <div class="control-group"><label>Paper <select name="media"><option value="">printer default</option>{% for o in location.info.media %}<option value="{{ o }}"{% if location.settings.media == o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></label></div>
+          <div class="control-group"><label>Scaling <select name="scaling"><option value="">printer default</option>{% for o in location.info.scaling %}<option value="{{ o }}"{% if location.settings.scaling == o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></label></div>
+          <p><button type="submit" class="btn btn-primary">Save settings</button></p>
+        </form>
+        </div>
+      </details>
+    {% else %}
+      <a class="btn" href="printers_laptop?location={{ location.id }}&amp;take_over=1">Take over via USB with this laptop</a>
+      <form method="post" action="printers_action">{% csrf_token %}
+        <input type="hidden" name="location" value="{{ location.id }}" /><input type="hidden" name="action" value="disconnect" />
+        <button type="button" class="btn pr-confirm" data-pr-confirm="Disconnect the laptop from {{ location.name }}?">Disconnect</button>
+      </form>
+      {% if network_printing %}
+      <details class="dayof-section">
+  <summary>Replace with network printer</summary>
+  <div class="dayof-section-body">
+        <form method="post" action="printers_action" class="dayof-form">{% csrf_token %}
+          {% include "program/modules/onsiteprintschedules/printer_connect.html" with take_over="1" confirm="Replace the laptop printing for "|add:location.name|add:"?" connect_label="Replace laptop with this printer" %}
+        </form>
+        </div>
+      </details>
+      {% endif %}
+    {% endif %}
+    {% if location.waiting %}
+    <form method="post" action="printers_action">{% csrf_token %}
+      <input type="hidden" name="location" value="{{ location.id }}" /><input type="hidden" name="action" value="discard_waiting" />
+      <button type="button" class="btn pr-confirm" data-pr-confirm="Cancel all {{ location.waiting }} waiting job{{ location.waiting|pluralize }} for {{ location.name }}?">Cancel all waiting</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <details class="dayof-section">
+  <summary>History</summary>
+  <div class="dayof-section-body">
+    {% for c in location.history %}
+    <div><small class="muted">{{ c.timestamp|date:"M j, g:i a" }} &middot; <b>{{ c.action }}</b>{% if c.detail %}: {{ c.detail }}{% endif %} &middot; {% if c.recorded_by %}{{ c.recorded_by.username }}{% endif %}</small></div>
+    {% empty %}<div><small class="muted">Nothing yet.</small></div>
+    {% endfor %}
+    </div>
+  </details>
+
+  {% if not location.is_default %}
+  <details class="dayof-section">
+  <summary>Rename / archive</summary>
+  <div class="dayof-section-body">
+    <form method="post" action="printers_action" class="dayof-form">{% csrf_token %}
+      <input type="hidden" name="location" value="{{ location.id }}" /><input type="hidden" name="action" value="rename" />
+      <div class="control-group"><label>New name <input type="text" class="input-xlarge" name="name" value="{{ location.name }}" /></label></div>
+      <p><button type="submit" class="btn">Rename</button></p>
+    </form>
+    <form method="post" action="printers_action">{% csrf_token %}
+      <input type="hidden" name="location" value="{{ location.id }}" /><input type="hidden" name="action" value="archive" />
+      <button type="button" class="btn pr-confirm" data-pr-confirm="Archive the location {{ location.name }}? It disappears from the lists; you can restore it below.">Archive this location</button>
+    </form>
+    </div>
+  </details>
+  {% endif %}
+  </div>
+</div>
+{% endfor %}
+
+{% if archived_locations %}
+<details class="dayof-section">
+  <summary>Archived locations ({{ archived_locations|length }})</summary>
+  <div class="dayof-section-body">
+    <table class="table table-condensed">
+    {% for location in archived_locations %}
+      <tr><td>{{ location.name }}</td>
+        <td class="text-right"><form method="post" action="printers_action">{% csrf_token %}
+          <input type="hidden" name="location" value="{{ location.id }}" /><input type="hidden" name="action" value="restore" />
+          <button type="submit" class="btn btn-mini">Restore</button>
+        </form></td></tr>
+    {% endfor %}
+    </table>
+  </div>
+</details>
+{% endif %}
+
+<div class="dayof-box">
+  <div class="dayof-box-body">
+  <form method="post" action="printers_action" class="dayof-form">{% csrf_token %}
+    <input type="hidden" name="action" value="add_location" />
+    <div class="control-group"><label for="new-location-name">Add a location</label>
+      <input type="text" class="input-xlarge" id="new-location-name" name="name" placeholder="e.g. Check-in A" required /></div>
+    <p><button type="submit" class="btn">Add location</button></p>
+  </form>
+  </div>
+</div>
+
+{% include "program/modules/onsitecore/returnlink.html" %}
+
+<script type="text/javascript">
+(function ($j) {
+    function submitForm(form) { $j(form).trigger('submit'); }
+
+    $j(document).on('click', '.pr-confirm, .pr-connect-btn[data-pr-confirm]', function () {
+        var form = this.form || $j(this).closest('form')[0];
+        armConfirm(this, $j(this).attr('data-pr-confirm'), function () { submitForm(form); });
+    });
+    $j(document).on('click', '.pr-connect-btn:not([data-pr-confirm])', function () {
+        submitForm($j(this).closest('form')[0]);
+    });
+
+    $j(document).on('input', '.pr-address', function () {
+        var box = $j(this).closest('.pr-connect');
+        box.find('.pr-connect-btn').hide();
+        box.find('.pr-probe-result').text('');
+    });
+    $j(document).on('click', '.pr-check', function () {
+        var box = $j(this).closest('.pr-connect');
+        var out = box.find('.pr-probe-result').removeClass('pr-err').text('Checking...');
+        box.find('.pr-connect-btn').hide();
+        $j.getJSON(box.data('probe'), {address: box.find('.pr-address').val()}).done(function (r) {
+            if (r.error) { out.addClass('pr-err').text(r.error); return; }
+            var i = r.info || {};
+            var bits = [i.model || r.uri];
+            if (i.sides && i.sides.length) { bits.push('sides: ' + i.sides.join(', ')); }
+            if ('driver' in i && !i.driver) {
+                out.addClass('pr-err').text(bits.join(' · ') + ' · it takes nothing the print server can send it (' +
+                    (i.formats || []).join(', ') + ')');
+                return;
+            }
+            if (i.driver && i.driver !== 'everywhere') {
+                bits.push(i.driver.indexOf('model:') === 0 ? 'older printer: using its own driver' :
+                          'older printer: generic ' + (i.driver === 'pcl' ? 'PCL' : 'PostScript') + ' driver');
+            }
+            out.text(bits.join(' · '));
+            box.find('.pr-connect-btn').show();
+        }).fail(function () {
+            out.addClass('pr-err').text('Could not check the printer. Try again.');
+        });
+    });
+    // Enter in the address box checks instead of submitting
+    $j(document).on('keydown', '.pr-address', function (e) {
+        if (e.which === 13) { e.preventDefault(); $j(this).closest('.pr-connect').find('.pr-check').click(); }
+    });
+
+    // Refresh every 15 s unless someone is typing or has a section open
+    setInterval(function () {
+        var a = document.activeElement;
+        if (a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) { return; }
+        if ($j('details[open]').length || $j('.confirm2-armed').length) { return; }
+        location.reload();
+    }, 15000);
+})(window.$j || window.jQuery);
+</script>
+{% endblock %}

@@ -10,13 +10,15 @@
 <center>
 <a target="_new" href="/onsite/{{program.getUrlBase}}/studentschedule">Get Student Schedule</a>
 <br />
-{% if printers %}
+<form method="post" action="/onsite/{{program.getUrlBase}}/printschedule" style="display:inline">{% csrf_token %}
+<button type="submit" class="btn btn-link" style="padding:0">Print Student Schedule{% if printers %} to default printer{% endif %}</button>
+</form><br />
 {% for printer in printers %}
-<a href="/onsite/{{program.getUrlBase}}/printschedule?printer={{ printer }}">Print Student Schedule to {{ printer }}</a><br />
+<form method="post" action="/onsite/{{program.getUrlBase}}/printschedule" style="display:inline">{% csrf_token %}
+<input type="hidden" name="printer" value="{{ printer }}" />
+<button type="submit" class="btn btn-link" style="padding:0">Print Student Schedule to {{ printer }}</button>
+</form><br />
 {% endfor %}
-{% else %}
-<a href="/onsite/{{program.getUrlBase}}/printschedule">Print Student Schedule</a>
-{% endif %}
 </center>
 
 <div class="errormsg">

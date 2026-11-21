@@ -58,7 +58,7 @@ from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function
 from esp.utils.models import Printer, PrintRequest
-from esp.program.controllers import dayof
+from esp.program.controllers import dayof, printing
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
@@ -339,22 +339,54 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def printschedule_status(self, request, tl, one, two, module, extra, prog):
+        if request.method != 'POST':
+            #   It changes things (enrollment, check-in and the payment that
+            #   records, printing), so not by GET: an <img> on any page could
+            #   trigger it for whoever has onsite access
+            return HttpResponseNotAllowed(['POST'])
         resp = HttpResponse(content_type='application/json')
 
         result = {}
 
         try:
-            user = int(request.GET.get('user', None))
+            user = int(request.POST.get('user', None))
             user_obj = ESPUser.objects.get(id=user)
         except:
-            result['message'] = "Could not find user %s." % request.GET.get('user', None)
+            result['message'] = "Could not find user %s." % request.POST.get('user', None)
+            json.dump(result, resp)
+            return resp
 
-        printer = request.GET.get('printer', None)
-        if printer is not None:
-            # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
-            printer = Printer.objects.get(name=printer)
-        req = PrintRequest.objects.create(user=user_obj, printer=printer)
-        result['message'] = "Submitted %s's schedule for printing (print request #%s)." % (user_obj.name(), req.id)
+        printer = request.POST.get('printer', None)
+        if printer:
+            printer = Printer.objects.active().filter(name=printer).first()
+            if printer is None:
+                result['message'] = 'Unknown printer location %s.' % request.POST.get('printer')
+                json.dump(result, resp)
+                return resp
+        else:
+            printer = None
+        try:
+            #   Before checking anyone in: tell whoever clicked if it can't print
+            printing.check_can_print(printer)
+        except printing.PrintingError as e:
+            result['message'] = str(e)
+            json.dump(result, resp)
+            return resp
+        checkin_note = ''
+        if request.POST.get('check_in') == 'true':
+            #   "Check in & print": never check in without being asked to
+            (rec, payment) = dayof.check_in_request(prog, user_obj, request)
+            checkin_note = ' ' + dayof.checkin_message(user_obj, rec, payment)
+            result['checked_in'] = True
+        recorded_by = dayof.real_user(request)
+        try:
+            req = printing.queue('schedule', prog, printer, user=user_obj, requested_by=recorded_by)
+        except printing.PrintingError as e:
+            #   (the printer went away since the check above)
+            result['message'] = '%s%s' % (str(e), checkin_note)
+            json.dump(result, resp)
+            return resp
+        result['message'] = "Submitted %s's schedule for printing (print request #%s).%s" % (user_obj.name(), req.id, checkin_note)
 
         json.dump(result, resp)
         return resp
@@ -364,7 +396,7 @@ class OnSiteClassList(ProgramModuleObj):
     def classchange_grid(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['timeslots'] = prog.getTimeSlots()
-        context['printers'] = Printer.objects.all().values_list('name', flat=True)
+        context['printers'] = Printer.objects.active().exclude(is_default=True).values_list('name', flat=True)
         context['initial_student'] = request.GET.get('student_id', '')
         #   Off by default: checking in records what the student owes as paid,
         #   so only when the volunteer means to (see update_schedule_json)
@@ -477,7 +509,7 @@ class OnSiteClassList(ProgramModuleObj):
         for cls in classes:
             categories[cls.category_id] = {'id': cls.category_id, 'category': cls.category.category}
 
-        printers = [ x.name for x in Printer.objects.all() ]
+        printers = [ x.name for x in Printer.objects.active().exclude(is_default=True) ]
 
         return render_to_response(self.baseDir()+'allclasslist.html', request,
             {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': list(categories.values()), 'printers': printers})

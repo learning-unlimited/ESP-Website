@@ -1450,3 +1450,62 @@ def template_preview(request):
 
     return render_to_response(template, request, context)
 
+
+#   For the whole upload: nginx_esp.conf's client_max_body_size (20M) limits
+#   the request, so a bit under that
+PRINT_PDF_MAX_BYTES = 19 * 1024 * 1024
+
+
+@admin_required
+def print_pdf(request):
+    """ Prints uploaded PDFs on a day-of print location (the same queue
+    schedules and receipts go through). """
+    from django.contrib import messages
+    from esp.program.controllers import dayof, printing
+    from esp.utils.models import Printer
+    if request.method == 'POST':
+        files = request.FILES.getlist('files')
+        location = Printer.objects.active().filter(id=request.POST.get('location') or 0).first()
+        try:
+            copies = int(request.POST.get('copies') or 1)
+        except ValueError:
+            copies = 0
+        errors = []
+        if location is None:
+            errors.append('Choose where to print.')
+        if not files:
+            errors.append('Choose at least one PDF.')
+        if not 1 <= copies <= 999:
+            errors.append('Copies must be from 1 to 999.')
+        if sum(f.size for f in files) > PRINT_PDF_MAX_BYTES:
+            errors.append('The files add up to more than %d MB; send them in smaller batches.'
+                          % (PRINT_PDF_MAX_BYTES // (1024 * 1024)))
+        for f in files:
+            if not f.read(5).startswith(b'%PDF'):
+                errors.append('%s isn\'t a PDF.' % f.name)
+            f.seek(0)
+        if not errors:
+            try:
+                printing.check_can_print(location)
+            except printing.PrintingError as e:
+                errors.append(str(e))
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+        else:
+            try:
+                with transaction.atomic():      # all of them or none
+                    for f in files:
+                        printing.queue('pdf', None, location, file=f, title=f.name, copies=copies,
+                                       requested_by=dayof.real_user(request))
+            except printing.PrintingError as e:
+                messages.error(request, str(e))
+            else:
+                messages.success(request, 'Sent %d %s (%d %s each) to %s.' % (
+                    len(files), 'file' if len(files) == 1 else 'files', copies, 'copy' if copies == 1 else 'copies',
+                    location.name))
+                return HttpResponseRedirect(request.path)
+    return render_to_response('program/print_pdf.html', request, {
+        'locations': Printer.objects.active().order_by('-is_default', 'name'),
+        'max_mb': PRINT_PDF_MAX_BYTES // (1024 * 1024),
+    })

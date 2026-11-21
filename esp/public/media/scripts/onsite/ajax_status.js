@@ -264,19 +264,39 @@ function hide_loading_box()
     $j("#loading_box").dialog("close");
 }
 
-function print_schedule()
+function update_checkin_print_button()
 {
+    var student = state.student_id ? data.students[state.student_id] : null;
+    if (student && !student.checked_in)
+        $j("#schedule_checkin_print").show().prop("disabled", false);
+    else
+        $j("#schedule_checkin_print").hide().prop("disabled", true);
+}
+
+function print_schedule(check_in)
+{
+    var student_id = state.student_id;
     printer_name = $j("#printer_selector").attr("value");
     printing_url = program_base_url + "printschedule_status";
     var student_data = { 'user' : state.student_id }
     if (printer_name)
         student_data.printer = printer_name
+    if (check_in === true)
+        student_data.check_in = 'true';
     result = $j.ajax({
         url: printing_url,
+        type: 'POST',
+        headers: {'X-CSRFToken': csrf_token()},
         data: student_data,
         dataType: 'json',
         success: function (data, text_status, jqxhr) {
             add_message(data.message);
+            if (check_in === true && data.checked_in === true && student_id in window.data.students)
+            {
+                window.data.students[student_id].checked_in = true;
+                if (state.student_id == student_id)
+                    update_checkin_print_button();
+            }
         }
     });
 }
@@ -451,6 +471,9 @@ function set_current_student(student_id)
         $j("#schedule_print").off("click");
         $j("#status_switch").on("click", function () {set_current_student(null);});
         $j("#schedule_print").on("click", function () {print_schedule();});
+        $j("#schedule_checkin_print").off("click");
+        $j("#schedule_checkin_print").on("click", function () {print_schedule(true);});
+        update_checkin_print_button();
     }
     else
     {
@@ -460,6 +483,7 @@ function set_current_student(student_id)
         $j("#student_selector").attr("value", "");
         $j("#status_switch").attr("disabled", "disabled");
         $j("#schedule_print").attr("disabled", "disabled");
+        update_checkin_print_button();
     }
 }
 

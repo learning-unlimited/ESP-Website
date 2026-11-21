@@ -1,0 +1,135 @@
+{% extends "main.html" %}
+
+{% block title %}Printing: {{ location.name }}{% endblock %}
+
+{% block content_title %}Printing: {{ location.name }}{% endblock %}
+
+{% block stylesheets %}{{ block.super }}<link rel="stylesheet" type="text/css" href="/media/styles/dayof.css" />{% endblock %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/onsite/confirm2.js"></script>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="dayof-box dayof-instructions"><div class="dayof-box-body">
+Using this tool you can print student schedules for students on the fly.
+<br />
+To use this tool as intended you must:<br />
+<ol>
+<li>Get a computer that can reliably sit and be plugged into a printer</li>
+<li>Update firefox to the most recent version on the computer</li>
+<li>Install a printer, and make SURE it's default (at least in Firefox)</li>
+<li>Use firefox :-D</li>
+<li>Set up the printer as default:<br />
+<ol>
+<li>Goto <tt>about:config</tt> and type `<tt>print_printer</tt>'. Enter the string title (exactly) for the {{ settings.ORGANIZATION_SHORT_NAME }} Printer.</li>
+<li>Type in <tt>print.always_print_silent</tt> into the search bar, and make it a new boolean variable if it doesn't already exist; then set it to TRUE.</li>
+<li>Make <tt>print.print_duplex</tt> as a number variable if it doesn't already exist. Set it to 0 for single-sided, 1 for double-sided with long-edge binding, and 2 for double-sided with short-edge binding (you'll usually want it set to 1). </li>
+<li>While you're at it, you might as well make <tt>print.print_color</tt> FALSE.</li>
+<li>Note that the print_duplex and print_color settings might be overridden in per-printer config settings (e.g. <tt>print.printer_Brother_HL-2280DW.print_duplex</tt>), so if the settings don't seem to be working, check your per-printer settings as well.</li>
+</ol>
+Now your printer will now automatically print from firefox. Test this by printing this page. Notice it shouldn't open a dialog box or anything.
+</li>
+<li>Now you should be ready to go to the next page!</li>
+</ol>
+
+<strong>MAKE SURE YOU DO THIS ON ONE COMPUTER. IF YOU DON'T KNOW WHAT YOU ARE DOING, PLEASE <a href="javascript:history.go(-1);">GO BACK</a> NOW!</strong>
+</div></div>
+
+<div class="dayof-box">
+  <div class="dayof-box-body">
+    <p>Print the test page from this laptop. Once Firefox is set up as above, it prints without a dialog box.
+      Printed two-sided, page 2 should be on the back of page 1 and read the same way up.</p>
+    <button type="button" class="btn" id="lp-test">Print test page</button> <span id="lp-test-status" class="muted"></span>
+  </div>
+</div>
+<iframe id="lp-test-frame" src="about:blank" style="visibility: hidden; width: 1px; height: 1px"></iframe>
+
+<div id="lp-ask" class="dayof-box" style="display:none">
+  <div class="dayof-box-body">
+    <p id="lp-ask-text"></p>
+    <label class="checkbox" id="lp-discard-label"><input type="checkbox" id="lp-discard" /> Discard the jobs already waiting (start fresh)</label>
+    <p>
+      <button type="button" class="btn btn-primary" id="lp-start">Start printing here</button>
+      <a class="btn" href="{{ printers_url }}">Back to Printers</a>
+    </p>
+  </div>
+</div>
+
+{% include "program/modules/onsitecore/returnlink.html" %}
+
+<script type="text/javascript">
+(function ($j) {
+    // Claims the location for this laptop, then opens the page that stays running and prints
+    // (printers_laptop_run), passing the token in the URL fragment so a reload there keeps printing.
+    var LOCATION = {{ location.id }};
+    var BASE = '/onsite/{{ program.getUrlBase }}/';
+    var NAME = '{{ location.name|escapejs }}';
+    var ELSEWHERE = {% if connected_elsewhere %}true{% else %}false{% endif %};
+    var TAKE_OVER_URL = /[?&]take_over=1/.test(window.location.search);
+
+    function csrf() {
+        var v = $j('input[name=csrfmiddlewaretoken]').first().val();
+        if (v) { return v; }
+        var m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : '';
+    }
+
+    function claim(takeOver) {
+        $j('#lp-start').prop('disabled', true);
+        var data = {location: LOCATION};
+        if (takeOver) { data.take_over = 1; }
+        if ($j('#lp-discard').is(':checked')) { data.discard_waiting = 1; }
+        $j.ajax({url: BASE + 'printers_claim', type: 'POST', data: data,
+                 headers: {'X-CSRFToken': csrf()}
+        }).done(function (r) {
+            window.location = BASE + 'printers_laptop_run?location=' + LOCATION + '#token=' + encodeURIComponent(r.token);
+        }).fail(function (xhr) {
+            var msg = 'Could not start printing (server error ' + xhr.status + ').';
+            try { msg = JSON.parse(xhr.responseText).error || msg; } catch (e) {}
+            $j('#lp-ask-text').text(msg).addClass('lp-err');
+            $j('#lp-start').prop('disabled', false);
+        });
+    }
+
+    $j('#lp-test').on('click', function () {
+        var status = $j('#lp-test-status').text('Getting the test page...');
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', BASE + 'printers_test_pdf?location=' + LOCATION + '&q=' + new Date().getTime());
+        xhr.responseType = 'blob';
+        xhr.onload = function () {
+            if (xhr.status !== 200) { status.text('Could not get the test page (HTTP ' + xhr.status + ').'); return; }
+            var frame = document.getElementById('lp-test-frame');
+            frame.src = URL.createObjectURL(new Blob([xhr.response], {type: 'application/pdf'}));
+            // Printing right away prints the previous document instead.
+            setTimeout(function () {
+                try { frame.contentWindow.print(); status.text('Sent to the printer.'); }
+                catch (e) { status.text('Could not print: ' + e); }
+            }, 1000);
+        };
+        xhr.onerror = function () { status.text('Could not get the test page.'); };
+        xhr.send();
+    });
+
+    $j(function () {
+        $j('#lp-start').on('click', function () {
+            if (ELSEWHERE && !TAKE_OVER_URL) {
+                armConfirm(this, 'Take over from the other printer for ' + NAME + '?', function () { claim(true); });
+            } else {
+                claim(TAKE_OVER_URL);
+            }
+        });
+        if (ELSEWHERE && !TAKE_OVER_URL) {
+            $j('#lp-ask-text').text('Something is already printing for ' + NAME + '.');
+            $j('#lp-start').text('Take over');
+        } else {
+            $j('#lp-ask-text').text('Start printing for ' + NAME + ' from this laptop?');
+        }
+        $j('#lp-ask').show();
+    });
+})(window.$j || window.jQuery);
+</script>
+{% endblock %}
