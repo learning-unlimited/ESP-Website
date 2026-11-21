@@ -27,7 +27,7 @@ class RapidCheckinStudentWidget(forms.Widget):
             except (ESPUser.DoesNotExist, ValueError, TypeError):
                 pass
         html = (
-            '<input type="text" id="id_%s" name="%s_raw" value="%s" class="span6" />'
+            '<input type="text" id="id_%s" name="%s_raw" value="%s" class="col-md-6" />'
             % (name, name, addslashes(init_val))
         )
         html += '<input type="hidden" id="id_%s_data" name="%s" value="%s" />' % (

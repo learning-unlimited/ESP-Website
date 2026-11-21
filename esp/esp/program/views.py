@@ -62,11 +62,12 @@ from django.core.cache import cache
 from django.urls import reverse
 from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
 
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.program.modules.program_settings import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType, StudentSubjectInterest
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RecordTypeForm, RedirectForm, PlainRedirectForm
 from esp.program.setup import prepare_program, commit_program
@@ -74,7 +75,7 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.commmodule import CommModule
-from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, RecordType
+from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, RecordType, PendingActivation
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
@@ -253,40 +254,6 @@ def _latest_release():
     return label, _rst_to_html("\n".join(preview_lines))
 
 # ---------------------------------------------------------------------------
-
-@login_required
-def lottery_student_reg(request, program = None):
-    """
-    Serve the student reg page.
-
-    This is just a static page;
-    it gets all of its content from AJAX callbacks.
-    """
-
-    # First check whether the user is actually a student.
-    if not request.user.isStudent():
-        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
-
-    context = {}
-
-    return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, {})
-
-@login_required
-def lottery_student_reg_simple(request, program = None):
-    """
-    Serve the student reg page.
-
-    This is just a static page;
-    it gets all of its content from AJAX callbacks.
-    """
-
-    # First check whether the user is actually a student.
-    if not request.user.isStudent():
-        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
-
-    context = {}
-
-    return render_to_response('program/modules/lotterystudentregmodule/student_reg_simple.html', request, {})
 
 @transaction.atomic
 @login_required
@@ -534,18 +501,52 @@ def usersearch(request):
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
     elif num_users > 1:
         found_users = found_users.all()
-        sorted_users = sorted(found_users, key=lambda x: x.get_last_program_with_profile().dates()[0] if x.get_last_program_with_profile() and x.get_last_program_with_profile().dates() else datetime.date(datetime.MINYEAR, 1, 1), reverse=True)
+        def _last_active_sort_key(user):
+            # Sort by the user's most recent program (volunteers included), oldest-possible if none
+            program = user.get_last_active_program()
+            dates = program.dates() if program else None
+            return dates[0] if dates else datetime.date(datetime.MINYEAR, 1, 1)
+        sorted_users = sorted(found_users, key=_last_active_sort_key, reverse=True)
         return render_to_response('users/userview_search.html', request, { 'found_users': sorted_users })
     else:
         raise ESPError("No user found by that name! Searched for `{}`".format(userstr), log=False)
 
 @admin_required
 def userview(request):
-    """ Render a template displaying all the information about the specified user """
+    """ Render a template displaying all the information about the specified user. """
+    params = request.POST if request.method == 'POST' else request.GET
+    username = params.get('username')
+    if not username:
+        raise ESPError("You must specify a username to view.", log=False)
     try:
-        user = ESPUser.objects.get(username=request.GET['username'])
+        user = ESPUser.objects.get(username=username)
     except ESPUser.DoesNotExist:
         raise ESPError("Sorry, can't find anyone with that username.", log=False)
+
+    # Grade changes and grade change request approvals/rejections must be
+    # submitted via POST
+    if request.method == 'POST':
+        if 'approve_request' in request.POST:
+            gcr = GradeChangeRequest.objects.filter(id=request.POST['approve_request'], requesting_student=user).first()
+            if gcr:
+                gcr.approved = True
+                gcr.acknowledged_by = request.user
+                gcr.save()
+        if 'reject_request' in request.POST:
+            gcr = GradeChangeRequest.objects.filter(id=request.POST['reject_request'], requesting_student=user).first()
+            if gcr:
+                gcr.approved = False
+                gcr.acknowledged_by = request.user
+                gcr.save()
+
+        if 'graduation_year' in request.POST:
+            user.set_student_grad_year(request.POST['graduation_year'])
+
+        from urllib.parse import urlencode
+        query = {'username': user.username}
+        if request.POST.get('program'):
+            query['program'] = request.POST['program']
+        return HttpResponseRedirect('/manage/userview?%s' % urlencode(query))
 
     if 'program' in request.GET:
         try:
@@ -553,7 +554,11 @@ def userview(request):
         except Program.DoesNotExist:
             raise ESPError("Sorry, can't find that program.", log=False)
     else:
-        program = user.get_last_program_with_profile()
+        program = user.get_last_active_program()
+        if program is None:
+            current = Program.current_programs()
+            if current:
+                program = current[0]
 
     learn_modules = []
     teach_modules = []
@@ -575,24 +580,6 @@ def userview(request):
         teacherbio.picture = 'images/not-available.jpg'
 
     from esp.users.forms.user_profile import StudentInfoForm
-
-    if 'approve_request' in request.GET:
-        gcrs = GradeChangeRequest.objects.filter(id=request.GET['approve_request'])
-        if gcrs.count() == 1:
-            gcr = gcrs[0]
-            gcr.approved = True
-            gcr.acknowledged_by = request.user
-            gcr.save()
-    if 'reject_request' in request.GET:
-        gcrs = GradeChangeRequest.objects.filter(id=request.GET['reject_request'])
-        if gcrs.count() == 1:
-            gcr = gcrs[0]
-            gcr.approved = False
-            gcr.acknowledged_by = request.user
-            gcr.save()
-
-    if 'graduation_year' in request.GET:
-        user.set_student_grad_year(request.GET['graduation_year'])
 
     change_grade_form = StudentInfoForm(user=user)
     if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:
@@ -700,11 +687,10 @@ def activate_user(request):
 def unenroll_student(request):
     if request.method != 'POST' or 'user_id' not in request.POST or 'program' not in request.POST:
         return HttpResponseBadRequest('')
-    users = ESPUser.objects.filter(id=request.POST['user_id'])
-    if users.count() != 1:
+    user = ESPUser.objects.filter(id=request.POST['user_id']).first()
+    if user is None:
         return HttpResponseBadRequest('')
     else:
-        user = users[0]
         sections = user.getSections(program = request.POST['program'])
         verbs = RTC.getVisibleRegistrationTypeNames(request.POST['program'])
         for sec in sections:
@@ -717,13 +703,14 @@ def activate_or_deactivate_user(request, activate):
     if request.method != 'POST' or 'user_id' not in request.POST:
         return HttpResponseBadRequest('')
     else:
-        users = ESPUser.objects.filter(id=request.POST['user_id'])
-        if users.count() != 1:
+        user = ESPUser.objects.filter(id=request.POST['user_id']).first()
+        if user is None:
             return HttpResponseBadRequest('')
         else:
-            user = users[0]
             user.is_active = activate
             user.save()
+            if activate:
+                PendingActivation.objects.filter(user=user).delete()
             return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
 
 @admin_required
@@ -854,6 +841,7 @@ def newprogram(request):
     return render_to_response('program/newprogram.html', request, {'form': form, 'programs': Program.objects.all().order_by('-id'), 'template_prog_id': template_prog_id})
 
 @csrf_exempt
+@require_POST
 @transaction.non_atomic_requests
 def submit_transaction(request):
     # Before we do anything else, log the raw postback to the database
@@ -1081,24 +1069,21 @@ def redirects(request, section=""):
                     redirect_form = RedirectForm()
             elif request.POST.get('command') == 'load': # Load existing redirect into form
                 redirect_id = request.POST.get('id')
-                redirects = Redirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = Redirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     redirect_form = RedirectForm(instance = redirect)
             elif request.POST.get('command') == 'edit': # Edit existing redirect
                 redirect_id = request.POST.get('id')
-                redirects = Redirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = Redirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     redirect_form = RedirectForm(request.POST, instance = redirect)
                     if redirect_form.is_valid():
                         redirect_form.save()
                         redirect_form = RedirectForm()
             elif request.POST.get('command') == 'delete': # Delete redirect
                 redirect_id = request.POST.get('id')
-                redirects = Redirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = Redirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     redirect.delete()
         elif request.POST.get('object') == 'email_redirect':
             section = 'email_redirects'
@@ -1109,24 +1094,21 @@ def redirects(request, section=""):
                     email_redirect_form = PlainRedirectForm()
             elif request.POST.get('command') == 'load': # Load existing email redirect into form
                 redirect_id = request.POST.get('id')
-                redirects = PlainRedirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = PlainRedirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     email_redirect_form = PlainRedirectForm(instance = redirect)
             elif request.POST.get('command') == 'edit': # Edit existing email redirect
                 redirect_id = request.POST.get('id')
-                redirects = PlainRedirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = PlainRedirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     email_redirect_form = PlainRedirectForm(request.POST, instance = redirect)
                     if email_redirect_form.is_valid():
                         email_redirect_form.save()
                         email_redirect_form = PlainRedirectForm()
             elif request.POST.get('command') == 'delete': # Delete email redirect
                 redirect_id = request.POST.get('id')
-                redirects = PlainRedirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = PlainRedirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     redirect.delete()
     context['open_section'] = section
     context['redirect_form'] = redirect_form
@@ -1156,24 +1138,21 @@ def catsflagsrecs(request, section=""):
                     cat_form = CategoryForm()
             elif request.POST.get('command') == 'load': # Load existing category into form
                 cat_id = request.POST.get('id')
-                cats = ClassCategories.objects.filter(id = cat_id)
-                if cats.count() == 1:
-                    cat = cats[0]
+                cat = ClassCategories.objects.filter(id = cat_id).first()
+                if cat:
                     cat_form = CategoryForm(instance = cat)
             elif request.POST.get('command') == 'edit': # Edit existing category
                 cat_id = request.POST.get('id')
-                cats = ClassCategories.objects.filter(id = cat_id)
-                if cats.count() == 1:
-                    cat = cats[0]
+                cat = ClassCategories.objects.filter(id = cat_id).first()
+                if cat:
                     cat_form = CategoryForm(request.POST, instance = cat)
                     if cat_form.is_valid():
                         cat_form.save()
                         cat_form = CategoryForm()
             elif request.POST.get('command') == 'delete': # Delete category
                 cat_id = request.POST.get('id')
-                cats = ClassCategories.objects.filter(id = cat_id)
-                if cats.count() == 1:
-                    cat = cats[0]
+                cat = ClassCategories.objects.filter(id = cat_id).first()
+                if cat:
                     cat.delete()
         elif request.POST.get('object') == 'flag_type':
             section = 'flagtypes'
@@ -1184,24 +1163,21 @@ def catsflagsrecs(request, section=""):
                     flag_form = FlagTypeForm()
             elif request.POST.get('command') == 'load': # Load existing flag type into form
                 ft_id = request.POST.get('id')
-                fts = ClassFlagType.objects.filter(id = ft_id)
-                if fts.count() == 1:
-                    ft = fts[0]
+                ft = ClassFlagType.objects.filter(id = ft_id).first()
+                if ft:
                     flag_form = FlagTypeForm(instance = ft)
             elif request.POST.get('command') == 'edit': # Edit existing flag type
                 ft_id = request.POST.get('id')
-                fts = ClassFlagType.objects.filter(id = ft_id)
-                if fts.count() == 1:
-                    ft = fts[0]
+                ft = ClassFlagType.objects.filter(id = ft_id).first()
+                if ft:
                     flag_form = FlagTypeForm(request.POST, instance = ft)
                     if flag_form.is_valid():
                         flag_form.save()
                         flag_form = FlagTypeForm()
             elif request.POST.get('command') == 'delete': # Delete flag type
                 ft_id = request.POST.get('id')
-                fts = ClassFlagType.objects.filter(id = ft_id)
-                if fts.count() == 1:
-                    ft = fts[0]
+                ft = ClassFlagType.objects.filter(id = ft_id).first()
+                if ft:
                     ft.delete()
         elif request.POST.get('object') == 'record_type':
             section = 'recordtypes'
@@ -1212,24 +1188,21 @@ def catsflagsrecs(request, section=""):
                     rec_form = RecordTypeForm()
             elif request.POST.get('command') == 'load': # Load existing record type into form
                 ft_id = request.POST.get('id')
-                fts = RecordType.objects.filter(id = ft_id)
-                if fts.count() == 1:
-                    ft = fts[0]
+                ft = RecordType.objects.filter(id = ft_id).first()
+                if ft:
                     rec_form = RecordTypeForm(instance = ft)
             elif request.POST.get('command') == 'edit': # Edit existing record type
                 rt_id = request.POST.get('id')
-                rts = RecordType.objects.filter(id = rt_id)
-                if rts.count() == 1:
-                    rt = rts[0]
+                rt = RecordType.objects.filter(id = rt_id).first()
+                if rt:
                     rec_form = RecordTypeForm(request.POST, instance = rt)
                     if rec_form.is_valid():
                         rec_form.save()
                         rec_form = RecordTypeForm()
             elif request.POST.get('command') == 'delete': # Delete record type
                 rt_id = request.POST.get('id')
-                rts = RecordType.objects.filter(id = rt_id)
-                if rts.count() == 1:
-                    rt = rts[0]
+                rt = RecordType.objects.filter(id = rt_id).first()
+                if rt:
                     rt.delete()
     context['open_section'] = section
     context['cat_form'] = cat_form
@@ -1256,6 +1229,16 @@ def statistics(request, program=None):
                 field_ids.append(field_name)
         return field_ids
 
+    def get_form_setup(field_ids):
+        """ Data telling ajax_tools.js how to re-attach behavior to a freshly
+            rendered statistics form.
+        """
+        return {
+            'forms': [{'id': 'statistics_form', 'url': '/manage/statistics/'}],
+            'callbacks': [{'name': 'setup_update', 'args': [field_id]}
+                          for field_id in field_ids],
+        }
+
     if request.method == 'POST':
         #   Hack for proper behavior when multiselect fields are hidden
         #   (they contain '' instead of simply being absent like they should)
@@ -1277,7 +1260,7 @@ def statistics(request, program=None):
             context['field_ids'] = get_field_ids(form)
             result = {}
             result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
-            result['script'] = render_to_string('program/statistics/script.js', context)
+            result.update(get_form_setup(context['field_ids']))
             return HttpResponse(json.dumps(result), content_type='application/json')
 
         if form.is_valid():
@@ -1410,7 +1393,7 @@ def statistics(request, program=None):
             # Batch-fetch latest profile per user to avoid N+1
             profile_by_user = {}
             if user_list:
-                for p in RegistrationProfile.objects.filter(user__in=users).select_related('user').order_by('user_id', '-last_ts'):
+                for p in RegistrationProfile.objects.filter(user__in=user_list).select_related('user', 'contact_user', 'student_info', 'student_info__k12school').order_by('user_id', '-last_ts'):
                     if p.user_id not in profile_by_user:
                         profile_by_user[p.user_id] = p
             profiles = [profile_by_user.get(u.id) or RegistrationProfile(user=u) for u in user_list]
@@ -1431,7 +1414,7 @@ def statistics(request, program=None):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 result = {}
                 result['result_html'] = context['result']
-                result['script'] = render_to_string('program/statistics/script.js', context)
+                result.update(get_form_setup(context['field_ids']))
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
@@ -1442,6 +1425,9 @@ def statistics(request, program=None):
             context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                result = {}
+                result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
+                result.update(get_form_setup(context['field_ids']))
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
@@ -1532,3 +1518,326 @@ def manage_docs(request, doc_path=None):
         'latest_release_html': latest_release_html,
     }
     return render_to_response('program/manage_docs.html', request, context)
+
+from django.http import JsonResponse, Http404
+from django.views.decorators.http import require_POST, require_GET
+from django.utils.dateparse import parse_datetime
+
+def get_program_or_404(request, program_type, program_term):
+    from esp.program.models import Program
+    try:
+        prog = Program.by_prog_inst(program_type, program_term)
+    except Program.DoesNotExist:
+        raise Http404("Program not found.")
+
+    if not request.user.is_authenticated or not request.user.isAdministrator(prog):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("You must be an administrator to manage this program.")
+
+    return prog
+
+@require_GET
+def module_schedule_api(request, program_type, program_term):
+    """
+    JSON API endpoint to list all modules for a program.
+    Inputs: program_type (str), program_term (str) from the URL.
+    Outputs: JSONResponse with a list of serialized modules grouped by module_type (learn/teach).
+    """
+    prog = get_program_or_404(request, program_type, program_term)
+    modules = prog.getModules()
+
+    # We serialize them into dicts grouped by module_type (learn/teach)
+    data = {
+        "program_id": prog.id,
+        "program_name": prog.name,
+        "modules": {"learn": [], "teach": []}
+    }
+
+    for mod in modules:
+        tl = mod.module.module_type
+        if tl not in data["modules"]:
+            data["modules"][tl] = []
+
+        data["modules"][tl].append({
+            "id": mod.id,
+            "handler": mod.module.handler,
+            "admin_title": mod.module.admin_title,
+            "link_title": mod.get_link_title(),
+            "module_type": tl,
+            "seq": mod.seq,
+            "always_enabled": mod.always_enabled,
+            "seq_locked": mod.seq_locked,
+            "start_date": mod.start_date.isoformat() if mod.start_date else None,
+            "end_date": mod.end_date.isoformat() if mod.end_date else None,
+            "required": mod.required,
+            "required_label": mod.required_label,
+        })
+
+    return JsonResponse(data)
+
+@require_POST
+def module_schedule_update_api(request, program_type, program_term):
+    """
+    JSON API endpoint to update a program module's schedule and metadata.
+    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, start_date, end_date, seq, link_title, required, required_label.
+    Outputs: JSONResponse with success boolean and updated module fields.
+    """
+    # we simulate PATCH using POST with data, or we could just use POST.
+    prog = get_program_or_404(request, program_type, program_term)
+
+    try:
+        data = json.loads(request.body)
+        module_id = data.get("module_id")
+
+        from esp.program.modules.base import ProgramModuleObj
+        from django.utils import timezone
+
+        try:
+            mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
+        except ProgramModuleObj.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Module not found"}, status=404)
+
+        mod_hydrated = ProgramModuleObj.getFromProgModule(prog, mod.module)
+
+        if "start_date" in data:
+            val = data["start_date"]
+            if val:
+                dt = parse_datetime(val)
+                if dt is None:
+                    return JsonResponse({"success": False, "error": "Invalid start_date format"}, status=400)
+                if timezone.is_aware(dt):
+                    dt = timezone.make_naive(dt, timezone.get_current_timezone())
+                mod.start_date = dt
+            else:
+                mod.start_date = None
+
+        if "end_date" in data:
+            val = data["end_date"]
+            if val:
+                dt = parse_datetime(val)
+                if dt is None:
+                    return JsonResponse({"success": False, "error": "Invalid end_date format"}, status=400)
+                if timezone.is_aware(dt):
+                    dt = timezone.make_naive(dt, timezone.get_current_timezone())
+                mod.end_date = dt
+            else:
+                mod.end_date = None
+
+        if "seq" in data:
+            if mod_hydrated.seq_locked:
+                return JsonResponse({"success": False, "error": f"Module {mod.module.handler} is locked and cannot be reordered"}, status=403)
+            mod.seq = int(data["seq"])
+
+        if "link_title" in data:
+            title = data["link_title"]
+            if not isinstance(title, str):
+                return JsonResponse({"success": False, "error": "link_title must be a string"}, status=400)
+            max_len = ProgramModuleObj._meta.get_field('link_title').max_length
+            if len(title) > max_len:
+                return JsonResponse({"success": False, "error": f"link_title must be {max_len} characters or fewer"}, status=400)
+            mod.link_title = title
+
+        if "required" in data:
+            if not isinstance(data["required"], bool):
+                return JsonResponse({"success": False, "error": "required must be a boolean"}, status=400)
+            mod.required = data["required"]
+
+        if "required_label" in data:
+            label = data["required_label"]
+            if not isinstance(label, str):
+                return JsonResponse({"success": False, "error": "required_label must be a string"}, status=400)
+            max_len = ProgramModuleObj._meta.get_field('required_label').max_length
+            if len(label) > max_len:
+                return JsonResponse({"success": False, "error": f"required_label must be {max_len} characters or fewer"}, status=400)
+            mod.required_label = label
+
+        if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
+            return JsonResponse({"success": False, "error": "start_date must be before end_date"}, status=400)
+
+        # Enforce hard constraints (same as admincore POST handler)
+        handler = mod.module.handler
+        if handler in ("StudentRegProfileModule", "TeacherRegProfileModule"):
+            mod.seq = 0
+            mod.required = True
+        elif "CreditCardModule_" in handler:
+            mod.seq = 10000
+            mod.required = False
+        elif handler == "StudentRegConfirm":
+            mod.seq = 99999
+            mod.required = False
+        elif handler == "AvailabilityModule":
+            mod.required = True
+        elif "AcknowledgementModule" in handler:
+            mod.required = True
+        elif handler == "StudentRegTwoPhase":
+            mod.required = True
+
+        mod.save()
+        mod_hydrated.start_date = mod.start_date
+        mod_hydrated.end_date = mod.end_date
+        mod_hydrated.sync_permissions()
+
+        return JsonResponse({
+            "success": True,
+            "module_id": mod.id,
+            "start_date": mod.start_date.isoformat() if mod.start_date else None,
+            "end_date": mod.end_date.isoformat() if mod.end_date else None,
+            "seq": mod.seq,
+            "link_title": mod.link_title,
+            "required": mod.required,
+            "required_label": mod.required_label
+        })
+    except ValueError:
+        return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)
+    except Exception:
+        logger.exception("module_schedule_update_api failed")
+        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
+
+@require_GET
+def module_schedule_preview_api(request, program_type, program_term):
+    """
+    JSON API endpoint to preview the list of active modules for a given timestamp.
+    Inputs: program_type (str), program_term (str) from the URL, GET parameter 'at' (ISO timestamp string).
+    Outputs: JSONResponse with a list of serialized modules valid at the given timestamp.
+    """
+    prog = get_program_or_404(request, program_type, program_term)
+
+    at_str = request.GET.get("at")
+    if not at_str:
+        return JsonResponse({"success": False, "error": "Missing 'at' parameter"}, status=400)
+
+    from django.utils import timezone
+    at_dt = parse_datetime(at_str)
+    if at_dt is None:
+        return JsonResponse({"success": False, "error": "Invalid 'at' parameter"}, status=400)
+
+    if timezone.is_aware(at_dt):
+        at_dt = timezone.make_naive(at_dt, timezone.get_current_timezone())
+
+    # We bypass time filtering initially by using getModules(user=admin)
+    all_modules = prog.getModules(user=request.user)
+
+    data = {
+        "program_id": prog.id,
+        "program_name": prog.name,
+        "modules": {"learn": [], "teach": []}
+    }
+
+    for mod in all_modules:
+        if mod.is_valid(when=at_dt):
+            tl = mod.module.module_type
+            if tl not in data["modules"]:
+                data["modules"][tl] = []
+
+            data["modules"][tl].append({
+                "id": mod.id,
+                "handler": mod.module.handler,
+                "admin_title": mod.module.admin_title,
+                "link_title": mod.get_link_title(),
+                "module_type": tl,
+                "seq": mod.seq,
+                "always_enabled": mod.always_enabled,
+                "seq_locked": mod.seq_locked,
+                "start_date": mod.start_date.isoformat() if mod.start_date else None,
+                "end_date": mod.end_date.isoformat() if mod.end_date else None,
+                "required": mod.required,
+                "required_label": mod.required_label,
+            })
+
+    return JsonResponse(data)
+
+@require_GET
+def module_schedule_conflicts_api(request, program_type, program_term):
+    prog = get_program_or_404(request, program_type, program_term)
+
+    # request.user is admin, so getModules returns all modules regardless of expiration
+    all_modules = prog.getModules(user=request.user)
+    conflicts = []
+
+    for i, mod1 in enumerate(all_modules):
+        for mod2 in all_modules[i+1:]:
+            # Check for conflict declaration
+            if (mod2.module.handler in mod1.conflicts_with) or (mod1.module.handler in mod2.conflicts_with):
+                # Check for time overlap
+                start1 = mod1.start_date
+                end1 = mod1.end_date
+                start2 = mod2.start_date
+                end2 = mod2.end_date
+
+                # Overlap condition
+                cond1 = (start1 is None) or (end2 is None) or (start1 < end2)
+                cond2 = (start2 is None) or (end1 is None) or (start2 < end1)
+
+                if cond1 and cond2:
+                    overlap_starts = [s for s in (start1, start2) if s is not None]
+                    overlap_start = max(overlap_starts) if overlap_starts else None
+
+                    overlap_ends = [e for e in (end1, end2) if e is not None]
+                    overlap_end = min(overlap_ends) if overlap_ends else None
+
+                    conflicts.append({
+                        "module_id_1": mod1.id,
+                        "handler_1": mod1.module.handler,
+                        "module_id_2": mod2.id,
+                        "handler_2": mod2.module.handler,
+                        "overlap_start": overlap_start.isoformat() if overlap_start else None,
+                        "overlap_end": overlap_end.isoformat() if overlap_end else None,
+                        "description": f"{mod1.get_link_title()} overlaps with {mod2.get_link_title()}"
+                    })
+
+    return JsonResponse({"conflicts": conflicts})
+
+@require_POST
+def module_schedule_reorder_api(request, program_type, program_term):
+    """
+    JSON API endpoint to bulk update the sequence (seq) of program modules.
+    Accepts a JSON body with 'order': a list of {"id": <int>, "seq": <int>} dicts.
+    """
+    prog = get_program_or_404(request, program_type, program_term)
+
+    try:
+        data = json.loads(request.body)
+        order = data.get("order", [])
+        if not isinstance(order, list):
+            return JsonResponse({"success": False, "error": "'order' must be a list"}, status=400)
+
+        from esp.program.modules.base import ProgramModuleObj
+        from django.db import transaction
+
+        update_ids = [u.get("id") for u in order if "id" in u]
+        module_map = {m.id: m for m in ProgramModuleObj.objects.filter(program=prog, id__in=update_ids).select_related('module')}
+
+        with transaction.atomic():
+            for update in order:
+                mod_id = update.get("id")
+                new_seq = update.get("seq")
+
+                if mod_id not in module_map:
+                    continue
+
+                mod = module_map[mod_id]
+                handler = mod.module.handler
+
+                position_locked = (
+                    handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
+                    'CreditCardModule_' in handler or
+                    handler == 'StudentRegConfirm'
+                )
+
+                if position_locked:
+                    raise ValueError(f"Module {handler} is locked and cannot be reordered")
+
+                mod.seq = int(new_seq)
+                mod.save(update_fields=['seq'])
+
+        return JsonResponse({"success": True})
+    except ValueError as e:
+        if "locked and cannot be reordered" in str(e):
+            return JsonResponse({"success": False, "error": "One or more modules are locked and cannot be reordered"}, status=403)
+        return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
+    except (TypeError, KeyError):
+        return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
+    except Exception as e:
+        logger.exception("module_schedule_reorder_api failed")
+        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
+

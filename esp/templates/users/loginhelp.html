@@ -19,7 +19,7 @@ In order to join {{ settings.INSTITUTION_NAME }}
 {{ settings.ORGANIZATION_SHORT_NAME }}, you first need to log on to this web
 site.
 If you have not already done so, please
-[create an account](/myesp/register/ "Join {{ settings.ORGANIZATION_SHORT_NAME }}!") now.
+[create an account]({% url 'esp.users.views.user_registration_phase1' %} "Join {{ settings.ORGANIZATION_SHORT_NAME }}!") now.
 Note: Creating an account does *not* register you for any programs.
 
 
@@ -43,7 +43,7 @@ Please check your spam folder.
 
 
 [1]: https://www.google.com/cookies.html "Enabling cookies in your browser."
-[2]: /myesp/passwdrecover/
+[2]: {% url 'passwd_recover' %}
 [3]: mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}
 
 {% end_inline_qsd_block %}

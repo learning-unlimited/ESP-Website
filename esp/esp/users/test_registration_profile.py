@@ -361,7 +361,7 @@ class StudentInfoFormProfileTest(CacheFlushTestCase):
 class RegistrationProfileViewTest(CacheFlushTestCase):
     """
     test the /myesp/profile/ view for student,
-    teacher, guardian, and educator account types — both GET and POST.
+    teacher, guardian, educator, and volunteer account types — both GET and POST.
     Test admin grade-change via userview URL.
     """
 
@@ -379,11 +379,17 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
 
         self.student = _make_user('profile_test_student', 'Student')
         self.teacher = _make_user('profile_test_teacher', 'Teacher')
+        self.guardian = _make_user('profile_test_guardian', 'Guardian')
+        self.educator = _make_user('profile_test_educator', 'Educator')
+        self.volunteer = _make_user('profile_test_volunteer', 'Volunteer')
 
     def tearDown(self):
         self.admin.delete()
         self.student.delete()
         self.teacher.delete()
+        self.guardian.delete()
+        self.educator.delete()
+        self.volunteer.delete()
 
     def _login(self, user):
         self.assertTrue(
@@ -404,6 +410,30 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
     def test_teacher_profile_page_loads(self):
         """GET /myesp/profile/ for a teacher should return 200."""
         self._login(self.teacher)
+        response = self.client.get('/myesp/profile/')
+        self.assertEqual(response.status_code, 200)
+
+    # --- Guardian profile view ------------------------------------------
+
+    def test_guardian_profile_page_loads(self):
+        """GET /myesp/profile/ for a guardian should return 200."""
+        self._login(self.guardian)
+        response = self.client.get('/myesp/profile/')
+        self.assertEqual(response.status_code, 200)
+
+    # --- Educator profile view -------------------------------------------------
+
+    def test_educator_profile_page_loads(self):
+        """GET /myesp/profile/ for an educator should return 200."""
+        self._login(self.educator)
+        response = self.client.get('/myesp/profile/')
+        self.assertEqual(response.status_code, 200)
+
+    # --- Volunteer profile view ------------------------------------------------
+
+    def test_volunteer_profile_page_loads(self):
+        """GET /myesp/profile/ for a volunteer should return 200."""
+        self._login(self.volunteer)
         response = self.client.get('/myesp/profile/')
         self.assertEqual(response.status_code, 200)
 
@@ -432,8 +462,9 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
         self._login(self.admin)
         target_grade = 11
         yog = ESPUser.current_schoolyear() + (12 - target_grade)
-        self.client.get(
-            f'/manage/userview?username={self.student.username}&graduation_year={yog}'
+        self.client.post(
+            '/manage/userview',
+            data={'username': self.student.username, 'graduation_year': yog},
         )
         # Refresh student from DB
         student_fresh = ESPUser.objects.get(pk=self.student.pk)
@@ -470,9 +501,9 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
         try:
             self._login(other_student)
             target_yog = ESPUser.current_schoolyear() + (12 - 11)
-            response = self.client.get(
-                f'/manage/userview?username={self.student.username}'
-                f'&graduation_year={target_yog}'
+            response = self.client.post(
+                '/manage/userview',
+                data={'username': self.student.username, 'graduation_year': target_yog},
             )
             # Should be 302 redirect to login or 403 forbidden, never 200 + change
             self.assertIn(response.status_code, [302, 403])

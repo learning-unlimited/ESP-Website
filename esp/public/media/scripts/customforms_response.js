@@ -56,7 +56,11 @@ $j(document).ready(function() {
 //  Function to convert an uploaded file storage location to a URL.
 function file_link_formatter(cellvalue, options, rowObject)
 {
-    var url_path = cellvalue.split("media/uploaded/")[1];
+    //  Newer responses store a path relative to the media directory
+    //  ("uploaded/<model>/<file>"); older ones stored an absolute path under
+    //  whatever MEDIA_ROOT was, so match only the trailing three segments.
+    var match = (cellvalue || "").match(/(?:^|\/)uploaded\/([^\/]+\/[^\/]+)$/);
+    var url_path = match ? match[1] : undefined;
     if (url_path) {
         var url_dir = url_path.split("/");
         return "<a href=\"/media/uploaded/" + url_dir.slice(0, url_dir.length - 1).join("/") + "/" + encodeURIComponent(url_dir[url_dir.length - 1]) +  "\">" + url_dir[url_dir.length - 1] + "</a>";
@@ -96,7 +100,7 @@ var createGrid=function(form_data){
         //  Substitute in custom formatter defined above in order to link to uploaded files.
         if (val[2] == "file") {
             $j("#download-legend").show();
-            $j("#jqGrid_" + val[0] + " div").append(" <a title='Bulk Download All Files' href='/customforms/bulkdownloadfiles?form_id="+$j('#form_id').val()+"&question_name="+val[0]+"'><span style='font-size: 14px;' class='glyphicon glyphicon-download-alt'</span></a>");
+            $j("#jqGrid_" + val[0] + " div").append(" <a title='Bulk Download All Files' href='/customforms/bulkdownloadfiles?form_id="+$j('#form_id').val()+"&question_name="+val[0]+"'><span style='font-size: 14px;' class='bi bi-download'</span></a>");
             $j("#jqGrid_" + val[0] + " div a").click(function(e) {
                 e.stopPropagation();
             });

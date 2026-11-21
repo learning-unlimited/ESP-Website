@@ -4,6 +4,7 @@
 
 from django import forms
 from django.conf import settings
+from django.core.validators import EMPTY_VALUES
 from django.forms import widgets
 from django.template import Template, Context
 from django.utils.safestring import mark_safe
@@ -50,7 +51,7 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
 
     def value_from_datadict(self, data, files, name):
         dtf = django.utils.formats.get_format('DATETIME_INPUT_FORMATS')
-        empty_values = forms.fields.EMPTY_VALUES
+        empty_values = EMPTY_VALUES
 
         value = data.get(name, None)
         if value in empty_values:
@@ -71,6 +72,21 @@ class DateWidget(DateTimeWidget):
         built in datepicker. """
     pythondformat = '%m/%d/%Y'
     jquerywidget = 'datepicker'
+
+    def value_from_datadict(self, data, files, name):
+        value = data.get(name, None)
+        if value in EMPTY_VALUES:
+            return None
+        if isinstance(value, datetime.datetime):
+            return value.date()
+        if isinstance(value, datetime.date):
+            return value
+        for format in django.utils.formats.get_format('DATE_INPUT_FORMATS'):
+            try:
+                return datetime.date(*(time.strptime(value, format)[:3]))
+            except ValueError:
+                continue
+        return None
 
 class ClassAttrMergingSelect(forms.Select):
 
@@ -262,7 +278,8 @@ $j(document).ready(function() {
 }
 #{{ name }}_entries .ui-sortable-handle {
     cursor: move;
-    background: lavender;
+    background: var(--bs-secondary-bg, lavender);
+    color: var(--bs-emphasis-color, #333);
     padding: 5px;
     border-radius: 10px;
     border: dashed 1px lightgrey;
@@ -430,14 +447,15 @@ $j(document).ready(function() {
 }
 #{{ name }}_entries .ui-sortable-handle {
     cursor: move;
-    background: beige;
+    background: var(--bs-secondary-bg, beige);
+    color: var(--bs-emphasis-color, #333);
     padding: 5px;
     border-radius: 10px;
     border: dashed 1px lightgrey;
     margin-bottom: 5px;
 }
 #{{ name }}_entries > .ui-sortable-handle {
-    background: aliceblue;
+    background: var(--bs-tertiary-bg, aliceblue);
 }
 </style>
 """
@@ -464,19 +482,31 @@ $j(document).ready(function() {
         result = json.loads(data[name])
         return result
 
-class RadioSelectWithData(forms.RadioSelect):
+class WithOptionDataMixin(object):
+    """ Mixin for choice widgets that renders extra ``data-`` attributes on each
+        of the individual choice inputs.  ``option_data`` maps a choice value to
+        a dict of attribute names (without the ``data-`` prefix) and values.  """
+
     def __init__(self, *args, **kwargs):
-        self.option_data = kwargs.pop('option_data', {})
+        #   Choice values are frequently model IDs, so normalize the keys to
+        #   strings to avoid int/str mismatches at lookup time.
+        self.option_data = {str(key): data for key, data in kwargs.pop('option_data', {}).items()}
         super().__init__(*args, **kwargs)
 
-    # https://stackoverflow.com/a/59274893/4660582
-    def get_context(self, name, value, attrs):
-        context = super().get_context(name, value, attrs)
-        for optgroup in context['widget'].get('optgroups', []):
-            for option in optgroup[1]:
-                for k, v in self.option_data.get(option['value'], {}).items():
-                    option['attrs']['data-' + k] = v
-        return context
+    #   create_option() is the hook shared by every rendering path
+    def create_option(self, name, value, *args, **kwargs):
+        option = super().create_option(name, value, *args, **kwargs)
+        for key, data in self.option_data.get(str(value), {}).items():
+            option['attrs']['data-' + key] = data
+        return option
+
+
+class RadioSelectWithData(WithOptionDataMixin, forms.RadioSelect):
+    pass
+
+
+class CheckboxSelectMultipleWithData(WithOptionDataMixin, forms.CheckboxSelectMultiple):
+    pass
 
 class ChoiceWithOtherWidget(forms.MultiWidget):
     """MultiWidget for use with ChoiceWithOtherField."""

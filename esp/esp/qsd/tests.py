@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.program.tests import ProgramFrameworkTest
 from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
@@ -43,9 +44,8 @@ from esp.qsd.models import qsd_cache_key
 from django.urls import reverse
 from reversion import revisions as reversion
 from reversion.models import Version
+import esp.qsd.admin  # noqa: F401
 import json
-
-from esp.qsd.seltests import TestQsdCachePurging  # Run Selenium tests with regular tests
 
 class QSDCorrectnessTest(TestCase):
     """ Tests to ensure that QSD-related caches are cleared appropriately. """
@@ -468,6 +468,63 @@ class QSDVersionHistoryTest(TestCase):
         QuasiStaticData.objects.filter(url='learn/historytest').delete()
 
 
+class ClassQSDCanEditTest(ProgramFrameworkTest):
+    """Tests for revealing QSD edit controls to non-admins who can edit them (#5794)."""
+
+    CAN_EDIT_URL = '/admin/ajax_qsd_can_edit'
+
+    def setUp(self):
+        super().setUp(num_students=1, num_teachers=2, classes_per_teacher=1, num_admins=1)
+        self.teacher = self.teachers[0]
+        self.student = self.students[0]
+        self.qsd_url = 'learn/%s/index' % self.teacher.getTaughtClasses()[0].url()
+        self.other_class_url = 'learn/%s/index' % self.teachers[1].getTaughtClasses()[0].url()
+        self.program_url = 'learn/%s/index' % self.program.url
+
+        QuasiStaticData.objects.create(
+            url=self.qsd_url,
+            name='learn:index',
+            title='Class page',
+            content='Class page content',
+            author=self.admins[0],
+            nav_category=default_navbarcategory(),
+            description='',
+            keywords='',
+        )
+
+    def get_editable(self):
+        response = self.client.get(self.CAN_EDIT_URL, {
+            'url': [self.qsd_url, self.other_class_url, self.program_url],
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('no-store', response['Cache-Control'])
+        return json.loads(response.content)['editable']
+
+    def test_teacher_can_edit_only_own_class_page(self):
+        self.client.login(username=self.teacher.username, password='password')
+        self.assertEqual(self.get_editable(), [self.qsd_url])
+
+    def test_student_cannot_edit(self):
+        self.client.login(username=self.student.username, password='password')
+        self.assertEqual(self.get_editable(), [])
+
+    def test_anonymous_cannot_edit(self):
+        self.assertEqual(self.get_editable(), [])
+
+    def test_admin_can_edit_all(self):
+        self.client.login(username=self.admins[0].username, password='password')
+        self.assertEqual(self.get_editable(), [self.qsd_url, self.other_class_url, self.program_url])
+
+    def test_read_page_is_not_user_specific(self):
+        """Edit controls carry their QSD URL, but stay identical for every user so the page remains cacheable."""
+        logged_out = self.client.get('/%s.html' % self.qsd_url).content.decode('UTF-8')
+        self.assertIn('data-qsd-url="%s"' % self.qsd_url, logged_out)
+
+        self.client.login(username=self.teacher.username, password='password')
+        logged_in = self.client.get('/%s.html' % self.qsd_url).content.decode('UTF-8')
+        self.assertEqual(logged_out, logged_in)
+
+
 class QSDImageUploadTest(TestCase):
     """Tests for the ajax_qsd_image_upload endpoint (#2679)."""
 
@@ -888,3 +945,86 @@ class QSDAdminAuthorTest(TestCase):
 
         self.qsd.refresh_from_db()
         self.assertEqual(self.qsd.author, self.user2)
+
+
+class HTMLCommentSanitizationTest(TestCase):
+
+    def test_simple_comment_unchanged(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "Hello <!-- comment --> World"
+        result = sanitize_html_comments(content)
+        self.assertEqual(result, "Hello <!-- comment --> World")
+
+    def test_nested_comment_markers_removed(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "<!-- outer <!-- inner --> -->"
+        result = sanitize_html_comments(content)
+        self.assertEqual(result.count("<!--"), 1)
+        self.assertEqual(result.count("-->"), 1)
+        self.assertEqual(result, "<!-- outer  inner  -->")
+
+    def test_comment_with_blank_lines(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "<!-- ABC\n\nDEF -->"
+        result = sanitize_html_comments(content)
+        self.assertTrue(result.startswith("<!--"))
+        self.assertTrue(result.endswith("-->"))
+        self.assertIn("ABC", result)
+        self.assertIn("DEF", result)
+
+    def test_multiple_comments_unchanged(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "<!-- first --> text <!-- second -->"
+        result = sanitize_html_comments(content)
+        self.assertEqual(result, "<!-- first --> text <!-- second -->")
+
+    def test_html_tags_inside_comment(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "<!-- <h2>hidden header</h2> -->"
+        result = sanitize_html_comments(content)
+        self.assertIn("<h2>", result)
+        self.assertIn("</h2>", result)
+
+    def test_unterminated_comment_marker_removed_content_preserved(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "foo <!-- bar"
+        result = sanitize_html_comments(content)
+        # No lone opener survives (would comment out the rest of the page)
+        self.assertNotIn("<!--", result)
+        self.assertNotIn("-->", result)
+        # The text is preserved
+        self.assertIn("foo", result)
+        self.assertIn("bar", result)
+
+    def test_unterminated_nested_comment_all_markers_removed(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "x <!-- a <!-- b"
+        result = sanitize_html_comments(content)
+        self.assertNotIn("<!--", result)
+        self.assertNotIn("-->", result)
+        self.assertIn("a", result)
+        self.assertIn("b", result)
+
+    def test_terminated_comment_still_kept(self):
+        # Guard against the fix accidentally stripping well-formed comments
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "before <!-- keep me --> after"
+        result = sanitize_html_comments(content)
+        self.assertEqual(result, "before <!-- keep me --> after")
+
+    def test_terminated_then_unterminated(self):
+        # A valid comment followed by a dangling opener: keep the first, strip the second
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "<!-- ok --> mid <!-- dangling"
+        result = sanitize_html_comments(content)
+        self.assertEqual(result.count("<!--"), 1)
+        self.assertEqual(result.count("-->"), 1)
+        self.assertIn("mid", result)
+        self.assertIn("dangling", result)
+
+    def test_markdown_filter(self):
+        from esp.utils.templatetags.markup import markdown
+        content = "Text <!-- outer <!-- inner --> outer --> more"
+        result = markdown(content)
+        self.assertIsNotNone(result)
+        self.assertEqual(str(result).count("<!--"), 1)

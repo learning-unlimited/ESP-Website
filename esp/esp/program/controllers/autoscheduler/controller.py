@@ -224,7 +224,7 @@ class AutoschedulerController(object):
             resources += "</li>"
         info.append(f"<b>Resource requests:</b><ul>{resources}</ul>")
         cls = ClassSection.objects.get(id=section.id).parent_class
-        info.append(f"<b>Class Flags: </b>{', '.join(cls.flags.values_list('flag_type__name', flat=True))}")
+        info.append(f"<b>Class Flags: </b>{', '.join(cls.flags.filter(resolved=False).values_list('flag_type__name', flat=True))}")
         return info
 
     def roomslot_identifier(self, roomslot):
@@ -314,7 +314,11 @@ class AutoschedulerController(object):
     def export_assignments(self):
         changed_sections = set()
         for action in self.optimizer.manipulator.history:
-            changed_sections.add(action["section"])
+            # Swap actions touch two sections and store them under "sections"
+            if "sections" in action:
+                changed_sections.update(action["sections"])
+            else:
+                changed_sections.add(action["section"])
         scheduling_hashes = {
             section.id: section.initial_state for section in changed_sections}
         logger.info(scheduling_hashes)

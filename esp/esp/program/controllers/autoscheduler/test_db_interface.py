@@ -10,7 +10,7 @@ from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 import esp.program.controllers.autoscheduler.util as util
 from esp.program.models.class_ import \
         ClassSubject, ClassSection, ClassCategories
-from esp.program.modules import module_ext
+from esp.program.modules import program_settings
 from esp.program.tests import ProgramFrameworkTest
 from esp.resources.models import Resource, ResourceType, ResourceRequest
 
@@ -392,7 +392,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         section_obj.assign_meeting_times([timeslot])
         section_obj.assign_room(room)
         if lock:
-            module_ext.AJAXSectionDetail.objects.get_or_create(
+            program_settings.AJAXSectionDetail.objects.get_or_create(
                 program=self.program, cls_id=section_obj.id, comment="locked",
                 locked=True)
         return section_obj, timeslot, room
@@ -455,7 +455,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         but that we can exclude lunch classes. Note that we are NOT testing
         that we can successfully load lunch classes if we wanted."""
         lunch, created = ClassCategories.objects.get_or_create(
-                category="Lunch", symbol="L")
+                category="Lunch", is_lunch=True, symbol="L")
         subj, created = ClassSubject.objects.get_or_create(
                 title="Lunch!", category=lunch, grade_min=7, grade_max=12,
                 parent_program=self.program, class_size_max=2000,

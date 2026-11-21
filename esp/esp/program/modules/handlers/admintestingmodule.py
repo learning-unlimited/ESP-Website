@@ -5,6 +5,7 @@ from django.http import HttpResponseRedirect
 from esp.middleware import ESPError
 from esp.program.controllers.testingutils import DataCleanupController
 from esp.program.modules.base import ProgramModuleObj, aux_call, main_call, needs_admin
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_SETTINGS
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
@@ -32,6 +33,20 @@ class AdminTestingModule(ProgramModuleObj):
             'seq': 35,
             'choosable': 1,
         }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface testing mode in the admin dashboard search dropdown.
+        # Only the main view is searchable; aux endpoints (start_testing, reset_testing) return None.
+        if view_name != "admin_testing":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Testing Mode",
+            category=SEARCH_CATEGORY_SETTINGS,
+            keywords=["testing", "test", "sandbox", "registration", "accounts"],
+        )
 
     # ------------------------------------------------------------------
     # Helpers

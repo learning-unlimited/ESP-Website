@@ -46,7 +46,7 @@ from django.db import transaction
 from django.db.models import Sum, Q
 from django.utils.text import slugify
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 
 class BaseAccountingController(object):
@@ -119,8 +119,8 @@ class ProgramAccountingController(BaseAccountingController):
     def clear_all_data(self):
         #   Clear all financial data for the program
         FinancialAidGrant.objects.filter(request__program=self.program).delete()
-        self.all_transfers().delete()
-        self.get_lineitemtypes().delete()
+        Transfer.objects.filter(pk__in=self.all_transfers()).delete()
+        LineItemType.objects.filter(pk__in=self.get_lineitemtypes()).delete()
         self.all_accounts().delete()
 
     def setup_accounts(self):
@@ -416,10 +416,7 @@ class IndividualAccountingController(ProgramAccountingController):
         Transfer.objects.filter(user=self.user, line_item__in=line_items).delete()
 
         #   Delegate each item to set_preference(), which handles transfer creation.
-        #   set_preference()'s own per-item delete is a no-op here since we
-        #   already cleared all transfers above.
-        for item_tup in optional_items:
-            (item_name, quantity, cost, option_id) = item_tup
+        for item_name, quantity, cost, option_id in optional_items:
             result.extend(self.set_preference(item_name, quantity or 0, amount=cost, option_id=option_id))
 
         return result
@@ -428,22 +425,23 @@ class IndividualAccountingController(ProgramAccountingController):
     def set_preference(self, lineitem_name, quantity, amount=None, option_id=None):
         #   Sets a single preference, after removing any exactly matching transfers.
         line_item = self.get_lineitemtypes().get(text=lineitem_name)
+
+        kwargs = {'line_item': line_item}
+        if amount is not None:
+            kwargs['amount_dec'] = amount
+        if option_id is not None:
+            kwargs['option_id'] = option_id
+        self.get_transfers().filter(**kwargs).delete()
+
         option = None
-        if amount is not None and option_id:
-            self.get_transfers().filter(line_item=line_item, amount_dec=amount, option__id=option_id).delete()
-        elif option_id:
-            self.get_transfers().filter(line_item=line_item, option__id=option_id).delete()
-            #   Pull the amount from the line item options, if it has one
+        if option_id is not None:
             option = LineItemOptions.objects.get(id=option_id)
-            if option.amount_dec is not None:
-                amount = option.amount_dec
+
+        if amount is None:
+            if option is not None:
+                amount = option.amount_dec_inherited
             else:
                 amount = line_item.amount_dec
-        elif amount is not None:
-            self.get_transfers().filter(line_item=line_item, amount_dec=amount).delete()
-        else:
-            self.get_transfers().filter(line_item=line_item).delete()
-            amount = line_item.amount_dec
 
         result = []
         program_account = self.default_program_account()
@@ -462,16 +460,15 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def get_preferences(self, line_items=None):
         #   Return a list of 4-tuples: (item name, quantity, cost, options)
-        result = []
         transfers = self.get_transfers(line_items)
-        seen = {}
+        counts = {}
         for transfer in transfers:
-            li_name = transfer.line_item.text
-            key = (li_name, transfer.amount_dec, transfer.option_id)
-            if key not in seen:
-                seen[key] = len(result)
-                result.append([li_name, 0, transfer.amount_dec, transfer.option_id])
-            result[seen[key]][1] += 1
+            key = (transfer.line_item.text, transfer.amount_dec, transfer.option_id)
+            counts[key] = counts.get(key, 0) + 1
+
+        result = []
+        for (li_name, amount_dec, option_id), quantity in counts.items():
+            result.append([li_name, quantity, amount_dec, option_id])
         return result
 
     ##  Functions to turn a user's account status for a program into a string
@@ -512,6 +509,10 @@ class IndividualAccountingController(ProgramAccountingController):
         exception will be raised. This means that changing the cost of an item
         while users are paying will lead to errors.
 
+        A non-empty transaction_id that was already recorded as a payment for this
+        user and program is rejected with DuplicatePaymentError, so that a repeated
+        notification from the payment processor cannot be banked twice.
+
         For identifiers that were passed through trusted (e.g. signed) channels,
         set trusted=True. The cost of Transfer objects will be automatically
         adjusted to match the amount saved in the identifier, removing the need
@@ -521,29 +522,66 @@ class IndividualAccountingController(ProgramAccountingController):
         id_str, transfer_list = identifier.split(':')
         iac = IndividualAccountingController.from_id(id_str)
 
+        # Lock this user's row so that concurrent notifications are reconciled one at a
+        # time and the duplicate check below cannot be raced by a second postback.
+        ESPUser.objects.select_for_update().get(id=iac.user.id)
+
+        # The processor's transaction ID is unique per payment, so seeing it again means
+        # this notification is a replay of a payment that was already recorded.
+        if transaction_id and Transfer.objects.filter(
+                user=iac.user,
+                line_item__program=iac.program,
+                line_item__for_payments=True,
+                transaction_id=transaction_id).exists():
+            raise DuplicatePaymentError(
+                f"Failed on processing payment {transaction_id}: already recorded")
+
         payment = iac.submit_payment(
             amount_paid, transaction_id, link_transfers=False)
 
         # Reconcile Transfers with what's listed in the identifier. Note that
         # any exception will roll back the entire transaction.
-        transfer_total = 0
+        parsed_items = []
         for item in transfer_list.split(';'):
             line_item_id, saved_amount = item.split(',')
-            transfer = Transfer.objects.get(
-                user=iac.user,
-                line_item__id=int(line_item_id),
-            )
+            parsed_items.append((int(line_item_id), saved_amount))
+
+        # A user can have several Transfers for one Line Item Type (e.g. an optional item
+        # with quantity > 1), so hand out one unpaid Transfer per identifier entry.
+        unpaid_transfers = {}
+        paid_line_item_ids = set()
+        candidates = Transfer.objects.filter(
+            user=iac.user,
+            line_item__id__in={line_item_id for line_item_id, _ in parsed_items},
+        ).exclude(id=payment.id).select_related('line_item').order_by('id')
+        for candidate in candidates:
+            if candidate.paid_in_id:
+                paid_line_item_ids.add(candidate.line_item_id)
+            else:
+                unpaid_transfers.setdefault(candidate.line_item_id, []).append(candidate)
+
+        transfer_total = Decimal('0')
+        for line_item_id, saved_amount in parsed_items:
+            available = unpaid_transfers.get(line_item_id, [])
+            if not available:
+                # Check for duplicate payment
+                if line_item_id in paid_line_item_ids:
+                    raise DuplicatePaymentError(
+                        f"Failed on processing line item type {line_item_id}: already paid")
+                raise ReconciliationError(
+                    f"Failed on processing line item type {line_item_id}: no transfer found")
+
+            # Prefer a Transfer whose amount matches, so that entries for the same item at
+            # different prices pair up correctly; otherwise take the oldest one.
+            index = next((i for i, candidate in enumerate(available)
+                          if '%.2f' % candidate.amount == saved_amount), 0)
+            transfer = available.pop(index)
 
             # This case is rare, since it's unusual to change the program of a
             # Line Item Type after it's been created.
             if transfer.line_item.program != iac.program:
                 raise ReconciliationError(
                     f"Failed on processing Transfer {transfer.id}: program changed")
-
-            # Check for duplicate payment
-            if transfer.paid_in:
-                raise DuplicatePaymentError(
-                    f"Failed on processing Transfer {transfer.id}: already paid")
 
             # Check to see if the amount changed
             if '%.2f' % transfer.amount != saved_amount:
@@ -557,10 +595,12 @@ class IndividualAccountingController(ProgramAccountingController):
 
             # Mark as paid!
             transfer.paid_in = payment
-            transfer_total += transfer.amount
+            transfer_total += transfer.amount_dec
             transfer.save()
 
-        if transfer_total != amount_paid:
+        # Compare against the recorded payment so that summing the item amounts isn't
+        # tripped up by float rounding.
+        if transfer_total != payment.amount_dec:
             raise ReconciliationError(
                 "Failed to process payment. Item prices sum to $%.2f, but the user paid $%.2f" %
                 (transfer_total, amount_paid))
@@ -626,7 +666,8 @@ class IndividualAccountingController(ProgramAccountingController):
                 discount_aid_amount = (Decimal('0.01') * latest_grant.percent) * (amount_requested - amount_siblingdiscount - aid_amount)
                 aid_amount += discount_aid_amount
 
-        return aid_amount
+        # Round to the nearest cent
+        return aid_amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     def amount_donation(self):
         lit = self.donation_lineitemtype()

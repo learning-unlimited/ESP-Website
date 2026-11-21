@@ -10,6 +10,7 @@ jobs:
   lock-new-issue:
     if: github.event.action == 'opened'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       issues: write
     steps:
@@ -70,6 +71,7 @@ jobs:
       github.event.action == 'unlabeled'
       && github.event.label.name == 'needs-triage'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       issues: write
     steps:

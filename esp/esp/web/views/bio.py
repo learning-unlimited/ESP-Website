@@ -32,12 +32,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from django.core.files.base import ContentFile
-
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.utils.web        import get_from_id, render_to_response
-from esp.middleware import ESPError
 from django.http          import HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.contrib.auth.decorators import login_required
 from datetime             import datetime
@@ -45,31 +42,23 @@ from django.conf import settings
 import os
 
 @login_required
-def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, username=''):
+def bio_edit(request, tl='', username='', progid=None):
     """ Edits a teacher bio, given user and program identification information """
 
-    old_url = False
     try:
         if tl == '':
             founduser = request.user
         else:
-            if username != '':
-                founduser = ESPUser.objects.get(username=username)
-                old_url = (tl != 'teach')
-            else:
-                founduser = ESPUser.getUserFromNum(first, last, usernum)
-                old_url = True
-    except (ESPUser.DoesNotExist, ESPError):
+            founduser = ESPUser.objects.get(username=username)
+    except ESPUser.DoesNotExist:
         return bio_not_found(request)
 
     foundprogram = get_from_id(progid, Program, 'program', False)
 
-    return bio_edit_user_program(request, founduser, foundprogram,
-                                 old_url=old_url)
+    return bio_edit_user_program(request, founduser, foundprogram)
 
 @login_required
-def bio_edit_user_program(request, founduser, foundprogram, external=False,
-                          old_url=False):
+def bio_edit_user_program(request, founduser, foundprogram, external=False, old_url=False):
     """ Edits a teacher bio, given user and program """
 
     if founduser is None or not founduser.isTeacher():
@@ -83,8 +72,6 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
     lastbio      = TeacherBio.getLastBio(founduser)
 
     if old_url:
-        # TODO(benkraft): after these URLs have been redirecting for a while,
-        # remove them.
         return HttpResponsePermanentRedirect(lastbio.edit_url())
 
 
@@ -173,20 +160,15 @@ def bio_not_found(request, user=None, edit_url=None):
     response.status_code = 404
     return response
 
-def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
+def bio(request, tl, username=''):
     """ Displays a teacher bio """
 
     try:
-        if username != '':
-            founduser = ESPUser.objects.get(username=username)
-            old_url = (tl != 'teach')
-        else:
-            founduser = ESPUser.getUserFromNum(first, last, usernum)
-            old_url = True
-    except (ESPUser.DoesNotExist, ESPError):
+        founduser = ESPUser.objects.get(username=username)
+    except ESPUser.DoesNotExist:
         return bio_not_found(request)
 
-    return bio_user(request, founduser, old_url)
+    return bio_user(request, founduser, old_url=(tl != 'teach'))
 
 def bio_user(request, founduser, old_url=False):
     """ Display a teacher bio for a given user """
@@ -195,13 +177,12 @@ def bio_user(request, founduser, old_url=False):
         return bio_not_found(request)
 
     teacherbio = TeacherBio.getLastBio(founduser)
-    if teacherbio.hidden:
-        return bio_not_found(request, founduser, teacherbio.edit_url())
 
     if old_url:
-        # TODO(benkraft): after these URLs have been redirecting for a while,
-        # remove them.
         return HttpResponsePermanentRedirect(teacherbio.url())
+
+    if teacherbio.hidden:
+        return bio_not_found(request, founduser, teacherbio.edit_url())
 
     if not teacherbio.picture:
         teacherbio.picture = 'images/not-available.jpg'
@@ -233,4 +214,6 @@ def bio_user(request, founduser, old_url=False):
                                'classes': classes,
                                'recent_classes': recent_classes,
                                'institution': settings.INSTITUTION_NAME})
+
+
 

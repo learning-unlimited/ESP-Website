@@ -40,6 +40,27 @@ else
     echo ">>>    docker compose up"
 fi
 
+# Refresh theme node_modules when the named volume is stale.
+# Named volumes persist across `docker compose up --build` and will not
+# automatically receive new packages (e.g. sass) added to package.json.
+# The Dockerfile bakes a versioned copy at /opt/theme_node_modules_baked/
+# with a .lock-hash file. Compare that hash to a marker in the live volume;
+# if they differ, restore from the baked copy (no npm needed at runtime).
+THEME_DIR=/app/esp/public/media/theme_editor
+THEME_NM="$THEME_DIR/node_modules"
+VOL_HASH_FILE="$THEME_NM/.lock-hash"
+BAKED_DIR="/opt/theme_node_modules_baked"
+BAKED_HASH_FILE="$BAKED_DIR/.lock-hash"
+if [ -f "$BAKED_HASH_FILE" ]; then
+    BAKED_HASH=$(cat "$BAKED_HASH_FILE")
+    STORED_HASH=$(cat "$VOL_HASH_FILE" 2>/dev/null || echo "")
+    if [ "$BAKED_HASH" != "$STORED_HASH" ]; then
+        echo ">>> Theme node_modules stale — restoring from baked image copy..."
+        cp -r "$BAKED_DIR/." "$THEME_NM/"
+        echo ">>> Theme node_modules restored."
+    fi
+fi
+
 # Change to the esp directory before starting the server
 # This ensures manage.py resolves Django settings correctly
 cd /app/esp

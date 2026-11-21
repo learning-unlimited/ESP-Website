@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call, no_auth, meets_deadline, needs_account
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
 from esp.middleware import ESPError
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.volunteer import VolunteerOfferForm
@@ -42,9 +42,11 @@ from esp.users.models import ESPUser
 from esp.program.models import VolunteerOffer
 from django.db.models.query import Q
 from esp.tagdict.models import Tag
+from esp.utils.ids import get_by_id_or_404
 
 class VolunteerSignup(ProgramModuleObj, CoreModule):
     doc = """Provides a form for volunteers to signup for particular timeslots."""
+    permission_types = ('Volunteer/Signup',)
 
     @classmethod
     def module_properties(cls):
@@ -65,8 +67,9 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             id="volunteer_signup",
             url="/volunteer/%s/signup" % base,
             title="Volunteer Signup",
-            category="Quick Links",
-            keywords=["volunteer", "signup", "shifts"],
+            # Grouped under the dashboard section where the "Volunteer Reg" button appears in directory.html.
+            category=SEARCH_CATEGORY_REGISTRATION,
+            keywords=["volunteer", "signup", "shifts", "registration"],
         )
 
     def require_auth(self):
@@ -154,7 +157,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and 'user' in request.GET:
-                volunteer = ESPUser.objects.get(id=request.GET['user'])
+                volunteer = get_by_id_or_404(ESPUser, request.GET['user'])
             else:
                 volunteer = request.user
             scheditems = []
