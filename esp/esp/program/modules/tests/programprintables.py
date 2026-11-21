@@ -323,6 +323,17 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         self.assertEqual(listed, set(confirmed))
         self.assertContains(response, confirmed[0].getLastProfile().contact_user.e_mail)
 
+    def test_schedule_amount_owed_never_negative(self):
+        """ An overpaid student (e.g. aid granted after paying) owes $0, not a
+        negative amount. """
+        from esp.accounting.controllers import IndividualAccountingController
+        for student in self.students:
+            IndividualAccountingController(self.program, student).submit_payment(5000.0, link_transfers=False)
+        tex = self.get_response('studentschedules/tex', 'Student', 'enrolled').content.decode('utf8')
+        self.assertIn('Amount Owed', tex)
+        self.assertNotIn('\\$-', tex)
+        self.assertIn('\\$0 }', tex)
+
     def test_latex_printables_keep_accented_names(self):
         for student in self.students:
             student.first_name = u'Jos\u00e9'

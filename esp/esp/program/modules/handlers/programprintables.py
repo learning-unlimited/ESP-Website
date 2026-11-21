@@ -1574,7 +1574,8 @@ class ProgramPrintables(ProgramModuleObj):
             student.paid_online = payment_row['amount_paid'] > 0
             student.amount_finaid = payment_row['amount_finaid']
             student.amount_siblingdiscount = payment_row['amount_siblingdiscount']
-            student.itemizedcosttotal = payment_row['amount_due']
+            #   Overpaid (e.g. aid granted after paying) owes nothing; the refund is treasury's business
+            student.itemizedcosttotal = max(payment_row['amount_due'], 0)
 
             student.has_paid = ( student.itemizedcosttotal == 0 )
             student.payment_info = True
