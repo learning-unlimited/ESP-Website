@@ -34,6 +34,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django.test import override_settings
+
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 
@@ -41,6 +43,10 @@ import random
 import re
 import six
 
+#   Both credit card modules have the link title "Credit Card Payment", which
+#   this test matches links by, so a site whose local settings configure
+#   CyberSource (e.g. a dev VM) would see Stripe's link as present
+@override_settings(CYBERSOURCE_CONFIG={'post_url': '', 'merchant_id': ''})
 class ModuleExistenceTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
 
