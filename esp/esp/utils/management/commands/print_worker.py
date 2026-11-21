@@ -19,7 +19,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--once', action='store_true', help='Do one pass and exit.')
-        parser.add_argument('--interval', type=float, default=3.0, help='Seconds between passes.')
+        parser.add_argument('--interval', type=float, default=1.0, help='Seconds between passes.')
         parser.add_argument('--autoreload', action='store_true',
                             help='Restart when the code changes, like runserver (for development).')
 
