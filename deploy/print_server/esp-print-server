@@ -43,6 +43,7 @@ import json
 import os
 import random
 import re
+import socket
 import ssl
 import struct
 import subprocess
@@ -55,7 +56,7 @@ from urllib.parse import parse_qs, urlsplit
 
 QUEUE = re.compile(r'^esp-location-\d{1,9}$')
 JOB = re.compile(r'^esp-location-\d{1,9}-\d{1,9}$')
-URI = re.compile(r'^ipps?://[A-Za-z0-9.:\[\]_-]+(/[A-Za-z0-9._/~-]*)?$')
+URI = re.compile(r'^(ipps?|socket|lpd)://[A-Za-z0-9.:\[\]_-]+(/[A-Za-z0-9._/~-]*)?$')
 OPTION = re.compile(r'^[a-z][a-z0-9-]{0,40}=[A-Za-z0-9._-]{1,60}$')
 TEXT = re.compile(r'^[^\x00-\x1f]{0,100}$')
 MAX_PDF = 50 * 1024 * 1024
@@ -63,9 +64,10 @@ TIMEOUT = 90
 
 
 class Refused(Exception):
-    def __init__(self, status, message):
+    def __init__(self, status, message, http_status=None):
         super().__init__(message)
         self.status = status
+        self.http_status = http_status      # what the printer answered, if HTTP
 
 
 def run(args, stdin=None):
@@ -184,7 +186,7 @@ def ipp_post(url, body, context=None):
         with urllib.request.urlopen(request, timeout=PROBE_TIMEOUT, context=context) as response:
             return decode_response(response.read())
     except urllib.error.HTTPError as e:
-        raise Refused(502, 'The printer answered HTTP %d.' % e.code)
+        raise Refused(502, 'The printer answered HTTP %d.' % e.code, http_status=e.code)
     except (urllib.error.URLError, OSError) as e:
         raise Refused(502, 'Couldn\'t reach %s (%s).' % (url, getattr(e, 'reason', e)))
 
@@ -300,19 +302,64 @@ def installed_ppds():
     return ppds
 
 
-def model_ppd(model):
-    """ The installed PostScript PPD for this model ("HP Color LaserJet CP4520
-    Series"), or None. """
-    slug = re.sub(r'[^a-z0-9]+', '_', model.lower()).strip('_')
-    for prefix in ('hp_', 'hewlett_packard_'):
+def slugify(text):
+    return re.sub(r'[^a-z0-9]+', '_', text.lower()).strip('_')
+
+
+def model_ppd(model, postscript=True):
+    """ The installed PPD for this model ("HP Color LaserJet CP4520 Series",
+    "LBP6230/6240"), matched by its name or description (lpinfo -m), or
+    None. postscript: only PostScript ones (for printers that take
+    PostScript; others need the maker's own, e.g. Canon's UFR II LT). """
+    slug = slugify(model)
+    for prefix in ('hp_', 'hewlett_packard_', 'canon_'):
         if slug.startswith(prefix):
             slug = slug[len(prefix):]
     if not slug:
         return None
     found = [(name, description) for (name, description) in installed_ppds().items()
-             if slug in re.sub(r'[^a-z0-9]+', '_', name.lower()) and 'postscript' in description.lower()]
+             if (slug in slugify(name) or slug in slugify(description))
+             and (not postscript or 'postscript' in description.lower())]
     found.sort(key=lambda nd: ('recommended' not in nd[1].lower(), nd[0]))
     return found[0][0] if found else None
+
+
+def port_open(host, port):
+    try:
+        socket.create_connection((host, port), timeout=PROBE_TIMEOUT).close()
+        return True
+    except OSError:
+        return False
+
+
+def probe_without_ipp(host, why):
+    """ For a printer that doesn't answer IPP (e.g. Canon's UFR II LT ones):
+    what SNMP says it is, its maker's driver if installed, and raw printing
+    (port 9100, else LPD). why: what the IPP request said. """
+    device = snmp_device_id(host)
+    model = ('%s %s' % (device.get('MFG', ''), device.get('MDL', ''))).strip()
+    if not device.get('MDL'):
+        raise Refused(502, why)
+    ppd = model_ppd(device['MDL'], postscript=False)
+    if not ppd:
+        raise Refused(502, '%s doesn\'t answer IPP, and the print server has no driver for it (%s). Install '
+                           'the maker\'s Linux driver there (see deploy/print_server/README.md).' % (model, why))
+    name = '[%s]' % host if ':' in host else host
+    if port_open(host, 9100):
+        uri = 'socket://%s:9100' % name
+    elif port_open(host, 515):
+        uri = 'lpd://%s/' % name
+    else:
+        raise Refused(502, '%s doesn\'t accept print jobs on port 9100 or 515 (raw or LPD).' % model)
+    #   What it can do comes from the driver, once the queue exists
+    info = summarize({}, ipp2=False)
+    info.update({'driver': 'model:' + ppd, 'model': model, 'state': 'unknown'})
+    return {'uri': uri, 'info': info}
+
+
+#   Where printers answer IPP, tried in turn when only an address is given:
+#   the usual path, then older printers' (e.g. Brother's)
+IPP_PATHS = ('/ipp/print', '/ipp')
 
 
 def probe(address):
@@ -322,7 +369,18 @@ def probe(address):
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
     ipp2 = True
-    (status, groups) = ipp_post(http_url(uri), encode_request(uri), context)
+    given_path = re.match(r'^ipps?://', (address or '').strip(), re.I)
+    while True:
+        try:
+            (status, groups) = ipp_post(http_url(uri), encode_request(uri), context)
+            break
+        except Refused as e:
+            path = urlsplit(uri).path
+            if e.http_status == 404 and not given_path and path in IPP_PATHS[:-1]:
+                uri = uri[:-len(path)] + IPP_PATHS[IPP_PATHS.index(path) + 1]
+                continue
+            #   No IPP at all: maybe a printer that only takes its maker's language
+            return probe_without_ipp(urlsplit(uri).hostname or '', str(e))
     if status == VERSION_NOT_SUPPORTED:
         #   An older printer: ask again in IPP 1.1
         ipp2 = False
@@ -364,6 +422,10 @@ def create_queue(queue, uri, description, driver):
         for name in DUPLEX_UNIT_OPTIONS:
             if re.search(r'^%s/' % re.escape(name), options, re.M):
                 run(['lpadmin', '-p', queue, '-o', '%s=True' % name])
+        #   US Letter by default (some makers' PPDs default to A4)
+        page_sizes = re.search(r'^PageSize/[^:]*:(.*)$', options, re.M)
+        if page_sizes and 'Letter' in page_sizes.group(1).replace('*', '').split():
+            run(['lpadmin', '-p', queue, '-o', 'PageSize=Letter'])
     return queue_info(queue)
 
 

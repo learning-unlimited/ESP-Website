@@ -10,7 +10,8 @@ to create or delete a location's queue, and to print PDFs. CUPS converts each
 PDF into whatever the printer accepts (driverless queues,
 `lpadmin -m everywhere`). The API is described at the top of the script.
 
-Only the print server talks to printers (IPP, port 631); the web server (and
+Only the print server talks to printers (IPP on port 631, or raw/LPD on 9100/515
+for printers without IPP); the web server (and
 its print worker) only needs to reach the print server's API port (8631).
 Firewall 8631 so only the web server (and dev machines, if any) can reach it:
 everything else is refused by the token anyway, but there's no reason to let
@@ -36,6 +37,39 @@ restarts it. For a name Let's Encrypt can reach over HTTP:
 challenge instead, with whatever DNS hooks that domain has.) Then:
 
     sudo systemctl enable --now esp-print-server
+
+## Printers that aren't driverless
+
+"Check printer" picks the driver. Printers with IPP 2.0 that take PDF or
+raster get driverless queues. Others get the model's own driver when one is
+installed here (it knows the model from SNMP), else CUPS's generic
+PostScript or PCL driver. Installed drivers so far:
+
+- **Older HP printers with IPP 1.1** (e.g. Color LaserJet CP4525): HP's
+  PostScript PPDs, so color and duplex are offered:
+
+      sudo apt install printer-driver-postscript-hp
+
+- **Canon printers with no IPP at all**, which only speak UFR II LT (e.g.
+  LBP6230dw; `CID:CA_UFRIILT` in its SNMP device ID). The print server then
+  prints raw to port 9100 (else LPD, 515) with Canon's driver: "UFRII LT
+  Printer Driver for Linux" V5.00, `linux-UFRIILT-drv-v500-uken-18.tar.gz`
+  from `https://gdlp01.c-wss.com/gds/0/0100005950/10/` (sha512 starts
+  `e7b964f3d4541e1e`; the UFR II V6 driver doesn't cover these models).
+  Install its `64-bit_Driver/Debian/cnrdrvcups-ufr2lt-uk_5.00-1_amd64.deb`,
+  plus the library it needs but doesn't declare, then undo the setuid status
+  tool and world-writable directories its install script makes (none are
+  needed for printing):
+
+      sudo apt install ./cnrdrvcups-ufr2lt-uk_5.00-1_amd64.deb libcupsimage2t64
+      sudo dpkg-statoverride --update --add root root 0755 /usr/lib/Canon/CUPS_SFPR/Utilities/pksmncapr
+      sudo chown root:lp /var/cache/Canon /var/cache/Canon/CUPS_SFPR
+      sudo chmod 775 /var/cache/Canon /var/cache/Canon/CUPS_SFPR
+      sudo chmod 755 /etc/cngplp2l/account /etc/cngplp2l/options
+
+  Check with `ldd /usr/lib/cups/filter/rastertosfp` (nothing "not found"):
+  a missing library shows only as the job stopping, with the filter's status
+  127 in `/var/log/cups/error_log`.
 
 ## Website settings (`local_settings.py`)
 

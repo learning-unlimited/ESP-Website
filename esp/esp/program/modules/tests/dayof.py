@@ -1306,6 +1306,76 @@ class PrintServerScriptTest(TestCase):
         with self.assertRaises(script.Refused):
             script.create_queue('esp-location-2', 'ipp://10.0.0.9/ipp', 'Desk', 'model:/etc/passwd')
 
+    def test_printer_without_ipp(self):
+        """ A printer with no IPP (Canon's UFR II LT ones): SNMP says what it
+        is, its maker's driver prints to it raw (port 9100), on Letter. """
+        script = self.script
+        lpinfo = ('drv:///sample.drv/generic.ppd Generic PostScript Printer\n'
+                  'CNRCUPSLBP6230ZNK.ppd Canon LBP6230/6240\n')
+        snmp = ('network socket://10.31.171.64 "Canon LBP6230/6240" "Canon LBP6230dw" '
+                '"MFG:Canon;MDL:LBP6230/6240;CLS:PRINTER;CID:CA_UFRIILT_OIP;CMD:LIPSLX,CPCA;" ""\n')
+        self.run_cups.side_effect = lambda args, stdin=None: lpinfo if args[0] == 'lpinfo' else snmp
+        unreachable = script.Refused(502, 'Couldn\'t reach http://10.31.171.64:631/ipp/print (refused).')
+        with mock.patch.object(script, 'ipp_post', side_effect=unreachable), \
+                mock.patch.object(script, 'port_open', return_value=True):
+            result = script.probe('10.31.171.64')
+        self.assertEqual(result['uri'], 'socket://10.31.171.64:9100')
+        self.assertEqual((result['info']['driver'], result['info']['model']),
+                         ('model:CNRCUPSLBP6230ZNK.ppd', 'Canon LBP6230/6240'))
+        self.assertEqual(result['info']['sides'], [])       # from the queue, once made
+        #   No 9100: LPD; neither: refused
+        with mock.patch.object(script, 'ipp_post', side_effect=unreachable), \
+                mock.patch.object(script, 'port_open', side_effect=lambda host, port: port == 515):
+            self.assertEqual(script.probe('10.31.171.64')['uri'], 'lpd://10.31.171.64/')
+        with mock.patch.object(script, 'ipp_post', side_effect=unreachable), \
+                mock.patch.object(script, 'port_open', return_value=False):
+            with self.assertRaisesRegex(script.Refused, 'port 9100 or 515'):
+                script.probe('10.31.171.64')
+        #   No driver installed for it, or SNMP doesn't answer: says why
+        self.run_cups.side_effect = lambda args, stdin=None: (
+            'drv:///sample.drv/generic.ppd Generic PostScript Printer\n' if args[0] == 'lpinfo' else snmp)
+        with mock.patch.object(script, 'ipp_post', side_effect=unreachable):
+            with self.assertRaisesRegex(script.Refused, 'no driver for it'):
+                script.probe('10.31.171.64')
+        self.run_cups.side_effect = script.Refused(502, 'snmp: no reply')
+        with mock.patch.object(script, 'ipp_post', side_effect=unreachable):
+            with self.assertRaisesRegex(script.Refused, 'Couldn\'t reach'):
+                script.probe('10.31.171.64')
+        #   The queue takes raw URIs and defaults to Letter
+        self.run_cups.side_effect = lambda args, stdin=None: (
+            lpinfo if args[0] == 'lpinfo' else 'PageSize/Page Size: Letter Legal *A4\nDuplex/Duplex: *None DuplexNoTumble\n')
+        with mock.patch.object(script, 'queue_info', return_value={}):
+            script.create_queue('esp-location-3', 'socket://10.31.171.64:9100', 'Canon', 'model:CNRCUPSLBP6230ZNK.ppd')
+        calls = [c[0][0] for c in self.run_cups.call_args_list]
+        self.assertIn(['lpadmin', '-p', 'esp-location-3', '-o', 'PageSize=Letter'], calls)
+        self.assertTrue(script.URI.match('socket://10.31.171.64:9100'))
+        self.assertTrue(script.URI.match('lpd://10.31.171.64/'))
+        self.assertFalse(script.URI.match('file:///etc/passwd'))
+
+    def test_older_ipp_path(self):
+        """ A printer with IPP 1.1 at /ipp, not /ipp/print (older Brothers),
+        taking PCL: found there, with the generic PCL driver. """
+        script = self.script
+        snmp = ('network lpd://BRW008092B8DC1F/BINARY_P1 "Brother HL-2280DW" "Brother HL-2280DW" '
+                '"MFG:Brother;CMD:PJL,PCL,PCLXL;MDL:HL-2280DW;CLS:PRINTER;" ""\n')
+        self.run_cups.side_effect = lambda args, stdin=None: (
+            'drv:///sample.drv/generpcl.ppd Generic PCL Laser Printer\n' if args[0] == 'lpinfo' else snmp)
+        missing = script.Refused(502, 'The printer answered HTTP 404.', http_status=404)
+        pcl = (0x0001, {script.PRINTER_ATTRIBUTES: {'printer-make-and-model': ['Brother HL-2280DW'],
+                                                    'document-format-supported': ['application/vnd.hp-PCL']}})
+        with mock.patch.object(script, 'ipp_post',
+                               side_effect=[missing, (script.VERSION_NOT_SUPPORTED, {}), pcl]) as ipp:
+            result = script.probe('10.31.155.22')
+        self.assertEqual(result['uri'], 'ipp://10.31.155.22/ipp')
+        self.assertEqual((result['info']['driver'], result['info']['model']), ('pcl', 'Brother HL-2280DW'))
+        self.assertEqual([c[0][0] for c in ipp.call_args_list],
+                         ['http://10.31.155.22:631/ipp/print'] + ['http://10.31.155.22:631/ipp'] * 2)
+        #   A full URI is used as given
+        with mock.patch.object(script, 'ipp_post', side_effect=[missing]), \
+                mock.patch.object(script, 'port_open', return_value=False):
+            with self.assertRaises(script.Refused):
+                script.probe('ipp://10.31.155.22/ipp/print')
+
     def test_choose_driver_and_ipp_1_1(self):
         script = self.script
         self.assertEqual(script.choose_driver(['image/urf', 'application/pdf'], True), 'everywhere')
