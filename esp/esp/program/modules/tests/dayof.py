@@ -688,6 +688,14 @@ class PrintingTest(DayOfTestBase):
         #   Never touch a real print server: _request(method, path, timeout, **kwargs) is faked
         self.server = mock.patch('esp.utils.print_server._request', return_value={'job': 'esp-location-1-3'}).start()
         self.addCleanup(mock.patch.stopall)
+        #   Uploads go to a scratch directory (the real one needn't exist, e.g. in CI)
+        import shutil
+        import tempfile
+        upload_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, upload_dir, True)
+        uploads = override_settings(PRINT_UPLOAD_DIR=upload_dir)
+        uploads.enable()
+        self.addCleanup(uploads.disable)
 
     def test_one_connection_per_location_and_take_over(self):
         token = printing.claim_for_laptop(self.desk, self.admin)

@@ -39,7 +39,6 @@ import os
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.db import models
-from django.utils.functional import cached_property
 from reversion import revisions as reversion
 
 from esp.users.models import ESPUser
@@ -138,14 +137,14 @@ class PrinterChange(models.Model):
 class PrintUploadStorage(FileSystemStorage):
     """ Where PDFs uploaded for printing (/manage/printpdf) are kept:
     settings.PRINT_UPLOAD_DIR, outside MEDIA_ROOT, which is served publicly.
-    Read when used, so migrations record only this class. Keep this import
-    path: migrations refer to it. """
+    Read when used (not cached, so tests can override it), so migrations
+    record only this class. Keep this import path: migrations refer to it. """
 
-    @cached_property
+    @property
     def base_location(self):
         return settings.PRINT_UPLOAD_DIR
 
-    @cached_property
+    @property
     def location(self):
         return os.path.abspath(self.base_location)
 
