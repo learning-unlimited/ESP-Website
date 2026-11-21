@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 """
 
 import datetime
+import json
 
 from esp.program.controllers.classreg import ClassCreationController
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
@@ -143,3 +144,18 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         response = self.client.get(six.u('%smissingteachers') % self.program.get_onsite_url())
         phone = self.teacher.getLastProfile().contact_user.phone_cell
         self.assertIn(phone, six.text_type(response.content, encoding='UTF-8'))
+
+    def test_ajax_checkin_by_typed_text(self):
+        """ Enter in the missing teachers page's search box sends whatever was
+        typed: an id or a username checks that teacher in; anything else
+        (e.g. part of a name) is "User not found", not an error. """
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+        url = '%sajaxteachercheckin' % self.program.get_onsite_url()
+        for typed in ('Smi', '', '12abc'):
+            response = self.client.post(url, {'teacherid': typed})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(json.loads(response.content.decode('utf-8')), {'message': 'User not found'})
+        response = json.loads(self.client.post(url, {'teacherid': ' checkinteacher2 '}).content.decode('utf-8'))
+        self.assertEqual(response['username'], 'CheckinTeacher2')
+        response = json.loads(self.client.post(url, {'teacherid': str(self.teacher.id)}).content.decode('utf-8'))
+        self.assertEqual(response['username'], self.teacher.username)

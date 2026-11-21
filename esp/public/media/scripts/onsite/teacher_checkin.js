@@ -95,7 +95,7 @@ $j(function(){
             data.undo = true;
         $j.post('ajaxteachercheckin', data, "json").done(callback)
         .fail(function(){
-            alert("An error occurred while atempting to " + (undo?"un-check-in ":"check-in ") + username + ".");
+            alert("An error occurred while atempting to " + (undo?"un-check-in ":"check-in ") + id + ".");
             if (errorCallback) {
                 errorCallback();
             }

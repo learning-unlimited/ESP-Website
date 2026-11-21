@@ -134,6 +134,8 @@ class TeacherCheckinModule(ProgramModuleObj):
 
         POST data:
           'teacher':          The teacher's username.
+          'teacherid':        Or what was typed in the page's search box: a
+                              user id, or else a username (any case).
           'undo' (optional):  If 'true', undoes a previous check-in.
                               Otherwise, the teacher is checked in.
           'when' (optional):  If given, processes checkIn or undoCheckIn as if
@@ -145,7 +147,16 @@ class TeacherCheckinModule(ProgramModuleObj):
         if 'teacher' in request.POST:
             teachers = ESPUser.objects.filter(username=request.POST['teacher'])
         elif 'teacherid' in request.POST:
-            teachers = ESPUser.objects.filter(id=request.POST['teacherid'])
+            #   (Enter in the search box sends whatever was typed, e.g. part of a
+            #   name, which isn't an id; LU's fix d91528eaa, but leaving 'teacher' as is)
+            typed = request.POST['teacherid'].strip()
+            if typed.isdecimal():
+                teachers = ESPUser.objects.filter(id=int(typed))
+            elif typed:
+                #   (that exact username first, if names differing only in case both exist)
+                teachers = ESPUser.objects.filter(username=typed)
+                if not teachers.exists():
+                    teachers = ESPUser.objects.filter(username__iexact=typed).order_by('id')
         if teachers and teachers.exists():
             json_data['name'] = teachers[0].name()
             json_data['username'] = teachers[0].username
