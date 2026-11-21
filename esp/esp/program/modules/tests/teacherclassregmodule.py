@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from datetime import timedelta
 import json
 import random
 
@@ -41,7 +42,7 @@ from django.db import transaction
 
 from unittest.mock import patch
 
-from esp.cal.models import Event
+from esp.cal.models import Event, EventType
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
@@ -168,6 +169,37 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.assertTrue(self.cls in self.teacher.getTaughtClasses())
         self.assertTrue(self.cls in self.free_teacher1.getTaughtClasses())
         self.assertTrue(not self.cls in self.free_teacher2.getTaughtClasses())
+
+    def test_adding_coteacher_with_overlapping_walkin(self):
+        self.assertTrue(self.client.login(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
+        timeslots = list(self.program.getTimeSlots().order_by('start'))
+
+        # free_teacher1 teaches another class in the second block
+        other_cls = make_class(self.program, self.free_teacher1, duration=0.5, accept=True)
+        other_cls.get_sections()[0].assign_meeting_times([timeslots[1]])
+
+        def schedule_walkin(end):
+            # Starts with the first block so it passes the availability check
+            block = Event.objects.create(
+                program=self.program, event_type=EventType.get_from_desc('Open Class Time Block'),
+                start=timeslots[0].start, end=end, short_description='Walk-in block', description='Walk-in block')
+            for sec in self.cls.get_sections():
+                sec.duration = '0.5'
+                sec.save()
+                sec.clear_meeting_times()
+                sec.assign_meeting_times([block])
+
+        # Overlaps the second block
+        schedule_walkin(timeslots[1].start + timedelta(minutes=30))
+        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id})
+        self.assertContains(response, "does not have enough free blocks", status_code=200)
+        self.assertFalse(self.cls in self.free_teacher1.getTaughtClasses())
+
+        # Ends exactly when the second block starts
+        schedule_walkin(timeslots[1].start)
+        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id})
+        self.assertNotContains(response, "does not have enough free blocks", status_code=200)
+        self.assertTrue(self.cls in self.free_teacher1.getTaughtClasses())
 
     def test_coteachers_post_data_is_not_trusted(self):
         # Login the teacher
