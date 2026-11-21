@@ -48,7 +48,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 
 
-from esp.users.models    import ESPUser, Record
+from esp.users.models    import ESPUser, Record, RecordType
 from esp.program.models import RegistrationProfile
 from esp.program.class_status import ClassStatus
 
@@ -258,7 +258,8 @@ class OnSiteClassList(ProgramModuleObj):
 
         #   Check in student if not currently checked in, since if they're using this view they must be onsite
         if not prog.isCheckedIn(user) and request.GET.get('check_in') == 'true':
-            rec = Record(user=user, program=prog, event='attended')
+            rt = RecordType.objects.get(name='attended')
+            rec = Record(user=user, program=prog, event=rt)
             rec.save()
 
         if user and desired_sections is not None:
