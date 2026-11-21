@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 """
 from collections import OrderedDict
 from django              import forms
+from django.db import transaction
 from django.db.models.query import Q
 from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
 from esp.accounting.models import LineItemOptions
@@ -154,8 +155,10 @@ class StudentExtraCosts(ProgramModuleObj):
         return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     def lineitemtypes(self):
+        """ The items students can choose (preorder): not admission, and not
+        the items only sold at the help desk on the day. """
         pac = ProgramAccountingController(self.program)
-        return pac.get_lineitemtypes(include_donations=False).exclude(text__in=pac.admission_items)
+        return pac.get_lineitemtypes(include_donations=False).exclude(text__in=pac.admission_items).exclude(onsite_only=True)
 
     @main_call
     @needs_student_in_grade
@@ -168,8 +171,20 @@ class StudentExtraCosts(ProgramModuleObj):
         This module should ultimately deal with things like optional lab fees, etc.
         Right now it doesn't.
         """
-        iac = IndividualAccountingController(self.program, request.user)
-        if iac.has_paid():
+        return self.extracosts_page(request, tl, prog, request.user)
+
+    def extracosts_page(self, request, tl, prog, user, troubleshooting=None):
+        """ The extra costs form for user. Students use it for themselves.
+        Day-of troubleshooting uses it for a student by passing
+        troubleshooting, a dict with:
+            'template': the template to render (given the same context),
+            'context': extra context for it,
+            'done': a function returning the response after a successful save,
+            'recorded_by': who is making the change.
+        Troubleshooting can change items the student already paid for
+        (which can leave them overpaid; it asks to confirm that first). """
+        iac = IndividualAccountingController(self.program, user)
+        if troubleshooting is None and iac.has_paid():
             if not Tag.getBooleanTag('already_paid_extracosts_allowed', program = prog):
                 raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
 
@@ -180,7 +195,7 @@ class StudentExtraCosts(ProgramModuleObj):
         if prog.sibling_discount:
             sibling_line_item = iac.default_siblingdiscount_lineitemtype()
             sibling_form = SiblingDiscountForm(prefix="%s" % sibling_line_item.id, program=prog)
-            spi = SplashInfo.getForUser(request.user, self.program)
+            spi = SplashInfo.getForUser(user, self.program)
             sibling_form.load(spi)
 
         #   Fetch the user's current preferences
@@ -188,6 +203,10 @@ class StudentExtraCosts(ProgramModuleObj):
         paid_item_ids = set(iac.get_transfers().filter(paid_in__isnull=False).values_list('line_item_id', flat=True))
         admission_lit = iac.default_admission_lineitemtype()
         admission_paid = admission_lit is not None and admission_lit.id in paid_item_ids
+        #   Items the form won't let the user change: those already paid for,
+        #   except at day-of troubleshooting
+        locked_item_ids = set() if troubleshooting is not None else paid_item_ids
+        confirm_overpaid = None
 
         forms_all_valid = True
         error_custom = False
@@ -222,13 +241,14 @@ class StudentExtraCosts(ProgramModuleObj):
             #   Get a list of the (line item, quantity) pairs stored in the forms
             #   as well as a list of line items which had invalid forms
             form_prefs = []
+            sibling_forms = []
 
             for item in costs_db:
                 form = item['CostChoice']
                 lineitem_type = item['LineItemType']
 
                 # Disabled inputs are not submitted by the browser; preserve existing paid preference
-                if lineitem_type.id in paid_item_ids:
+                if lineitem_type.id in locked_item_ids:
                     existing = next((p for p in prefs if p[0] == lineitem_type.text), None)
                     if existing:
                         form_prefs.append(existing)
@@ -257,7 +277,7 @@ class StudentExtraCosts(ProgramModuleObj):
                                 option = LineItemOptions.objects.get(id=option_id)
                                 #   Give error if no amount was typed in
                                 if option.is_custom and not option_amount:
-                                    preserve_items.append(lineitem_type.text)
+                                    preserve_items[lineitem_type.text] = form
                                     forms_all_valid = False
                                     error_custom = True
                                 else:
@@ -267,7 +287,11 @@ class StudentExtraCosts(ProgramModuleObj):
                                     form_prefs.append((lineitem_type.text, 1, float(option_amount), int(option_id)))
 
                     elif isinstance(form, SiblingDiscountForm):
-                        form.save(spi)
+                        if troubleshooting is None:
+                            form.save(spi)
+                        else:
+                            #   Saved with the items, so "proceed anyways?" undoes it too
+                            sibling_forms.append(form)
                 else:
                     #   Preserve selected quantity for any items that we don't have a valid form for
                     preserve_items[lineitem_type.text] = form
@@ -280,13 +304,19 @@ class StudentExtraCosts(ProgramModuleObj):
                     new_prefs.append(prefs[[x[0] for x in prefs].index(lineitem_name)])
 
             new_prefs += form_prefs
-            iac.apply_preferences(new_prefs)
+            if troubleshooting is None:
+                iac.apply_preferences(new_prefs)
+            elif forms_all_valid:
+                confirm_overpaid = self._apply_troubleshooting_preferences(
+                    request, iac, new_prefs, troubleshooting, also_save=lambda: [f.save(spi) for f in sibling_forms])
+                if confirm_overpaid is None:
+                    return troubleshooting['done']()
 
             #   Redirect to main student reg page if all data was recorded properly
             #   (otherwise, the code below will reload the page)
-            if forms_all_valid:
+            if forms_all_valid and troubleshooting is None:
                 rt = RecordType.objects.get(name=self.event)
-                bit, created = Record.objects.get_or_create(user=request.user, program=self.program, event=rt)
+                bit, created = Record.objects.get_or_create(user=user, program=self.program, event=rt)
                 return self.goToCore(tl)
 
             ### End Post
@@ -314,7 +344,7 @@ class StudentExtraCosts(ProgramModuleObj):
             for x in costs_list
         ]
         for item in cost_items:
-            if item['LineItem'].id in paid_item_ids:
+            if item['LineItem'].id in locked_item_ids:
                 item['form'].fields['cost'].widget.attrs['disabled'] = True
 
         multi_cost_items = \
@@ -333,7 +363,7 @@ class StudentExtraCosts(ProgramModuleObj):
             for x in multicosts_list
         ]
         for item in multi_cost_items:
-            if item['LineItem'].id in paid_item_ids:
+            if item['LineItem'].id in locked_item_ids:
                 item['form'].fields['count'].widget.attrs['disabled'] = True
 
         multiselect_costitems = []
@@ -359,7 +389,7 @@ class StudentExtraCosts(ProgramModuleObj):
                 form_kwargs['initial'] = {'option': count_map[x.text][3]}
                 form_kwargs['is_custom'] = False
             new_entry['form'] = preserve_items.get(x.text) or MultiSelectCostItem(**form_kwargs)
-            if x.id in paid_item_ids:
+            if x.id in locked_item_ids:
                 new_entry['form'].fields['option'].widget.attrs['disabled'] = True
             multiselect_costitems.append(new_entry)
 
@@ -374,12 +404,45 @@ class StudentExtraCosts(ProgramModuleObj):
                     'LineItem': sibling_line_item
                 })
 
-        return render_to_response(self.baseDir()+'extracosts.html',
-                                  request,
-                                  { 'errors': not forms_all_valid, 'error_custom': error_custom, 'forms': forms, 'finaid_grant': iac.latest_finaid_grant(), 'select_qty': len(multicosts_list) > 0,
-                                    'paid_for': iac.has_paid(), 'amount_paid': iac.amount_paid(), 'amount_donation': iac.amount_donation(),
-                                    'paid_for_text': Tag.getProgramTag("already_paid_extracosts_text", program = prog),
-                                    'paid_item_ids': paid_item_ids, 'admission_paid': admission_paid })
+        context = { 'errors': not forms_all_valid, 'error_custom': error_custom, 'forms': forms, 'finaid_grant': iac.latest_finaid_grant(), 'select_qty': len(multicosts_list) > 0,
+                    'paid_for': iac.has_paid(), 'amount_paid': iac.amount_paid(), 'amount_donation': iac.amount_donation(),
+                    'paid_for_text': Tag.getProgramTag("already_paid_extracosts_text", program = prog),
+                    'paid_item_ids': locked_item_ids, 'admission_paid': admission_paid }
+        if troubleshooting is None:
+            return render_to_response(self.baseDir()+'extracosts.html', request, context)
+        context.update(troubleshooting.get('context', {}))
+        context['confirm_overpaid'] = confirm_overpaid
+        context['balance'] = iac.amount_due()
+        return render_to_response(troubleshooting['template'], request, context)
+
+    @staticmethod
+    def _apply_troubleshooting_preferences(request, iac, new_prefs, troubleshooting, also_save=None):
+        """ Saves new_prefs for day-of troubleshooting, which may replace
+        items the student already paid for. If that would leave them overpaid
+        (or more overpaid than they were) and the change wasn't confirmed,
+        nothing is saved and this returns the confirmation question to ask;
+        otherwise returns None. also_save() saves the rest of the form (the
+        sibling discount) in the same transaction. """
+        due_before = iac.amount_due()
+        paid_before = list(iac.get_transfers().filter(paid_in__isnull=False, line_item__for_payments=False)
+                           .exclude(line_item__text__in=iac.finaid_items).select_related('line_item'))
+        with transaction.atomic():
+            if also_save is not None:
+                also_save()
+            iac.apply_preferences(new_prefs, replace_paid=True,
+                                  recorded_by=troubleshooting.get('recorded_by'))
+            still_there = set(iac.get_transfers().values_list('id', flat=True))
+            removed = [t for t in paid_before if t.id not in still_there]
+            due_after = iac.amount_due()
+            if due_after < 0 and due_after < due_before and not request.POST.get('confirm_overpaid'):
+                transaction.set_rollback(True)
+                if removed:
+                    what = ', '.join('%s ($%.2f)' % (t.line_item.text, t.amount_dec) for t in removed)
+                    return ('Removing paid %s leaves %s overpaid by $%.2f; proceed anyways?'
+                            % (what, iac.user.first_name, -due_after))
+                return ('This change leaves %s overpaid by $%.2f; proceed anyways?'
+                        % (iac.user.first_name, -due_after))
+        return None
 
     def isStep(self):
         return self.lineitemtypes().exists()

@@ -32,6 +32,13 @@
             </button></a>
         </div>
         {% endif %}
+        {% if program|hasModule:"OnsiteTroubleshooting" %}
+        <div class="module_button">
+            <a href="/onsite/{{ program.getUrlBase }}/troubleshooting"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-wrench"></i> Day-Of Payment Troubleshooting</div>
+            </button></a>
+        </div>
+        {% endif %}
         {% if program|hasModule:"OnSiteCheckoutModule" %}
         <div class="module_button">
             <a href="/onsite/{{ program.getUrlBase }}/checkout"><button type="button" class="module_link_large">

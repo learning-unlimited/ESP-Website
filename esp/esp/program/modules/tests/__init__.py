@@ -56,3 +56,6 @@ from esp.program.modules.tests.testallviews import AllViewsTest
 from esp.program.modules.tests.nametag import NameTagModuleTest, TexSafeTest
 from esp.program.modules.tests.checkscan import (CheckScanAccessTest, CheckScanBatchTest, CheckScanCheckTest,
                                                  CheckScanSlipsTest, DevTreasuryKeyScriptTest)
+from esp.program.modules.tests.dayof import (CheckInStudentTest, RecorderTest, CheckInViewsTest,
+                                             BackfillPaymentMethodTest, TroubleshootingTest, DayOfCardTest,
+                                             HelpDeskSalesTest, ReceiptTest)

@@ -1,0 +1,79 @@
+/* Day-of pages (troubleshooting, help desk sales, receipts, card payment).
+   Layered on the site's Bootstrap 3 classes; only what Bootstrap lacks lives here. */
+
+
+/* Two-click confirm (confirm2.js) */
+.confirm2-text { margin-left: 8px; font-weight: bold; color: #a33; }
+.confirm2-armed { background: #c9302c !important; color: #fff !important; }
+
+/* Boxes: collapsible <details> sections and plain boxes share one look (Bootstrap 2 has no panels) */
+.dayof-box, details.dayof-section { border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; background: #fff; }
+details.dayof-section > summary { cursor: pointer; font-weight: bold; background: #f5f5f5; padding: 6px 10px; border-radius: 4px; }
+details.dayof-section[open] > summary { border-bottom: 1px solid #ddd; border-radius: 4px 4px 0 0; }
+details.dayof-section details > summary { cursor: pointer; }
+.dayof-section-body, .dayof-box-body { padding: 8px 10px; }
+.dayof-box-heading { background: #f5f5f5; padding: 6px 10px; border-bottom: 1px solid #ddd; border-radius: 4px 4px 0 0; }
+.dayof-box-footer { background: #f5f5f5; padding: 6px 10px; border-top: 1px solid #ddd; border-radius: 0 0 4px 4px; }
+.dayof-section-body > details { margin: 6px 0; }
+.dayof-section-body form + form { margin-top: 8px; }
+.dayof-box > table { margin-bottom: 0; }
+.dayof-actions > .btn, .dayof-actions > form { display: inline-block; margin: 2px 4px 2px 0; vertical-align: top; }
+.dayof-section-note { margin: 8px 0; }
+
+/* Small form pieces */
+.dayof-form .checkbox, .dayof-form .radio { margin-top: 4px; margin-bottom: 4px; }
+.dayof-form textarea { max-width: 100%; }
+.dayof-inline-form { display: inline-block; margin: 0; }
+
+/* Student page */
+.dayof-balance { font-size: 140%; font-weight: bold; }
+.dayof-ledger { margin-bottom: 0; }
+.dayof-ledger td:first-child { width: 100%; }
+.dayof-ledger .dayof-amount, .dayof-ledger th.text-right { text-align: right; white-space: nowrap; }
+
+/* Help desk sales */
+.dayof-items td { vertical-align: middle !important; }
+.dayof-items td.dayof-qty-cell { width: 1%; white-space: nowrap; }
+.dayof-qty { white-space: nowrap; margin-bottom: 0; }
+.dayof-qty .hd-q { width: 48px; text-align: center; font-size: 17px; }
+.dayof-qty .btn { min-width: 36px; font-size: 18px; }
+.dayof-total { font-size: 220%; font-weight: bold; margin: 8px 0; }
+.hd-focus { border-color: #3c763d; box-shadow: 0 0 4px #3c763d; }
+.dayof-submit-row .btn { margin: 4px 4px 4px 0; padding: 8px 12px; }
+
+/* Receipt (resembles the printed receipt) */
+.alert.dayof-void { font-size: 250%; font-weight: bold; text-align: center; padding: 8px; }
+.rc-paper { border: 1px solid #ccc; padding: 12px 14px; margin: 8px 0; max-width: 470px; background: #fff; }
+.rc-head { display: flex; justify-content: space-between; gap: 10px; }
+.rc-title { font-size: 200%; font-weight: bold; letter-spacing: 2px; }
+.rc-from { text-align: right; font-size: 90%; }
+.rc-from div:first-child { font-weight: bold; }
+.rc-meta { margin: 10px 0; }
+.rc-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 90%; }
+.rc-table th { text-align: left; border-bottom: 2px solid #444; padding: 3px 4px; font-size: 80%; }
+.rc-table td { padding: 3px 4px; }
+.rc-table .rc-num { text-align: right; white-space: nowrap; }
+.rc-table tr.rc-zebra td { background: #f2f2f2; }
+.rc-total td { font-weight: bold; border-top: 1px solid #444; font-size: 110%; }
+
+/* Card payment / QR / public pay page */
+.dayof-qr-box { text-align: center; margin: 12px 0; }
+.dayof-qr-box svg { width: 100%; max-width: 320px; height: auto; }
+.dayof-qr-link { word-break: break-all; text-align: center; font-size: 90%; }
+.dayof-qr-link span { user-select: all; }
+#qr-paid { display: none; text-align: center; font-size: 220%; font-weight: bold; }
+#qr-paid small { display: block; font-size: 45%; font-weight: normal; }
+#qr-review { display: none; text-align: center; font-size: 160%; }
+#qr-review small { display: block; font-size: 60%; }
+.dayof-pay-result { text-align: center; font-size: 130%; }
+.dayof-pay-form .btn { font-size: 130%; padding: 12px 20px; width: 100%; max-width: 470px; white-space: normal; }
+.dayof-center { text-align: center; }
+
+/* Print control (schedule / receipt print buttons) */
+.print-control select { margin-bottom: 0; }
+.print-control-message { font-weight: bold; margin-left: 6px; }
+
+/* Troubleshooting extra costs form */
+.dayof-extracosts td > ul { list-style-type: none; padding: 0; }
+.dayof-instructions { margin-bottom: 2.5em; }
+.dayof-student-name { margin-top: 0; margin-bottom: 4px; }

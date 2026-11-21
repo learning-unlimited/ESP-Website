@@ -1,0 +1,31 @@
+{% extends "main.html" %}
+
+{% block title %}{% if program %}Pay {{ program.niceName }}{% else %}Payment{% endif %}{% endblock %}
+
+{% block content_title %}{% if program %}Pay {{ program.niceName }}{% else %}Payment{% endif %}{% endblock %}
+
+{% block stylesheets %}{{ block.super }}<link rel="stylesheet" type="text/css" href="/media/styles/dayof.css" />{% endblock %}
+
+{% block content %}
+{% if error %}
+<div class="alert alert-error dayof-pay-result"><span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> {{ error }}</div>
+<p class="dayof-center">Please ask the person at the table for help.</p>
+
+{% elif result %}
+<div class="alert{% if result.0 == 'ok' %} alert-success{% elif result.0 == 'warn' %}{% else %} alert-error{% endif %} dayof-pay-result"><b>{{ result.1 }}</b>
+  {% if result.0 == 'ok' %}<p style="margin-bottom:0">You can close this page.</p>{% endif %}</div>
+
+{% else %}
+<p class="lead">Pay <b>${{ amount }}</b></p>
+<p class="lead">For: <b>{{ who_public }}</b></p>
+
+<form id="pay-form" class="dayof-pay-form" action="{{ post_url }}" method="post" autocomplete="off">
+<input type="hidden" name="merchant_id" value="{{ merchant_id }}" />
+<input type="hidden" name="amount" value="{{ amount }}" />
+<input type="hidden" name="merchantDefinedData1" value="{{ identifier }}" />
+<input type="hidden" name="comments" value="{{ comments }}" />
+<input type="hidden" name="billTo_country" value="US" />
+<p><input class="btn btn-primary" type="submit" value="Continue to card payment"></p>
+</form>
+{% endif %}
+{% endblock %}

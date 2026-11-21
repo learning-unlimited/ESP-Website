@@ -1,0 +1,35 @@
+{% extends "main.html" %}
+
+{% block title %}Day-Of Payment Troubleshooting{% endblock %}
+
+{% block content_title %}Payment Troubleshooting{% endblock %}
+
+{% block stylesheets %}{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/dayof.css" />
+{% endblock %}
+
+{% block content %}
+
+{% include "program/modules/dayof/messages.html" %}
+
+{% include "users/usersearch_form.html" %}
+
+<h2>Checked in but still owe money</h2>
+{% if owed %}
+<table class="table table-striped table-condensed">
+  <tr><th>Student</th><th class="text-right">Owes</th></tr>
+  {% for row in owed %}
+  <tr>
+    <td><a href="?user={{ row.student.id }}">{{ row.student.name }}</a> <small class="muted">(ID {{ row.student.id }})</small>
+</td>
+    <td class="text-right">${{ row.amount_due }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>Nobody has checked in with a balance still owed.</p>
+{% endif %}
+
+{% include "program/modules/onsitecore/returnlink.html" %}
+{% endblock %}

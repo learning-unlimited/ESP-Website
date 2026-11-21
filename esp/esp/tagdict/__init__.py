@@ -154,6 +154,14 @@ all_global_tags = {
         'is_setting': True,
         'field': forms.IntegerField(min_value=1),
     },
+    'card_payment_minimum': {
+        'is_boolean': False,
+        'help_text': 'Smallest credit card charge (in dollars) that day-of troubleshooting and the help desk can start. Whoever sets up a payment can override it, with a reason.',
+        'default': '5.00',
+        'category': 'onsite',
+        'is_setting': True,
+        'field': forms.DecimalField(min_value=0, decimal_places=2),
+    },
     'oktimes_collapse': {
         'is_boolean': True,
         'help_text': 'Collapse feasible start times into a single column in the Viable Times Spreadsheet?',
@@ -569,6 +577,14 @@ all_global_tags = {
 # Any tag used with Tag.getProgramTag()
 # or Tag.getBooleanTag() with a program argument
 all_program_tags = {
+    'receipt_from_address': {
+        'is_boolean': False,
+        'help_text': 'Who receipts printed on the day of the program are from: one line each (the first is shown in bold).',
+        'default': 'MIT ESP\nW20-467, 84 Massachusetts Ave\nCambridge, MA 02139\n617-253-4882',
+        'category': 'onsite',
+        'is_setting': True,
+        'field': forms.CharField(widget=forms.Textarea),
+    },
     'date_range_pretty': {
         'is_boolean': False,
         'help_text': 'Override the displayed date range for this program (e.g. for multi-week programs where classes meet every week but only the first week is registered on the website). If blank, the date range is computed from the program\'s timeslots.',

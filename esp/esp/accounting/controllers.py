@@ -249,11 +249,14 @@ class ProgramAccountingController(BaseAccountingController):
     def all_accounts(self):
         return Account.objects.filter(program=self.program)
 
-    def payments_summary(self):
+    def payments_summary(self, payment_method=None):
         """ Return a tuple with the number and total dollar amount of payments
-            that have been made so far. """
+            that have been made so far (only those by payment_method, e.g.
+            'card', if given). """
         payment_li_type = self.default_payments_lineitemtype()
         payments = Transfer.objects.filter(line_item=payment_li_type)
+        if payment_method is not None:
+            payments = payments.filter(payment_method=payment_method)
         return (payments.count(), payments.aggregate(total=Sum('amount_dec'))['total'])
 
     @staticmethod
@@ -408,17 +411,28 @@ class IndividualAccountingController(ProgramAccountingController):
                 transfer.amount_dec = item.amount_dec
                 transfer.save()
 
-    def apply_preferences(self, optional_items):
+    def apply_preferences(self, optional_items, replace_paid=False, recorded_by=None):
         """ Function to ensure there are transfers for this user corresponding
             to optional line item types, according to their preferences.
             optional_items is a list of 4-tuples: (item name, quantity, cost, option ID)
             The last 2 items, cost and option ID, are non-required and should
-            be set to None if unused.   """
+            be set to None if unused.
+            Items the user already paid for are kept, unless replace_paid
+            (used by day-of troubleshooting): then a line item type whose
+            items differ from what's asked for is replaced entirely, paid
+            items included, which can leave the user overpaid.
+            recorded_by is saved on new transfers. """
 
         result = []
         program_account = self.default_program_account()
         source_account = self.default_source_account()
-        line_items = self.get_lineitemtypes(include_donations=False).exclude(text__in=self.admission_items)
+        #   Help-desk-only items aren't on the extra costs forms (student or
+        #   troubleshooting), so leave whatever the user has of them alone
+        line_items = self.get_lineitemtypes(include_donations=False).exclude(
+            text__in=self.admission_items).exclude(onsite_only=True)
+
+        if replace_paid:
+            return self._replace_preferences(optional_items, line_items, recorded_by)
 
         #   Clear only unpaid transfers (if student unchecks an item they didn't pay for)
         Transfer.objects.filter(user=self.user, line_item__in=line_items, paid_in__isnull=True).delete()
@@ -452,11 +466,48 @@ class IndividualAccountingController(ProgramAccountingController):
                             transfer_amount = option.amount_dec_inherited
                     new_quantity = max(0, (quantity or 0) - paid_counts[lit.id])
                     for i in range(new_quantity):
-                        result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option))
+                        result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option,
+                                                              recorded_by=recorded_by))
                     break
             if not matched:
                 raise Exception('Could not find a line item type matching "%s"' % item_name)
 
+        return result
+
+    def _replace_preferences(self, optional_items, line_items, recorded_by):
+        """ apply_preferences(replace_paid=True): for each line item type
+        whose current transfers (paid or not) differ from what optional_items
+        asks for, delete them all and create what's asked for. """
+        program_account = self.default_program_account()
+        source_account = self.default_source_account()
+        line_items = list(line_items)
+        wanted = {}     # line item id -> list of (amount, option)
+        for (item_name, quantity, cost, option_id) in optional_items:
+            lit = next((li for li in line_items if li.text == item_name), None)
+            if lit is None:
+                raise Exception('Could not find a line item type matching "%s"' % item_name)
+            option = LineItemOptions.objects.get(id=option_id) if option_id is not None else None
+            if cost is not None:
+                amount = Decimal('%.2f' % cost)
+            elif option is not None:
+                amount = option.amount_dec_inherited
+            else:
+                amount = lit.amount_dec
+            wanted.setdefault(lit.id, []).extend([(amount, option)] * (quantity or 0))
+
+        result = []
+        for lit in line_items:
+            current = list(Transfer.objects.filter(user=self.user, line_item=lit))
+            want = wanted.get(lit.id, [])
+            key = lambda pair: (Decimal('%.2f' % pair[0]), pair[1].id if pair[1] is not None else 0)
+            if sorted(key((t.amount_dec, t.option)) for t in current) == sorted(key(w) for w in want):
+                continue
+            for t in current:
+                t.delete()
+            for (amount, option) in want:
+                result.append(Transfer.objects.create(
+                    source=source_account, destination=program_account, user=self.user, line_item=lit,
+                    amount_dec=amount, option=option, recorded_by=recorded_by))
         return result
 
     def set_preference(self, lineitem_name, quantity, amount=None, option_id=None):
@@ -800,12 +851,17 @@ class IndividualAccountingController(ProgramAccountingController):
         return amt_request - self.amount_finaid(amt_sibling) - amt_sibling - self.amount_paid()
 
     @transaction.atomic
-    def submit_payment(self, amount, transaction_id='', link_transfers=True):
+    def submit_payment(self, amount, transaction_id='', link_transfers=True, payment_method='card',
+                       recorded_by=None, checkin_record=None):
         """ Create a Transfer representing the user's payment for this program.
         By default, runs link_paid_transfers in an attempt to automatically
         create paid_in links. With link_transfers=False, this task is the
-        responsibility of the caller. """
+        responsibility of the caller. payment_method is 'card' or
+        'cash_check'; recorded_by says who recorded it, and
+        checkin_record is the check-in that implied it, if any. """
 
+        if payment_method not in dict(Transfer.PAYMENT_METHOD_CHOICES):
+            raise ValueError('Unknown payment method %r' % (payment_method,))
         line_item_type = self.default_payments_lineitemtype()
         target_account = self.default_source_account()
         payment = Transfer.objects.create(source=None,
@@ -813,7 +869,10 @@ class IndividualAccountingController(ProgramAccountingController):
                                           user=self.user,
                                           line_item=line_item_type,
                                           amount_dec=Decimal('%.2f' % amount),
-                                          transaction_id=transaction_id)
+                                          transaction_id=transaction_id,
+                                          payment_method=payment_method,
+                                          recorded_by=recorded_by,
+                                          checkin_record=checkin_record)
         if link_transfers:
             self.link_paid_transfers(payment)
         return payment
@@ -853,14 +912,16 @@ class IndividualAccountingController(ProgramAccountingController):
             raise ValueError("Transfers do not sum to target: %.2f" % target_full)
 
     @staticmethod
-    def updatePaid(program, user, paid=True):
+    def updatePaid(program, user, paid=True, recorded_by=None):
         """ Create an invoice for the user and, if paid is True, create a receipt showing
-        that they have paid all of the money they owe for the program. """
+        that they have paid all of the money they owe for the program. Used
+        by onsite pages, so the payment is recorded as cash/check. """
         iac = IndividualAccountingController(program, user)
         if not iac.has_paid():
             iac.ensure_required_transfers()
             if paid:
-                iac.submit_payment(iac.amount_due())
+                iac.submit_payment(iac.amount_due(), payment_method='cash_check',
+                                   recorded_by=recorded_by)
 
     def __str__(self):
         return 'Accounting for %s at %s' % (self.user.name(), self.program.niceName())

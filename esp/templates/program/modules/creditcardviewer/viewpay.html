@@ -138,6 +138,7 @@
 <li>Total number of students: {{ num_students }}</li>
 <li>Number of credit card payments so far: {{ num_payments }}</li>
 <li>Amount of credit card payments so far: ${{ total_payment|floatformat:2 }}</li>
+<li>Cash/check payments recorded onsite: {{ num_cash_payments }} (${{ total_cash_payment|default:0|floatformat:2 }})</li>
 </ul>
 
 <div id="program_form">

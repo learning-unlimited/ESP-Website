@@ -88,9 +88,12 @@ class CreditCardViewer(ProgramModuleObj):
             row['link_amounts'] = ' '.join('%.2f' % amount for amount in payment_issues.linkable_payment_amounts(row))
 
         #   Also fetch summary information about the payments
-        (num_payments, total_payment) = pac.payments_summary()
+        (num_payments, total_payment) = pac.payments_summary(payment_method='card')
+        (num_cash, total_cash) = pac.payments_summary(payment_method='cash_check')
 
         context = {
+            'num_cash_payments': num_cash,
+            'total_cash_payment': total_cash,
             'program': prog,
             'payment_table': payment_table,
             'num_students': len(student_list),

@@ -281,12 +281,13 @@ function print_schedule()
     });
 }
 
+//  As text: messages carry student names and other things people typed
 function add_message(msg, cls)
 {
     if (!cls)
-        $j("#messages").append($j("<div/>").addClass("message").html(msg));
+        $j("#messages").append($j("<div/>").addClass("message").text(msg));
     else
-        $j("#messages").append($j("<div/>").addClass(cls).html(msg));
+        $j("#messages").append($j("<div/>").addClass(cls).text(msg));
     $j("#messages").prop("scrollTop", $j("#messages").prop("scrollHeight"));
 }
 
@@ -558,7 +559,11 @@ function add_student(student_id, section_id, size_override)
     
     //  Commit changes to server
     var schedule_resp = $j.ajax({
-        url: program_base_url + "update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]&override=" + size_override + "&check_in=" + settings.check_in_student.toString(),
+        url: program_base_url + "update_schedule_json",
+        type: 'POST',
+        headers: {'X-CSRFToken': csrf_token()},
+        data: {user: student_id, sections: "[" + new_sections.toString() + "]", override: size_override,
+               check_in: settings.check_in_student.toString()},
         dataType: 'json',
         success: handle_schedule_response,
         complete: [update_checkboxes, unlock_schedule]
@@ -594,7 +599,11 @@ function remove_student(student_id, section_id)
    
     //  Commit changes to server
     var schedule_resp = $j.ajax({
-        url: program_base_url + "update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]" + "&check_in=" + settings.check_in_student.toString(),
+        url: program_base_url + "update_schedule_json",
+        type: 'POST',
+        headers: {'X-CSRFToken': csrf_token()},
+        data: {user: student_id, sections: "[" + new_sections.toString() + "]",
+               check_in: settings.check_in_student.toString()},
         dataType: 'json',
         success: handle_schedule_response,
         complete: [update_checkboxes, unlock_schedule]

@@ -1,0 +1,59 @@
+{% extends "main.html" %}
+
+{% block title %}Pay ${{ amount }} - {{ who }}{% endblock %}
+
+{% block content_title %}Pay ${{ amount }} on Your Phone{% endblock %}
+
+{% block stylesheets %}{{ block.super }}<link rel="stylesheet" type="text/css" href="/media/styles/dayof.css" />{% endblock %}
+
+{% block content %}
+<p class="lead"><b>{{ who }}</b></p>
+
+<div id="qr-paid" class="alert alert-success">Paid &#10003;<small></small></div>
+<div id="qr-review" class="alert alert-error"><strong>Paid the wrong amount.</strong><small></small></div>
+
+<div id="qr-box" class="dayof-qr-box">{{ qr_svg|safe }}</div>
+<p id="qr-link" class="dayof-qr-link"><span>{{ link }}</span></p>
+<p class="dayof-center"><small class="muted">Link works for {{ minutes }} minutes</small></p>
+
+<div id="qr-wait" class="alert"><strong>Wait for Paid &#10003; before they leave</strong> &mdash; the payment only records if their phone returns to our site.</div>
+
+<p><a class="btn" href="{{ back_url }}"><span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span> Back</a></p>
+
+<script type="text/javascript">
+(function () {
+    // "Paid" only when the card payment itself arrives (not, say, aid lowering the balance)
+    var paidWhen = '{{ paid_when|escapejs }}';
+    var known = {{ known_card_payments|default:"[]" }};
+    var expected = '{{ amount|escapejs }}';
+    var done = false;
+    function show(id, detail) {
+        done = true;
+        $j(id).show().find('small').text(detail || '');
+        $j('#qr-box, #qr-link, #qr-wait').hide();
+    }
+    function poll() {
+        if (done) { return; }
+        $j.getJSON('{{ status_url|escapejs }}').done(function (data) {
+            if (paidWhen === 'balance') {
+                var fresh = (data.card_payments || []).filter(function (p) { return known.indexOf(p.id) < 0; });
+                if (!fresh.length) { return; }
+                var p = fresh[fresh.length - 1];
+                var tx = p.transaction_id ? ' (transaction ' + p.transaction_id + ')' : '';
+                if (p.amount === expected) {
+                    show('#qr-paid', ' $' + p.amount + tx + '. Balance now $' + data.balance + '.');
+                } else {
+                    show('#qr-review', ' They paid $' + p.amount + tx + ', not $' + expected + '. Balance now $' + data.balance + '.');
+                }
+            } else if (data.status === 'paid') {
+                show('#qr-paid', data.transaction_id ? ' Transaction ' + data.transaction_id + '.' : '');
+            } else if (data.status === 'review') {
+                show('#qr-review', ' The amount paid doesn\'t match the sale; treasury will check it. Don\'t hand over the items yet.' +
+                     (data.transaction_id ? ' Transaction ' + data.transaction_id + '.' : ''));
+            }
+        });
+    }
+    setInterval(poll, 3000);
+})();
+</script>
+{% endblock %}

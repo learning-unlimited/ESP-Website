@@ -1,0 +1,272 @@
+{% extends "main.html" %}
+
+{% block title %}{{ student.name }} - Day-Of Payment Troubleshooting{% endblock %}
+
+{% block content_title %}Payment Troubleshooting{% endblock %}
+
+{% block stylesheets %}{{ block.super }}<link rel="stylesheet" type="text/css" href="/media/styles/dayof.css" />{% endblock %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/onsite/confirm2.js"></script>
+<script type="text/javascript" src="/media/scripts/onsite/dayof_card.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<h2 class="dayof-student-name">{{ student.name }}</h2>
+<p>ID {{ student.id }} &middot; {{ student.username }} &middot; <a href="{{ user_manage_url }}">User Manage Page</a>
+  &middot; Admin panel: <a href="{{ admin_transfers_url }}" target="_blank">line items</a>, <a href="{{ admin_postbacks_url }}" target="_blank">CyberSource postbacks</a>
+  {% if summary.checked_in %}<span class="label label-success">Checked in</span>{% else %}<span class="label label">Not checked in</span>{% endif %}
+</p>
+{% if summary.checked_in %}
+<form method="post" action="troubleshooting_undo_checkin" class="dayof-form">{% csrf_token %}
+  <input type="hidden" name="user" value="{{ student.id }}" />
+  <input type="hidden" name="expected_balance" value="{{ summary.balance_str }}" />
+  <p><button type="button" class="btn dayof-action" id="undo-checkin-submit"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Undo check-in</button>
+  {% if summary.checkin_payment %}<small class="muted">Also removes the ${{ summary.checkin_payment.amount_dec|floatformat:2 }} cash/check payment check-in recorded.</small>{% endif %}</p>
+</form>
+{% else %}
+<form method="post" action="troubleshooting_checkin" class="dayof-form">{% csrf_token %}
+  <input type="hidden" name="user" value="{{ student.id }}" />
+  <input type="hidden" name="expected_balance" value="{{ summary.balance_str }}" />
+  <p><button type="button" class="btn btn-success dayof-action" id="checkin-submit"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Check in</button>
+  {% if not summary.ever_checked_in and summary.balance > 0 %}<small class="muted">Records their ${{ summary.balance_str }} balance as paid in cash/check, as check-in does.</small>{% endif %}</p>
+</form>
+{% endif %}
+
+{% include "program/modules/dayof/messages.html" %}
+
+<div id="stale-banner" class="alert alert-error" style="display:none">This student's account changed. Reload before doing anything else.
+  <button type="button" class="btn btn-small" onclick="location.reload();">Reload</button></div>
+
+{% if summary.checked_in and summary.balance > 0 %}
+<div class="alert"><span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+  <strong>Checked in, still owes ${{ summary.balance_str }}</strong></div>
+{% endif %}
+
+<div class="dayof-box">
+  <table class="table table-condensed dayof-ledger">
+    <thead><tr><th>Item</th><th class="text-right">Amount</th></tr></thead>
+    {% for it in summary.items %}
+    <tr><td>{{ it.text }}{% if it.option %} ({{ it.option }}){% endif %}{% if it.paid %} <span class="label label-success">paid</span>{% endif %}</td><td class="dayof-amount">${{ it.amount|floatformat:2 }}</td></tr>
+    {% endfor %}
+    {% if summary.sibling_discount %}<tr><td>Sibling discount</td><td class="dayof-amount">&minus;${{ summary.sibling_discount|floatformat:2 }}</td></tr>{% endif %}
+    {% if summary.finaid %}<tr><td>Financial aid</td><td class="dayof-amount">&minus;${{ summary.finaid|floatformat:2 }}</td></tr>{% endif %}
+    {% for p in summary.payments %}
+    <tr><td>Paid {{ p.date|date:"M j, g:i a" }}: {{ p.method }}{% if p.at_checkin %} <span class="label label-info">at check-in</span>{% endif %}
+      <br /><small class="muted">{% if p.transaction_id %}{{ p.transaction_id }}{% if p.recorded_by %} &middot; {% endif %}{% endif %}{% if p.recorded_by %}by {{ p.recorded_by }}{% endif %}</small></td><td class="dayof-amount">&minus;${{ p.amount|floatformat:2 }}</td></tr>
+    {% empty %}<tr><td colspan="2"><small class="muted">No payments recorded.</small></td></tr>
+    {% endfor %}
+  </table>
+  <div class="dayof-box-footer dayof-balance">
+    {% if summary.balance < 0 %}Overpaid by ${{ summary.balance_str|cut:"-" }} (treasury refunds)
+    {% else %}Balance due: ${{ summary.balance_str }}{% endif %}
+  </div>
+</div>
+
+<details class="dayof-section">
+  <summary>Extra costs (preorder items)</summary>
+  <div class="dayof-section-body">
+    <a class="btn dayof-action" href="troubleshooting_extracosts?user={{ student.id }}">Edit extra costs</a>
+  </div>
+</details>
+
+<details class="dayof-section">
+  <summary>Financial aid</summary>
+  <div class="dayof-section-body">
+  {% if summary.grant %}<p>Current grant: {{ summary.grant.terms }}</p>{% endif %}
+  <form method="post" action="troubleshooting_finaid" id="finaid-form" class="dayof-form">{% csrf_token %}
+    <input type="hidden" name="user" value="{{ student.id }}" />
+    <input type="hidden" name="expected_balance" value="{{ summary.balance_str }}" />
+    <div class="control-group"><label>Maximum amount</label>
+      <div class="input-prepend"><span class="add-on">$</span><input type="text" class="input-small" name="amount_max" value="{{ finaid_defaults.amount_max }}" /></div></div>
+    <div class="control-group"><label>Percent covered</label>
+      <div class="input-append"><input type="text" class="input-mini" name="percent" value="{{ finaid_defaults.percent }}" /><span class="add-on">%</span></div></div>
+    <div class="control-group"><label for="finaid-reason">Reason</label>
+      <input type="text" class="input-xlarge" id="finaid-reason" name="reason" required /></div>
+    <label class="checkbox"><input type="checkbox" name="email" /> Email the student the approval notice</label>
+    <p><button type="button" class="btn btn-primary dayof-action" id="finaid-submit">Grant financial aid</button>
+    <span id="finaid-info"></span></p>
+  </form>
+  </div>
+</details>
+
+{% if summary.checkin_payment %}
+<details class="dayof-section">
+  <summary>Check-in payment</summary>
+  <div class="dayof-section-body">
+  <p>Recorded ${{ summary.checkin_payment.amount_dec|floatformat:2 }} paid at check-in.</p>
+  <form method="post" action="troubleshooting_checkin_adjust" class="dayof-form">{% csrf_token %}
+    <input type="hidden" name="user" value="{{ student.id }}" />
+    <input type="hidden" name="expected_balance" value="{{ summary.balance_str }}" />
+    <div class="control-group"><label>Amount they actually paid</label>
+      <div class="input-prepend"><span class="add-on">$</span><input type="text" class="input-small" name="actually_paid" required /></div></div>
+    <p><button type="button" class="btn dayof-action" id="adjust-submit">They paid less than this</button></p>
+  </form>
+  </div>
+</details>
+{% endif %}
+
+<details class="dayof-section">
+  <summary>Record a payment</summary>
+  <div class="dayof-section-body">
+  <p class="muted"><small>For money received some other way: cash or a check handed over now, or a card payment taken outside this page.</small></p>
+  <form method="post" action="troubleshooting_record_payment" class="dayof-form">{% csrf_token %}
+    <input type="hidden" name="user" value="{{ student.id }}" />
+    <input type="hidden" name="expected_balance" value="{{ summary.balance_str }}" />
+    <div class="control-group"><label>Amount</label>
+      <div class="input-prepend"><span class="add-on">$</span><input type="text" class="input-small" name="amount" value="{% if summary.balance > 0 %}{{ summary.balance_str }}{% endif %}" required /></div></div>
+    <div class="control-group"><label for="payment-method">Paid by</label>
+      <select name="method" id="payment-method" class="input-xlarge">
+        <option value="cash_check">Cash or check</option>
+        <option value="card">Credit card (taken elsewhere)</option>
+      </select></div>
+    <div class="control-group"><label for="payment-reference">Reference (optional)</label>
+      <input type="text" class="input-xlarge" id="payment-reference" name="reference" maxlength="200" placeholder="check number, transaction ID" /></div>
+    <label class="checkbox"><input type="checkbox" name="overpay" /> They paid more than they owe</label>
+    <p><button type="button" class="btn btn-primary dayof-action" id="cash-submit">Record payment</button></p>
+  </form>
+  </div>
+</details>
+
+<details class="dayof-section">
+  <summary>Pay by card{% if summary.balance <= 0 %} <small class="muted">(nothing owed)</small>{% endif %}</summary>
+  <div class="dayof-section-body">
+  <form method="post" action="troubleshooting_card" id="card-form" class="dayof-form" autocomplete="off">{% csrf_token %}
+    <input type="hidden" name="user" value="{{ student.id }}" />
+    <input type="hidden" name="expected_balance" value="{{ summary.balance_str }}" />
+    {% if summary.balance > 0 %}
+    <p>Charges the full balance: <b>${{ summary.balance_str }}</b></p>
+    <details>
+      <summary class="muted"><small>Other amount&hellip;</small></summary>
+      <label class="checkbox"><input type="checkbox" name="custom" id="card-custom" /> Charge a different amount</label>
+    {% else %}
+    <p>They don't owe anything; you can still charge an amount for something.</p>
+    <div>
+      <input type="hidden" name="custom" value="1" />
+    {% endif %}
+      <div class="control-group"><label for="card-amount">Amount</label>
+        <div class="input-prepend"><span class="add-on">$</span><input type="text" class="input-small" name="amount" id="card-amount" /></div></div>
+      <div class="control-group"><label for="card-desc">What it's for</label>
+        <input type="text" class="input-xlarge" name="description" id="card-desc" /></div>
+    {% if summary.balance > 0 %}</details>{% else %}</div>{% endif %}
+    {% include "program/modules/dayof/card_pay.html" %}
+  </form>
+  </div>
+</details>
+
+<details class="dayof-section" id="receipt"{% if remake %} open{% endif %}>
+  <summary>Receipt</summary>
+  <div class="dayof-section-body">
+  {% if not can_receipt and not remake %}
+  <p class="muted"><small>Only for students who are checked in or have paid by card.</small></p>
+  {% else %}
+  <form method="post" action="troubleshooting_receipt" class="dayof-form">{% csrf_token %}
+    <input type="hidden" name="user" value="{{ student.id }}" />
+    {% if remake %}
+    <div class="alert">Remaking receipt {{ remake.number }}: pick the right items. Making the new receipt voids receipt {{ remake.number }}.
+      <a href="troubleshooting?user={{ student.id }}#receipt">Cancel</a></div>
+    <input type="hidden" name="replaces" value="{{ remake.id }}" />
+    {% endif %}
+    {% for e in receipt_items %}
+    <label class="checkbox"><input type="checkbox" name="items" value="{{ e.transfer.id }}"{% if not remake or not remake.item_ids or e.transfer.id in remake.item_ids %} checked="checked"{% endif %} />
+      {{ e.transfer.line_item.text }}{% if e.transfer.option %} ({{ e.transfer.option.description }}){% endif %} ${{ e.transfer.amount_dec|floatformat:2 }}
+      <small class="muted">{% if e.aid %}aid ${{ e.aid|floatformat:2 }}{% endif %}{% if e.discount %} discount ${{ e.discount|floatformat:2 }}{% endif %}{% for pay in e.payments %}{% if forloop.first %} paid {% else %} + {% endif %}${{ pay.1|floatformat:2 }}{% endfor %}{% if e.unpaid > 0 %} unpaid ${{ e.unpaid|floatformat:2 }}{% endif %}</small></label>
+    {% endfor %}
+    <div class="control-group"><label for="receipt-payer">Payer name (optional)</label>
+      <input type="text" class="input-xlarge" id="receipt-payer" name="payer_name" maxlength="200" placeholder="{{ student.name }}" value="{{ remake.payer_name_given|default:'' }}" /></div>
+    <p><button type="submit" class="btn dayof-action">{% if remake %}Make the new receipt{% else %}Make receipt{% endif %}</button></p>
+  </form>
+  {% endif %}
+  {% for r in receipts %}
+  <div><small><a href="troubleshooting_receipt_view?receipt={{ r.id }}">Receipt {{ r.number }}</a> <span class="muted">{{ r.issued_at|date:"M j, g:i a" }}</span>{% if r.voided_at %} <span class="label label-important">void</span>{% else %} &middot; <a href="troubleshooting?user={{ student.id }}&amp;remake={{ r.id }}#receipt">remake</a>{% endif %}</small></div>
+  {% endfor %}
+  </div>
+</details>
+
+{% include "program/modules/onsitecore/returnlink.html" %}
+
+<script type="text/javascript">
+(function () {
+    var firstName = '{{ student.first_name|escapejs }}';
+
+    // Two-click confirms for check-in adjustment and cash.
+    $j('#adjust-submit').on('click', function () {
+        var f = this.form;
+        armConfirm(this, function () {
+            return 'Change ' + firstName + "'s check-in payment to $" + $j(f.actually_paid).val() +
+                " ? They'll still owe the difference.";
+        }, function () { f.submit(); });
+    });
+    $j('#checkin-submit').on('click', function () {
+        var f = this.form;
+        armConfirm(this, function () {
+            return 'Check in {{ student.name|escapejs }}{% if not summary.ever_checked_in and summary.balance > 0 %} and record ${{ summary.balance_str|escapejs }} paid in cash/check{% endif %}?';
+        }, function () { f.submit(); });
+    });
+    $j('#undo-checkin-submit').on('click', function () {
+        var f = this.form;
+        armConfirm(this, function () {
+            return "Undo {{ student.name|escapejs }}'s check-in{% if summary.checkin_payment %} and remove the ${{ summary.checkin_payment.amount_dec|floatformat:2|escapejs }} payment it recorded{% endif %}?";
+        }, function () { f.submit(); });
+    });
+    $j('#cash-submit').on('click', function () {
+        var f = this.form;
+        armConfirm(this, function () {
+            return 'Record $' + $j(f.amount).val() + ' ' + $j(f.method).find('option:selected').text().toLowerCase() +
+                ' from ' + '{{ student.name|escapejs }}' + '?';
+        }, function () { f.submit(); });
+    });
+
+    // Card payment (dayof_card.js): the balance, or the custom amount
+    var cardForm = document.getElementById('card-form');
+    var cardBalance = parseFloat('{{ summary.balance_str|escapejs }}');
+    var isCustom = function () { return cardForm.custom.type === 'hidden' || cardForm.custom.checked; };
+    var cardRefresh = function () {
+        cardForm.amount.required = isCustom();
+        cardForm.description.required = isCustom();
+    };
+    $j(cardForm).on('input change', cardRefresh);
+    cardRefresh();
+    DayOfCard.attach($j(cardForm).find('.dayof-card-pay'), {
+        amount: function () { return isCustom() ? parseFloat(cardForm.amount.value) : cardBalance; },
+        describe: function (amount) { return 'Charge ' + amount + ' to a card for {{ student.name|escapejs }}?'; }
+    });
+
+    // Financial aid: server-side preview, then confirm within 8 seconds.
+    var armedUntil = 0;
+    $j('#finaid-submit').on('click', function () {
+        var f = this.form, btn = $j(this), info = $j('#finaid-info');
+        if (!f.reason.value) { info.text('Enter a reason.'); return; }
+        if (Date.now() < armedUntil) { armedUntil = 0; f.submit(); return; }
+        $j.getJSON('troubleshooting_finaid_preview', {
+            user: {{ student.id }}, amount_max: f.amount_max.value, percent: f.percent.value
+        }).done(function (data) {
+            if (data.error) { info.text(data.error); return; }
+            var text = data.confirm + ' ' + (data.warnings || []).join(' ');
+            info.text(text).addClass('text-error').css('font-weight', 'bold');
+            btn.text('Confirm').addClass('confirm2-armed');
+            armedUntil = Date.now() + 8000;
+            setTimeout(function () {
+                if (Date.now() >= armedUntil) {
+                    armedUntil = 0; btn.text('Grant financial aid').removeClass('confirm2-armed'); info.text('').removeClass('text-error');
+                }
+            }, 8100);
+        }).fail(function () { info.text('Could not check the aid terms; try again.'); });
+    });
+
+    // Warn if the account changes under us.
+    var fingerprint = '{{ fingerprint|escapejs }}';
+    setInterval(function () {
+        $j.getJSON('troubleshooting_status?user={{ student.id }}').done(function (data) {
+            if (data.fingerprint !== fingerprint) {
+                $j('#stale-banner').show();
+                $j('.dayof-action, details.dayof-section form button, details.dayof-section form input[type=submit]').prop('disabled', true)
+                    .attr('aria-disabled', 'true').css('pointer-events', 'none');
+            }
+        });
+    }, 4000);
+})();
+</script>
+{% endblock %}

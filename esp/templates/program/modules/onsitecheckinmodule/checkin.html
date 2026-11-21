@@ -18,7 +18,7 @@
     Welcome to student check-in for {{module.student.name}}.  Make sure that the student has:
     <ul>
       <li> handed in Medical and Liability Form
-      <li> paid
+      <li> paid what they owe{% with due=module.amountDue %}{% if due > 0 %}: <strong>${{ due|floatformat:2 }}</strong> (checking them in records it as paid, cash/check){% else %} (nothing owed){% endif %}{% endwith %}
     </ul>
   </p>
   <br />
@@ -36,10 +36,6 @@
       <tr>
 	<td><label for="liability"><strong>Liability Form?</strong></label></td>
 	<td><input type="checkbox" name="liab" id="liability" checked="checked" /></td>
-      </tr>
-      <tr>
-	<td><label for="paid"><strong>Paid?</strong></label></td>
-	<td><input type="checkbox" name="paid" id="paid" checked="checked" /></td>
       </tr>
     </table>
     <input type="hidden" name="userid" value="{{module.student.id}}" />
@@ -80,11 +76,8 @@
 	<td><label for="liability"><strong>Liability Form?</strong></label></td>
 	<td><input type="checkbox" name="liab" id="liability" {% if module.hasLiability %}checked="checked"{% endif %} /></td>
       </tr>
-      <tr>
-	<td><label for="paid"><strong>Paid?</strong></label></td>
-	<td><input type="checkbox" name="paid" id="paid" {% if module.hasPaid %}checked="checked"{% endif %} /></td>
-      </tr>
     </table>
+    {% with due=module.amountDue %}<p>{% if due > 0 %}Still owes <strong>${{ due|floatformat:2 }}</strong>: settle it on the payment troubleshooting page.{% else %}Nothing owed.{% endif %}</p>{% endwith %}
     <input type="hidden" name="userid" value="{{module.student.id}}" />
     <input type="submit" value="Modify Student Check-In" />
   </form>

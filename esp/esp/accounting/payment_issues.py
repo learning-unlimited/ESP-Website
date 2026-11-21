@@ -75,8 +75,8 @@ ISSUE_STEPS = {
     ],
     'overpaid': [
         'Check "What happened" above to see why: e.g. financial aid approved after they paid, a duplicate payment, or a removed item.',
-        "If the student or their family asks for a refund, refund the overpaid amount in CyberSource "
-        "(their transaction IDs are under their line items & payments).",
+        "If the student or their family asks for a refund: refund card payments in CyberSource (their "
+        "transaction IDs are under their line items & payments); cash/check payments need a refund by check.",
         'Mark resolved once it is settled (refunded, or they want to keep it as a donation), saying what you did. '
         'If their balance changes again later, the issue reopens.',
     ],
@@ -298,7 +298,8 @@ def payment_issues(program, rows):
             continue
         history = [{'when': t.timestamp,
                     'text': 'Paid $%.2f%s' % (t.amount_dec, ' (%s)' % t.recorded_by_hand if t.recorded_by_hand
-                                              else ' by credit card' if t.transaction_id else '')}
+                                              else ' by %s' % t.get_payment_method_display().lower()
+                                              if t.payment_method else '')}
                    for t in row['transfers'] if t.line_item.for_payments]
         if row['grant']:
             history.append({'when': row['grant'].timestamp,
@@ -446,7 +447,8 @@ def record_payment(program, student, amount, transaction_id, admin, note, postba
 
     iac = IndividualAccountingController(program, student)
     with transaction.atomic():
-        payment = iac.submit_payment(amount, transaction_id, link_transfers=False)
+        payment = iac.submit_payment(amount, transaction_id, link_transfers=False,
+                                     payment_method='card', recorded_by=admin)
         try:
             with transaction.atomic():
                 iac.link_paid_transfers(payment)

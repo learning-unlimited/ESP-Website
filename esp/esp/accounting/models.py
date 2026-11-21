@@ -57,6 +57,15 @@ class LineItemType(models.Model):
     max_quantity = models.PositiveIntegerField(default=1)
     for_payments = models.BooleanField(default=False)
     for_finaid = models.BooleanField(default=False, help_text='Should financial aid cover this line item?')
+    onsite_only = models.BooleanField(default=False, help_text='Only sold at the help desk on the day of the program; hidden from the student extra costs page.')
+    helpdesk_amount_dec = models.DecimalField(
+        max_digits=9, decimal_places=2, blank=True, null=True,
+        help_text='Price at the help desk on the day of the program, if different from the price above.')
+
+    @property
+    def helpdesk_price(self):
+        """ What the help desk charges for this item (without an option). """
+        return self.amount_dec if self.helpdesk_amount_dec is None else self.helpdesk_amount_dec
 
     @property
     def amount(self):
@@ -119,10 +128,23 @@ class LineItemOptions(models.Model):
     description = models.TextField(help_text='You can include the cost as part of the description, which is helpful if the cost differs from the line item type.')
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this option--leave blank to inherit from the line item type.')
     is_custom = models.BooleanField(default=False, help_text='Should the student be allowed to specify a custom amount for this option?')
+    helpdesk_amount_dec = models.DecimalField(
+        max_digits=9, decimal_places=2, blank=True, null=True,
+        help_text='Price of this option at the help desk on the day of the program; leave blank to use the line item type\'s help desk price, or else this option\'s regular price.')
 
     class Meta:
         # Otherwise Django pluralizes the class name to "line item optionss".
         verbose_name = 'line item option'
+
+    @property
+    def helpdesk_price(self):
+        """ What the help desk charges for this option: its own help desk
+        price, else the line item type's, else its regular price. """
+        if self.helpdesk_amount_dec is not None:
+            return self.helpdesk_amount_dec
+        if self.lineitem_type.helpdesk_amount_dec is not None:
+            return self.lineitem_type.helpdesk_amount_dec
+        return self.amount_dec_inherited
 
     @property
     def amount_dec_inherited(self):
@@ -149,6 +171,10 @@ class FinancialAidGrant(models.Model):
     percent = models.PositiveIntegerField(blank=True, null=True, help_text='Enter an integer between 0 and 100 here to grant a certain percentage discount after the above dollar credit is applied.  0 means no additional discount, 100 means no payment is required for items that are covered by financial aid.')
     timestamp = models.DateTimeField(auto_now=True)
     finalized = models.BooleanField(default=False, editable=False)
+    #   Who granted it (blank for grants made before this was recorded); see
+    #   Transfer.recorded_by for what these mean
+    granted_by = AjaxForeignKey(ESPUser, blank=True, null=True, related_name='+',
+                                on_delete=models.SET_NULL, editable=False)
 
     @property
     def amount_max(self):
@@ -289,6 +315,24 @@ class Transfer(models.Model):
     paid_in = models.ForeignKey(
         'self', blank=True, null=True, on_delete=models.PROTECT,
         help_text='If this transfer is for a fee that has been paid, references the transfer for the payment transaction.')
+    #   For payments (transfers from outside): how it was paid. Blank for
+    #   transfers that aren't payments.
+    PAYMENT_METHOD_CHOICES = (
+        ('card', 'Credit card'),
+        ('cash_check', 'Cash or check'),
+    )
+    payment_method = models.CharField(max_length=20, blank=True, default='', choices=PAYMENT_METHOD_CHOICES)
+    #   Who recorded it: the real account behind the request (an admin morphed
+    #   into another account counts as the admin).
+    recorded_by = AjaxForeignKey(ESPUser, blank=True, null=True, related_name='+',
+                                 on_delete=models.SET_NULL)
+    #   For a payment that checking the student in implied (they paid their
+    #   balance in cash or check at check-in): that check-in record. Undoing
+    #   the check-in deletes the payment; deleting the record any other way
+    #   (admin, or with its program) keeps the money record, unlinked.
+    checkin_record = models.ForeignKey(
+        'users.Record', blank=True, null=True, on_delete=models.SET_NULL,
+        related_name='checkin_payments')
 
     def set_amount(self, amount):
         if self.paid_in:
@@ -300,6 +344,116 @@ class Transfer(models.Model):
 
     def __str__(self):
         return 'Transfer $%s from %s to %s' % (self.amount_dec, self.source, self.destination)
+
+class OnsiteSale(models.Model):
+    """ An anonymous sale at the help desk on the day of the program (e.g. a
+    non-preordered shirt or a plushie), not tied to any account. Recording
+    cash sales is optional; card sales and sales that get a receipt are always
+    recorded. A sale with no lines is a custom amount (see description). """
+    METHOD_CHOICES = (
+        ('cash_check', 'Cash or check'),
+        ('card', 'Credit card'),
+    )
+    STATUS_CHOICES = (
+        ('pending', 'Waiting for card payment'),
+        ('paid', 'Paid'),
+        ('review', 'Paid the wrong amount (treasury to check)'),
+        ('void', 'Void'),
+    )
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    method = models.CharField(max_length=20, choices=METHOD_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    payer_name = models.CharField(max_length=200, blank=True, default='')
+    description = models.CharField(max_length=200, blank=True, default='',
+                                   help_text='What a custom-amount sale was for.')
+    total_dec = models.DecimalField(max_digits=9, decimal_places=2)
+    transaction_id = models.CharField(max_length=64, blank=True, default='')
+    recorded_by = AjaxForeignKey(ESPUser, blank=True, null=True, related_name='+', on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    paid_at = models.DateTimeField(blank=True, null=True)
+    voided_at = models.DateTimeField(blank=True, null=True)
+    voided_by = AjaxForeignKey(ESPUser, blank=True, null=True, related_name='+', on_delete=models.SET_NULL)
+
+    class Meta:
+        ordering = ('-id',)
+
+    def identifier(self):
+        """ What we send CyberSource to pay for this sale; see
+        esp.program.views.submit_transaction. """
+        return '%d/onsite-%d:%.2f' % (self.program_id, self.id, self.total_dec)
+
+    def __str__(self):
+        return 'Help desk sale %d ($%.2f, %s)' % (self.id, self.total_dec, self.status)
+
+class OnsiteSaleLine(models.Model):
+    sale = models.ForeignKey(OnsiteSale, on_delete=models.CASCADE, related_name='lines')
+    line_item = models.ForeignKey(LineItemType, on_delete=models.PROTECT)
+    option = models.ForeignKey(LineItemOptions, blank=True, null=True, on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField()
+    unit_price_dec = models.DecimalField(max_digits=9, decimal_places=2,
+                                         help_text='The help desk price when it was sold.')
+
+    @property
+    def amount_dec(self):
+        return self.unit_price_dec * self.quantity
+
+class DayOfCardCheckout(models.Model):
+    """ A card payment started at day-of troubleshooting (for a student's
+    balance) or the help desk (for a sale), on the laptop or by QR code: who
+    started which charge, and why if it was below the card minimum. """
+    CHANNEL_CHOICES = (
+        ('laptop', 'On the staff laptop'),
+        ('qr', 'On the payer\'s phone (QR code)'),
+    )
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, related_name='dayof_card_checkouts',
+                          on_delete=models.CASCADE)
+    sale = models.ForeignKey(OnsiteSale, blank=True, null=True, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=9, decimal_places=2)
+    identifier = models.TextField()
+    channel = models.CharField(max_length=10, choices=CHANNEL_CHOICES)
+    custom_amount = models.BooleanField(default=False)
+    description = models.CharField(max_length=200, blank=True, default='')
+    below_minimum_reason = models.CharField(max_length=200, blank=True, default='')
+    recorded_by = AjaxForeignKey(ESPUser, blank=True, null=True, related_name='+', on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class Receipt(models.Model):
+    """ A receipt handed out on the day of the program, for a student's
+    account (from day-of troubleshooting) or a help desk sale. What was
+    printed is frozen in lines_json, so a reprint is identical. Receipts can
+    be voided but never edited. """
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    number = models.PositiveIntegerField(help_text='Counts up within the program.')
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, related_name='dayof_receipts', on_delete=models.CASCADE)
+    sale = models.ForeignKey(OnsiteSale, blank=True, null=True, related_name='receipts', on_delete=models.CASCADE)
+    payer_name = models.CharField(max_length=200, blank=True, default='')
+    lines_json = models.TextField()
+    issued_at = models.DateTimeField(auto_now_add=True)
+    recorded_by = AjaxForeignKey(ESPUser, blank=True, null=True, related_name='+', on_delete=models.SET_NULL)
+    voided_at = models.DateTimeField(blank=True, null=True)
+    voided_by = AjaxForeignKey(ESPUser, blank=True, null=True, related_name='+', on_delete=models.SET_NULL)
+
+    class Meta:
+        unique_together = (('program', 'number'),)
+        ordering = ('-id',)
+
+    def __str__(self):
+        return 'Receipt %d for %s' % (self.number, self.program)
+
+class HelpdeskPriceChange(models.Model):
+    """ A change to a help desk price, made on the help desk prices page. """
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    line_item = models.ForeignKey(LineItemType, on_delete=models.CASCADE)
+    option = models.ForeignKey(LineItemOptions, blank=True, null=True, on_delete=models.CASCADE)
+    #   Blank means "not set" (the item fell back to another price)
+    old_amount = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True)
+    new_amount = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True)
+    recorded_by = AjaxForeignKey(ESPUser, blank=True, null=True, related_name='+', on_delete=models.SET_NULL)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-timestamp',)
 
 class CybersourcePostback(models.Model):
     """ Logs every Cybersource postback to enable debugging and automated
@@ -324,6 +478,8 @@ class CybersourcePostback(models.Model):
     program = models.ForeignKey(Program, blank=True, null=True, on_delete=models.SET_NULL)
     status_detail = models.TextField(blank=True, default='',
                                      help_text='Why the postback needs attention, if it does.')
+    #   For a help desk sale (identifier <program>/onsite-<sale id>)
+    onsite_sale = models.ForeignKey(OnsiteSale, blank=True, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return '%d' % self.id

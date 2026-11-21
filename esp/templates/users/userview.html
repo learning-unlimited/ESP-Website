@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}User Information{% endblock %}
+{% block title %}{{ user.name }} - User Information{% endblock %}
 
 {% load modules %}
 
@@ -86,6 +86,9 @@
                         {% endfor %}
                     {% endif %}
                 </div>
+                {% if program|hasModule:"OnsiteTroubleshooting" %}
+                    <a id="troubleshootinglink" class="sidelink" href="/onsite/{{program.getUrlBase}}/troubleshooting?user={{user.id}}">Day-Of Payment Troubleshooting</a>
+                {% endif %}
                 <div id="unenroll-student">
                     <form action="/manage/unenroll_student" method="post">{% csrf_token %}
                         <input type="hidden" name="user_id" value="{{user.id}}"/>

@@ -1,0 +1,123 @@
+{% extends "main.html" %}
+
+{% block title %}{{ student.name }} - Extra Costs{% endblock %}
+
+{% block content_title %}Payment Troubleshooting{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/dayof.css" />
+<link rel="stylesheet" href="//code.jquery.com/ui/1.13.0/themes/smoothness/jquery-ui.css">
+{% endblock %}
+
+{% block xtrajs %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/program/modules/extracosts.js"></script>
+{% endblock %}
+
+{% block content %}
+<h2 class="dayof-student-name">Extra costs: {{ student.name }}</h2>
+<p>ID {{ student.id }} &middot; <a class="btn btn-small" href="{{ back_url }}"><span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span> Back to payment troubleshooting</a></p>
+
+{% include "program/modules/dayof/messages.html" %}
+
+{% if paid_for %}<div class="alert"><span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> Some items are already paid for. Changing them can leave the student overpaid.</div>{% endif %}
+{% if error_custom %}<div class="alert alert-error formerror">A choice with a custom amount needs an amount.</div>
+{% elif errors %}<div class="alert alert-error formerror">There was a problem with the choices below. Please review the form.</div>{% endif %}
+{% if confirm_overpaid %}<div class="alert"><strong>{{ confirm_overpaid }}</strong></div>{% endif %}
+
+<div id="program_form" class="dayof-extracosts">
+<form action="?user={{ student.id }}" method="post">{% csrf_token %}
+<input type="hidden" name="user" value="{{ student.id }}" />
+<input type="hidden" name="expected_balance" value="{{ balance|floatformat:2 }}" />
+<table style="width:100%" cellpadding="2" cellspacing="0">
+
+{% for f in forms %}
+<tr>
+    <td><b>{{ f.LineItem.text }}</b> {% if f.LineItem.required or f.type == "sibling" %}(required){% else %}(optional){% endif %}</td>
+</tr>
+<tr {% if f.type != "sibling" %}style="border-bottom: 1px dashed grey;"{% endif %}>
+    <td>
+        {% if f.type == "single" %}
+            {% if f.form.cost.errors %}<div class="text-error">{{ f.form.cost.errors|join:", " }}</div>{% endif %}
+            {{ f.form.cost }} ${{ f.LineItem.amount_dec|floatformat:2 }}{% if f.LineItem.id in paid_item_ids %} <span class="label label-success">already paid</span>{% endif %}
+        {% elif f.type == "multiple" %}
+            {% if f.form.count.errors %}<div class="text-error">{{ f.form.count.errors|join:", " }}</div>{% endif %}
+            {{ f.form.count }} ${{ f.LineItem.amount_dec|floatformat:2 }} each{% if f.LineItem.id in paid_item_ids %} <span class="label label-success">already paid</span>{% endif %}
+        {% elif f.type == "select" %}
+            {% if f.form.option.errors %}<div class="text-error">{{ f.form.option.errors|join:", " }}</div>{% endif %}
+            {{ f.form.option }}{% if f.LineItem.id in paid_item_ids %} <span class="label label-success">already paid</span>{% endif %}
+        {% elif f.type == "sibling" %}
+            {% if f.form.siblingdiscount.errors %}<div class="text-error">{{ f.form.siblingdiscount.errors|join:", " }}</div>{% endif %}
+            {{ f.form.siblingdiscount }}{% if admission_paid %} <span class="label label-success">already paid</span>{% endif %}
+    </td>
+</tr>
+            <tr>
+                <td>If you selected that you have a sibling, please enter their name below:</td>
+            </tr>
+            {% if f.form.siblingname.errors %}
+            <tr>
+                <td>
+                    <div class="text-error">{{ f.form.siblingname.errors|join:", " }}</div>
+                </td>
+            </tr>
+            {% endif %}
+            <tr style="border-bottom: 1px dashed grey;">
+                <td>{{ f.form.siblingname }}</td>
+            </tr>
+        {% endif %}
+        
+        {# If num_options, radio buttons will be used for the field. In order to  #}
+        {# be able to remove a selected item, we need a button. The Javascript    #}
+        {# code for the button is in extracosts.js.                               #}
+
+        {% if f.LineItem.num_options and not f.LineItem.required and f.LineItem.id not in paid_item_ids %}
+            <button type="button"
+                    class="remove-item btn btn-mini"
+                    name="{{ f.form.prefix }}-option{% if f.type == "select" and f.LineItem.has_custom_options %}_0{% endif %}"
+                    onclick="remove_item(this);">
+                Remove this item
+            </button>
+        {% endif %}
+    </td>
+</tr>
+{% endfor %}
+<tr>
+    <td align="right">
+        {% if forms %}
+        <p>Total cost of selected items: <strong id="total_extras"></strong></p>
+        {% endif %}
+        {% if not program.sibling_discount %}
+        <p>Program admission: <strong id="amount_cost" data-total="{{ program.base_cost|floatformat:2 }}">${{ program.base_cost|floatformat:2 }}</strong></p>
+        {% endif %}
+        {% if amount_donation > 0 %}
+        <p>Donation: <strong id="amount_donation" data-donation="{{ amount_donation|floatformat:2 }}">${{ amount_donation|floatformat:2 }}</strong></p>
+        {% endif %}
+        {% if paid_for %}
+        <p>Total amount previously paid: <strong id="amount_paid" data-total="{{ amount_paid|floatformat:2 }}">-${{ amount_paid|floatformat:2 }}</strong></p>
+        {% endif %}
+        {% if finaid_grant %}
+        <p>Total amount of financial aid: <strong id="amount_finaid" data-percent="{{ finaid_grant.percent|floatformat:2 }}" data-max_dec="{{ finaid_grant.amount_max_dec|floatformat:2 }}"></strong></p>
+        {% endif %}
+        <p id="due_warning">Total amount due: <strong id="amount_due"></strong></p>
+        {% if paid_for %}
+        <p id="donation_warning" style="color: blue;" hidden></p>
+        {% endif %}
+    </td>
+</tr>
+<tr>
+    <td align="center">
+        {% if confirm_overpaid %}
+        <input type="hidden" name="confirm_overpaid" value="1" />
+        <input type="submit" class="btn btn-danger" value="Yes, save anyway"/>
+        <a class="btn" href="{{ back_url }}">Cancel</a>
+        {% else %}
+        <input type="submit" class="btn btn-primary" value="Save"/>
+        {% endif %}
+    </td>
+</tr>
+</table>
+</form>
+</div>
+{% endblock %}

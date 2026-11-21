@@ -1,0 +1,61 @@
+{% extends "main.html" %}
+
+{% block title %}Receipt {{ content.number }}{% endblock %}
+
+{% block content_title %}Receipt {{ content.number }}{% endblock %}
+
+{% block stylesheets %}{{ block.super }}<link rel="stylesheet" type="text/css" href="/media/styles/dayof.css" />{% endblock %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/onsite/confirm2.js"></script>
+{% endblock %}
+
+{% block content %}
+
+{% include "program/modules/dayof/messages.html" %}
+
+{% if content.void %}<div class="alert alert-error dayof-void">VOID</div>{% endif %}
+
+<div class="rc-paper">
+  <div class="rc-head">
+    <div class="rc-title">RECEIPT</div>
+    <div class="rc-from">{% for line in content.from %}<div>{{ line }}</div>{% endfor %}</div>
+  </div>
+  <div class="rc-meta">
+    {% if content.payer %}<div><b>Payment By:</b> {{ content.payer }}</div>{% endif %}
+    <div><b>Date:</b> {{ content.date }}</div>
+    <div><b>Receipt #</b> {{ content.number }}</div>
+  </div>
+  <table class="rc-table">
+    <tr><th>DESCRIPTION</th><th class="rc-num">QUANTITY</th><th class="rc-num">UNIT PRICE</th><th class="rc-num">AMOUNT</th></tr>
+    {% for l in content.lines %}
+    <tr{% if forloop.counter0|divisibleby:2 %} class="rc-zebra"{% endif %}><td>{{ l.description }}</td><td class="rc-num">{{ l.quantity }}</td><td class="rc-num">{{ l.unit }}</td><td class="rc-num">{{ l.amount }}</td></tr>
+    {% endfor %}
+    <tr><td colspan="3" class="rc-num"><b>SUBTOTAL</b></td><td class="rc-num">{{ content.subtotal }}</td></tr>
+    {% for a in content.adjustments %}
+    <tr><td colspan="3" class="rc-num">{{ a.label }}</td><td class="rc-num">{{ a.amount }}</td></tr>
+    {% endfor %}
+    {% for p in content.payments %}
+    <tr><td colspan="3" class="rc-num">{{ p.label }}</td><td class="rc-num">{{ p.amount }}</td></tr>
+    {% endfor %}
+    <tr class="rc-total"><td colspan="3" class="rc-num">AMOUNT DUE</td><td class="rc-num">{{ content.amount_due }}</td></tr>
+  </table>
+</div>
+
+<div class="dayof-actions">
+  <a class="btn btn-primary" href="{{ urls.pdf }}" target="_blank">Open PDF to print</a>
+  <a class="btn" href="{{ urls.back }}"><span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span> Back</a>
+  {% if urls.remake and not content.void %}<a class="btn" href="{{ urls.remake }}"><span class="glyphicon glyphicon-repeat" aria-hidden="true"></span> Remake this receipt</a>{% endif %}
+</div>
+
+{% if not content.void %}
+<form method="post" action="{{ urls.void }}">
+  {% csrf_token %}
+  <input type="hidden" name="receipt" value="{{ receipt.id }}" />
+  <button type="button" class="btn btn-mini" data-confirm="Void receipt {{ content.number }}?">Void this receipt</button>
+</form>
+{% endif %}
+
+{% include "program/modules/onsitecore/returnlink.html" %}
+{% endblock %}

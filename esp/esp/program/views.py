@@ -74,6 +74,7 @@ from esp.program.models import Program, TeacherBio, RegistrationType, ClassSecti
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RecordTypeForm, RedirectForm, PlainRedirectForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
+from esp.program.controllers import dayof_payments
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.commmodule import CommModule
@@ -630,11 +631,15 @@ def submit_transaction(request):
     payment recorded and flags the postback for treasury to review. """
     pretty_postdata = json.dumps(request.POST, sort_keys=True, indent=4,
                                  separators=(', ', ': '))
-    (user, program) = _postback_owner(request.POST.get('req_merchant_defined_data1', ''))
+    identifier = request.POST.get('req_merchant_defined_data1', '')
+    (user, program) = _postback_owner(identifier)
+    sale = None
+    if dayof_payments.is_sale_identifier(identifier):
+        (program, sale) = dayof_payments.sale_from_identifier(identifier)
     log_record = CybersourcePostback.objects.create(
         post_data=pretty_postdata,
         transaction_id=request.POST.get('transaction_id', '')[:64],
-        user=user, program=program)
+        user=user, program=program, onsite_sale=sale)
     transaction.commit()
     try:
         return _submit_transaction(request, log_record)
@@ -664,6 +669,35 @@ def submit_transaction(request):
                        'processor. Please check your balance before trying again.',
                        log=False)
 
+def onsite_pay(request, token):
+    """ A QR code pay link from day-of troubleshooting or the help desk: lets
+    someone pay on their own phone without logging in. The link is signed
+    and expires after an hour; it can only pay what it was made for. """
+    checkout = dayof_payments.checkout_from_token(token)
+    context = {'checkout': checkout}
+    if checkout is None:
+        context['error'] = 'This payment link has expired or isn\'t valid. Please ask for a new one.'
+        return render_to_response('program/modules/dayof/pay.html', request, context)
+    result = request.GET.get('card_result')
+    if result:
+        context['result'] = dayof_payments.result_text(result)
+        try:
+            context.update(dayof_payments.checkout_form_context(checkout))
+        except dayof_payments.CheckoutError as e:
+            context['error'] = str(e)
+        return render_to_response('program/modules/dayof/pay.html', request, context)
+    error = dayof_payments.checkout_still_valid(checkout)
+    if error:
+        context['error'] = error
+        return render_to_response('program/modules/dayof/pay.html', request, context)
+    # So that after paying, CyberSource's return lands back on this page
+    request.session[dayof_payments.SESSION_KEY] = token
+    try:
+        context.update(dayof_payments.checkout_form_context(checkout))
+    except dayof_payments.CheckoutError as e:
+        context['error'] = str(e)
+    return render_to_response('program/modules/dayof/pay.html', request, context)
+
 def _postback_owner(identifier):
     """ The (user, program) a postback's identifier names, or Nones if it
     can't be parsed or names someone or something that doesn't exist. """
@@ -681,19 +715,23 @@ def _submit_transaction(request, log_record):
     reason_code = request.POST.get('reason_code', '')
     identifier = request.POST.get('req_merchant_defined_data1', '')
 
+    if dayof_payments.is_sale_identifier(identifier):
+        #   A help desk sale ("<program>/onsite-<sale id>:..."), not a student
+        return _submit_sale_transaction(request, log_record, identifier, decision, reason_code)
+
     if decision == 'ACCEPT':
         return _record_accepted_payment(request, log_record, identifier)
 
     if decision == 'DECLINE':
         _set_postback_status(log_record, 'not_paid', 'Declined (reason %s).' % reason_code)
-        return _redirect_from_identifier(identifier, 'declined')
+        return _redirect_from_identifier(request, identifier, 'declined')
 
     if decision == 'REVIEW':
         if reason_code == '201':
             # The issuer wants the cardholder to call; nothing was authorized.
             _set_postback_status(log_record, 'not_paid',
                                  'Issuer requested verification (reason 201); not charged.')
-            return _redirect_from_identifier(identifier, 'bank_verify')
+            return _redirect_from_identifier(request, identifier, 'bank_verify')
         _set_postback_status(log_record, 'review_hold',
                              'Held for review by the processor (reason %s); '
                              'the card may have been authorized.' % reason_code)
@@ -704,18 +742,18 @@ def _submit_transaction(request, log_record):
                         'was recorded on the website. Accept or reject it in CyberSource; if you '
                         'accept it, record it with "Record this payment" on %s, then mark it '
                         'resolved there.' % (reason_code, _issues_page_phrase(log_record)))
-        return _redirect_from_identifier(identifier, 'under_review')
+        return _redirect_from_identifier(request, identifier, 'under_review')
 
     if decision == 'ERROR':
         _set_postback_status(log_record, 'not_paid', 'Processor error (reason %s).' % reason_code)
         # 104: the same order was submitted twice within 15 minutes, so the
         # first attempt may have gone through.
         return _redirect_from_identifier(
-            identifier, 'possible_duplicate' if reason_code == '104' else 'error')
+            request, identifier, 'possible_duplicate' if reason_code == '104' else 'error')
 
     if decision == 'CANCEL':
         _set_postback_status(log_record, 'not_paid', 'Cancelled by the user.')
-        return _redirect_from_identifier(identifier, 'cancelled')
+        return _redirect_from_identifier(request, identifier, 'cancelled')
 
     logger.warning('Unknown Cybersource decision %r in postback %d', decision, log_record.id)
     _set_postback_status(log_record, 'failed', 'Unknown decision %r.' % decision)
@@ -724,7 +762,7 @@ def _submit_transaction(request, log_record):
                     'Cybersource returned an unrecognized decision (%r) for the '
                     'following postback, so no payment was recorded. Check it in CyberSource; '
                     'it is listed on %s, with steps to resolve it.' % (decision, _issues_page_phrase(log_record)))
-    return _redirect_from_identifier(identifier, 'error')
+    return _redirect_from_identifier(request, identifier, 'error')
 
 def _record_accepted_payment(request, log_record, identifier):
     amount_paid = Decimal(request.POST['req_amount'])
@@ -745,12 +783,13 @@ def _record_accepted_payment(request, log_record, identifier):
                 transaction_id=transaction_id).first()
         repeat = payment is not None
         if not repeat:
-            payment = iac.submit_payment(amount_paid, transaction_id, link_transfers=False)
+            payment = iac.submit_payment(amount_paid, transaction_id, link_transfers=False,
+                                         payment_method='card')
         log_record.transfer = payment
         log_record.save()
     if repeat:
         _set_postback_status(log_record, 'processed', 'Repeat of an already-recorded payment.')
-        return _redirect_from_identifier(identifier, 'success')
+        return _redirect_from_identifier(request, identifier, 'success')
 
     # 2. Mark the items it paid for. A failure rolls back only this step.
     try:
@@ -774,11 +813,11 @@ def _record_accepted_payment(request, log_record, identifier):
                             iac.user.name(), iac.user.username, iac.user.id,
                             amount_paid, iac.program.niceName(), transaction_id,
                             type(e).__name__, e, balance, _issues_page_phrase(log_record)))
-        return _redirect_from_identifier(identifier, 'received_review')
+        return _redirect_from_identifier(request, identifier, 'received_review')
 
     _set_postback_status(log_record, 'processed')
     _notify_treasury_if_overpaid(request, identifier, log_record, transaction_id)
-    return _redirect_from_identifier(identifier, 'success')
+    return _redirect_from_identifier(request, identifier, 'success')
 
 def _set_postback_status(log_record, status, detail=''):
     try:
@@ -842,15 +881,97 @@ def _notify_treasury_if_overpaid(request, identifier, log_record, transaction_id
     except Exception:
         logger.exception('Failed to check for overpayment')
 
-def _redirect_from_identifier(identifier, result):
+def _redirect_from_identifier(request, identifier, result):
+    """ Sends the browser on to payment_return, which picks where it lands.
+    The postback itself is a cross-site POST from CyberSource, which browsers
+    send without our (SameSite=Lax) session cookie, so who the browser
+    belongs to can't be told here; the redirected GET carries the cookie. """
+    from six.moves.urllib.parse import urlencode
+    return HttpResponseRedirect("/manage/payment_return?%s" % urlencode({"id": identifier, "result": result}))
+
+
+PAYMENT_RESULT = re.compile(r'^[a-z_]{1,40}$')
+
+
+def payment_return(request):
+    """ Where a browser lands after paying through CyberSource: a payment
+    started at day-of troubleshooting or the help desk goes back there,
+    anything else to the program's payment page. Only redirects (to our own
+    pages), so a hand-made URL can do no harm. """
+    identifier = request.GET.get('id', '')
+    result = request.GET.get('result', '')
+    if not PAYMENT_RESULT.match(result):
+        result = 'error'
     try:
         program = IndividualAccountingController.program_from_identifier(identifier)
     except Exception:
         # Without a usable identifier we can't tell which program this was for
         logger.warning('Cybersource postback with unusable identifier %r', identifier)
         return HttpResponseRedirect('/')
-    destination = "/learn/%s/cybersource?result=%s" % (program.getUrlBase(), result)
-    return HttpResponseRedirect(destination)
+    dayof_destination = dayof_payments.return_url(request, program, identifier, result)
+    if dayof_destination:
+        return HttpResponseRedirect(dayof_destination)
+    return HttpResponseRedirect("/learn/%s/cybersource?result=%s" % (program.getUrlBase(), result))
+
+def _submit_sale_transaction(request, log_record, identifier, decision, reason_code):
+    """ Handles a Cybersource postback for an anonymous help desk sale.
+    Like _submit_transaction, it never loses a payment: anything odd about an
+    accepted one is flagged for treasury. """
+    sale = log_record.onsite_sale
+    if decision == 'ACCEPT':
+        amount_paid = Decimal(request.POST['req_amount'])
+        transaction_id = request.POST['transaction_id']
+        if sale is None:
+            _set_postback_status(log_record, 'failed', 'Help desk sale %r not found.' % identifier)
+            _email_treasury(request, log_record, '[ESP CC] Payment for an unknown help desk sale',
+                            'Cybersource accepted a payment of $%.2f (transaction ID %s) for a help desk '
+                            'sale that the website can\'t find (%s), so nothing was recorded. Check it in '
+                            'CyberSource; it is listed on %s.' % (
+                                amount_paid, transaction_id, identifier, _issues_page_phrase(log_record)))
+            return _redirect_from_identifier(request, identifier, 'error')
+        (status, detail) = dayof_payments.record_sale_payment(sale, amount_paid, transaction_id)
+        _set_postback_status(log_record, status, detail)
+        if status != 'processed':
+            _email_treasury(request, log_record, '[ESP CC] Help desk card payment needs review',
+                            'A help desk card payment (sale %d, $%.2f, transaction ID %s) needs a look: '
+                            '%s It is listed on %s.' % (
+                                sale.id, amount_paid, transaction_id, detail, _issues_page_phrase(log_record)))
+            return _redirect_from_identifier(request, identifier, 'received_review')
+        return _redirect_from_identifier(request, identifier, 'success')
+
+    if decision == 'DECLINE':
+        _set_postback_status(log_record, 'not_paid', 'Declined (reason %s).' % reason_code)
+        return _redirect_from_identifier(request, identifier, 'declined')
+    if decision == 'REVIEW':
+        if reason_code == '201':
+            _set_postback_status(log_record, 'not_paid',
+                                 'Issuer requested verification (reason 201); not charged.')
+            return _redirect_from_identifier(request, identifier, 'bank_verify')
+        _set_postback_status(log_record, 'review_hold',
+                             'Held for review by the processor (reason %s); '
+                             'the card may have been authorized.' % reason_code)
+        _email_treasury(request, log_record,
+                        '[ESP CC] Help desk payment held for review by Cybersource',
+                        'Cybersource is holding a help desk card payment for review (decision REVIEW, '
+                        'reason code %s). The card may have been charged, but the sale was not marked '
+                        'paid. Accept or reject it in CyberSource. It is listed on %s.'
+                        % (reason_code, _issues_page_phrase(log_record)))
+        return _redirect_from_identifier(request, identifier, 'under_review')
+    if decision == 'ERROR':
+        _set_postback_status(log_record, 'not_paid', 'Processor error (reason %s).' % reason_code)
+        return _redirect_from_identifier(
+            request, identifier, 'possible_duplicate' if reason_code == '104' else 'error')
+    if decision == 'CANCEL':
+        _set_postback_status(log_record, 'not_paid', 'Cancelled by the user.')
+        return _redirect_from_identifier(request, identifier, 'cancelled')
+
+    logger.warning('Unknown Cybersource decision %r in postback %d', decision, log_record.id)
+    _set_postback_status(log_record, 'failed', 'Unknown decision %r.' % decision)
+    _email_treasury(request, log_record, '[ESP CC] Unknown Cybersource decision',
+                    'Cybersource returned an unrecognized decision (%r) for a help desk sale, so '
+                    'nothing was recorded. Check it in CyberSource; it is listed on %s.'
+                    % (decision, _issues_page_phrase(log_record)))
+    return _redirect_from_identifier(request, identifier, 'error')
 
 # This really should go in qsd
 @reversion.create_revision()
@@ -1328,3 +1449,4 @@ def template_preview(request):
     context = {}
 
     return render_to_response(template, request, context)
+

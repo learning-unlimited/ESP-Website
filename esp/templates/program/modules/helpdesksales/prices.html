@@ -1,0 +1,71 @@
+{% extends "main.html" %}
+
+{% block title %}Help Desk Prices - {{ program.niceName }}{% endblock %}
+
+{% block content_title %}Help Desk Prices{% endblock %}
+
+{% block stylesheets %}{{ block.super }}<link rel="stylesheet" type="text/css" href="/media/styles/dayof.css" />{% endblock %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/onsite/confirm2.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<p><a class="btn btn-small" href="/onsite/{{ program.getUrlBase }}/helpdesk_sales"><span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span> Back to Help Desk Sales</a></p>
+
+{% include "program/modules/dayof/messages.html" %}
+
+<p class="muted"><small>A change applies to help desk sales from now on; past sales keep the price they were sold at. Leave the box blank to go back to the default.</small></p>
+
+{% for item in items %}
+<div class="dayof-box">
+  <table class="table table-condensed dayof-ledger">
+    <tr><td><strong>{{ item.label }}</strong><br /><small class="muted">Regular (pre-order) price ${{ item.regular_price|floatformat:2 }} &middot; {% if item.own_price == None %}using the default{% else %}set specially for the help desk{% endif %}</small></td>
+      <td class="text-right"><strong>${{ item.price|floatformat:2 }}</strong></td></tr>
+  </table>
+  <div class="dayof-box-body">
+  <form method="post" action="" class="hd-price-form form-inline" data-label="{{ item.label }}" data-current="{{ item.price|floatformat:2 }}">
+    {% csrf_token %}
+    <input type="hidden" name="key" value="{{ item.key }}" />
+    <input type="hidden" name="expected_old" value="{% if item.own_price != None %}{{ item.own_price|floatformat:2 }}{% endif %}" />
+    <div class="control-group"><label>New price</label>
+      <div class="input-prepend"><span class="add-on">$</span><input type="text" class="input-small" name="price" inputmode="decimal" /></div></div>
+    <button type="button" class="btn btn-small hd-change">Change</button>
+  </form>
+  </div>
+</div>
+{% empty %}
+<p>Nothing is set up to sell.</p>
+{% endfor %}
+
+<h2>Recent changes</h2>
+{% if changes %}
+<table class="table table-condensed">
+  {% for c in changes %}
+  <tr><td>{{ c.line_item.text }}{% if c.option %} ({{ c.option.description }}){% endif %}
+    <br /><small class="muted">{{ c.timestamp|date:"M j, g:i a" }} by {{ c.recorded_by.username }}</small></td>
+    <td class="text-right">{% if c.old_amount == None %}default{% else %}${{ c.old_amount|floatformat:2 }}{% endif %} &rarr; {% if c.new_amount == None %}default{% else %}${{ c.new_amount|floatformat:2 }}{% endif %}</td></tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="muted"><small>No changes yet.</small></p>
+{% endif %}
+
+{% include "program/modules/onsitecore/returnlink.html" %}
+
+
+<script type="text/javascript">
+(function ($j) {
+    $j(document).on('click', '.hd-change', function () {
+        var $f = $j(this).closest('form');
+        var raw = $j.trim($f.find('input[name=price]').val());
+        var next = raw === '' ? 'the default' : '$' + raw.replace(/^\$/, '');
+        var text = $f.data('label') + ': $' + $f.data('current') + ' → ' + next +
+            ' for help desk sales from now on?';
+        window.armConfirm(this, text, function () { $f[0].submit(); });
+    });
+})(window.$j || window.jQuery);
+</script>
+{% endblock %}

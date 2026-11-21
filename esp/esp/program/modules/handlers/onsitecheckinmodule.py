@@ -43,8 +43,15 @@ from esp.users.models    import ESPUser, Record, RecordType
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from esp.users.views    import search_for_user
+from esp.program.controllers import dayof
 
 import json
+
+
+def owed_suffix(program, student):
+    """ ' Still owes $30.00.' for a checked-in student who owes money, else ''. """
+    due = IndividualAccountingController(program, student).amount_due()
+    return (' Still owes $%.2f.' % due) if due > 0 else ''
 
 
 class OnSiteCheckinModule(ProgramModuleObj):
@@ -60,19 +67,13 @@ class OnSiteCheckinModule(ProgramModuleObj):
             "choosable": 1,
             }
 
-    def updatePaid(self, paid=True):
-        IndividualAccountingController.updatePaid(self.program, self.student, paid)
-
     def create_record(self, event):
         created = False
         if event=="attended":
-            if not self.program.isCheckedIn(self.student):
-                rt = RecordType.objects.get(name="attended")
-                rec = Record(user=self.student, event=rt, program=self.program)
-                rec.save()
-                created = True
-        elif event=="paid":
-            self.updatePaid(True)
+            (rec, payment) = dayof.check_in_request(self.program, self.student, self.request)
+            created = rec is not None
+            if created:
+                self.checkin_message = dayof.checkin_message(self.student, rec, payment)
         else:
             rt = RecordType.objects.get(name=event)
             recs, created = Record.objects.get_or_create(user=self.student,
@@ -86,8 +87,6 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 rt = RecordType.objects.get(name="checked_out")
                 rec = Record(user=self.student, event=rt, program=self.program)
                 rec.save()
-        elif event=="paid":
-            self.updatePaid(False)
         else:
             rt = RecordType.objects.get(name=event)
             recs, created = Record.objects.get_or_create(user=self.student,
@@ -102,9 +101,12 @@ class OnSiteCheckinModule(ProgramModuleObj):
     def isAttending(self):
         return self.program.isCheckedIn(self.student)
 
-    def hasPaid(self):
+    def amountDue(self):
+        """ What the student owes (shown at check-in: checking them in records
+        it as paid in cash/check). """
         iac = IndividualAccountingController(self.program, self.student)
-        return iac.has_paid(in_full=True)
+        iac.ensure_required_transfers()
+        return iac.amount_due()
 
     def hasMedical(self):
         return Record.user_completed(self.student, "med", self.program)
@@ -190,11 +192,10 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 student = form.cleaned_data['target_user']
                 #   Check that this is a student user who is not also teaching (e.g. an admin)
                 if student.isStudent() and student not in self.program.teachers()['class_approved']:
-                    if not prog.isCheckedIn(student):
-                        rt = RecordType.objects.get(name="attended")
-                        rec = Record(user=student, event=rt, program=prog)
-                        rec.save()
-                    context['message'] = '%s %s marked as attended.' % (student.first_name, student.last_name)
+                    (rec, payment) = dayof.check_in_request(prog, student, request)
+                    context['message'] = dayof.checkin_message(student, rec, payment)
+                    if rec is None:
+                        context['message'] += owed_suffix(prog, student)
                     if request.is_ajax():
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
                 else:
@@ -226,12 +227,10 @@ class OnSiteCheckinModule(ProgramModuleObj):
                         continue
 
                     if student.isStudent():
-                        if prog.isCheckedIn(student):
+                        (rec, payment) = dayof.check_in_request(prog, student, request)
+                        if rec is None:
                             results['existing'].append(code)
                         else:
-                            rt = RecordType.objects.get(name="attended")
-                            new = Record(user=student, program=prog, event=rt)
-                            new.save()
                             results['new'].append(code)
                     else:
                         results['not_student'].append(code)
@@ -261,12 +260,12 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 student = students[0]
                 info_string = student.name() + " (" + str(code) + ")"
                 if student.isStudent():
-                    if prog.isCheckedIn(student):
-                        json_data['message'] = '%s is already checked in!' % info_string
+                    (rec, payment) = dayof.check_in_request(prog, student, request)
+                    if rec is None:
+                        json_data['message'] = '%s is already checked in!%s' % (info_string, owed_suffix(prog, student))
+                    elif payment is not None:
+                        json_data['message'] = '%s is now checked in! Recorded $%.2f paid in cash/check.' % (info_string, payment.amount_dec)
                     else:
-                        rt = RecordType.objects.get(name="attended")
-                        new = Record(user=student, program=prog, event=rt)
-                        new.save()
                         json_data['message'] = '%s is now checked in!' % info_string
                 else:
                     json_data['message'] = '%s is not a student!' % info_string
@@ -281,16 +280,21 @@ class OnSiteCheckinModule(ProgramModuleObj):
             user = ESPUser.objects.filter(id = request.POST['userid']).first()
             if user:
                 self.student = user
-                for key in ['attended', 'paid', 'liab', 'med']:
+                self.checkin_message = None
+                #   (No "paid" box: checking in records what they owe as paid)
+                for key in ['attended', 'liab', 'med']:
                     if key in request.POST:
                         self.create_record(key)
                     else:
                         self.delete_record(key)
                 if "undocheckin" in request.POST:
-                    Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("-time")[0].delete()
+                    #   Also deletes the payment the check-in implied
+                    dayof.undo_check_in(Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("-time")[0])
                 if "undocheckout" in request.POST:
                     Record.objects.filter(event__name="checked_out", program=self.program, user=self.student).order_by("-time")[0].delete()
                 message = "Check-in updated for " + user.username
+                if self.checkin_message:
+                    message += ". " + self.checkin_message
             else:
                 error = True
 

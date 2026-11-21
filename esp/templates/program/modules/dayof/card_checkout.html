@@ -1,0 +1,25 @@
+{% extends "main.html" %}
+
+{% block title %}Card payment{% endblock %}
+
+{% block content_title %}Card Payment{% endblock %}
+
+{% block stylesheets %}{{ block.super }}<link rel="stylesheet" type="text/css" href="/media/styles/dayof.css" />{% endblock %}
+
+{% block content %}
+<p>Taking you to the card payment page to pay <b>${{ amount }}</b> for {{ who }}&hellip;</p>
+<p class="muted"><small>If this is a shared laptop, use a private window and don't let the browser save the card.</small></p>
+
+<form id="cybersource_form" action="{{ post_url }}" method="post" autocomplete="off">
+<input type="hidden" name="merchant_id" value="{{ merchant_id }}" />
+<input type="hidden" name="amount" value="{{ amount }}" />
+<input type="hidden" name="merchantDefinedData1" value="{{ identifier }}" />
+<input type="hidden" name="comments" value="{{ comments }}" />
+<input type="hidden" name="billTo_country" value="US" />
+<p class="dayof-center"><input class="btn btn-primary" type="submit" value="Continue to payment"></p>
+</form>
+
+<script type="text/javascript">
+document.getElementById('cybersource_form').submit();
+</script>
+{% endblock %}

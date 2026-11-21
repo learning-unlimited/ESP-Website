@@ -1,0 +1,13 @@
+{% comment %}Django messages (and a card_result_text banner, if the page has one) as Bootstrap alerts.{% endcomment %}
+{% for message in messages %}
+<div class="alert{% if 'error' in message.tags %} alert-error{% elif 'warning' in message.tags %}{% elif 'info' in message.tags %} alert-info{% else %} alert-success{% endif %}">
+  <span class="glyphicon glyphicon-{% if 'error' in message.tags or 'warning' in message.tags %}exclamation-sign{% elif 'info' in message.tags %}info-sign{% else %}ok-sign{% endif %}" aria-hidden="true"></span>
+  {{ message }}
+</div>
+{% endfor %}
+{% if card_result_text %}
+<div class="alert{% if card_result_text.0 == 'ok' %} alert-success{% elif card_result_text.0 == 'warn' %}{% else %} alert-error{% endif %}">
+  <span class="glyphicon glyphicon-{% if card_result_text.0 == 'ok' %}ok-sign{% else %}exclamation-sign{% endif %}" aria-hidden="true"></span>
+  <strong>{{ card_result_text.1 }}</strong>
+</div>
+{% endif %}

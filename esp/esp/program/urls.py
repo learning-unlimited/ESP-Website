@@ -9,6 +9,8 @@ urlpatterns = [
     url(r'^manage/programs/?$', views.manage_programs),
     url(r'^manage/newprogram/?$', views.newprogram),
     url(r'^manage/submit_transaction/?$', views.submit_transaction),
+    url(r'^manage/payment_return/?$', views.payment_return),
+    url(r'^onsite_pay/(?P<token>[-:\w.]+)/?$', views.onsite_pay),
     url(r'^manage/pages/?$', views.manage_pages),
     url(r'^manage/userview/?$', views.userview),
     url(r'^manage/deactivate_user/?$', views.deactivate_user),

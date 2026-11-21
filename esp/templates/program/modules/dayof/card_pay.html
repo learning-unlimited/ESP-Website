@@ -1,0 +1,21 @@
+{% comment %}
+Onsite card payment buttons, dropped into a page's form: "on this laptop"
+(CyberSource in a new tab) or "on their phone" (QR code page), with the
+card-minimum override. The page attaches it with
+DayOfCard.attach(element, {amount: function () {...}, describe: ...}); see
+/media/scripts/onsite/dayof_card.js. Needs card_minimum in the context and
+posts channel, below_minimum and below_minimum_reason.
+{% endcomment %}
+<div class="dayof-card-pay" data-card-minimum="{{ card_minimum }}">
+  <input type="hidden" name="channel" value="laptop" />
+  <div class="dayof-card-below" hidden>
+    <div class="alert">This is below the ${{ card_minimum }} card minimum.</div>
+    <label class="checkbox"><input type="checkbox" name="below_minimum" value="1" /> Charge the card anyway</label>
+    <div class="control-group"><label>Reason
+      <input type="text" class="input-xlarge" name="below_minimum_reason" maxlength="200" /></label></div>
+  </div>
+  <p class="dayof-card-buttons">
+    <button type="button" class="btn btn-primary dayof-action dayof-card-go" data-channel="laptop"><span class="glyphicon glyphicon-credit-card" aria-hidden="true"></span> Card on this laptop</button>
+    <button type="button" class="btn dayof-action dayof-card-go" data-channel="qr"><span class="glyphicon glyphicon-qrcode" aria-hidden="true"></span> Card on their phone (QR)</button>
+  </p>
+</div>

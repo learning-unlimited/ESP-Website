@@ -40,6 +40,7 @@ from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12Sc
 from esp.program.models import RegistrationProfile
 from esp.program.modules.forms.onsite import OnSiteRegForm
 from esp.accounting.controllers import IndividualAccountingController
+from esp.program.controllers import dayof
 
 class OnSiteRegister(ProgramModuleObj):
     doc = """Register a new student onsite."""
@@ -99,12 +100,10 @@ class OnSiteRegister(ProgramModuleObj):
 
                 regProf.save()
 
-                if new_data['paid']:
-                    IndividualAccountingController.updatePaid(self.program, self.user, True)
-                else:
-                    IndividualAccountingController.updatePaid(self.program, self.user, False)
-
-                Record.createBit('Attended', self.program, self.user)
+                #   Checks them in; if they paid, records it (cash/check) as
+                #   part of the check-in, so undoing it removes the payment
+                dayof.check_in_student(self.program, self.user, dayof.real_user(request),
+                                       record_payment=bool(new_data['paid']))
 
                 if new_data['medical']:
                     Record.createBit('Med', self.program, self.user)

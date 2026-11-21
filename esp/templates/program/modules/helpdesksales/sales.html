@@ -1,0 +1,116 @@
+{% extends "main.html" %}
+
+{% block title %}Help Desk Sales - {{ program.niceName }}{% endblock %}
+
+{% block content_title %}Help Desk Sales{% endblock %}
+
+{% block stylesheets %}{{ block.super }}<link rel="stylesheet" type="text/css" href="/media/styles/dayof.css" />{% endblock %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/onsite/confirm2.js"></script>
+<script type="text/javascript" src="/media/scripts/onsite/dayof_card.js"></script>
+<script type="text/javascript" src="/media/scripts/onsite/helpdesk_sales.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<p><a class="btn btn-small" href="/onsite/{{ program.getUrlBase }}/helpdesk_prices"><span class="glyphicon glyphicon-usd" aria-hidden="true"></span> Help desk prices</a></p>
+
+{% include "program/modules/dayof/messages.html" %}
+
+<form method="post" action="" id="hd-form" class="dayof-form" data-card-minimum="{{ card_minimum }}">
+{% csrf_token %}
+<input type="hidden" name="expected_total" id="hd-expected" value="0.00" />
+<input type="hidden" name="action" id="hd-action" value="" />
+
+<div class="dayof-box" id="hd-items">
+  <table class="table table-condensed dayof-items">
+    {% for item in items %}
+    <tr class="hd-item">
+      <td class="hd-item-label">{{ item.label }}</td>
+      <td class="text-right"><strong>${{ item.price|floatformat:2 }}</strong></td>
+      <td class="dayof-qty-cell">
+        <div class="input-prepend input-append hd-qty dayof-qty">
+          <button type="button" class="btn hd-minus" aria-label="One fewer">&minus;</button>
+          <input type="number" class="hd-q" name="q_{{ item.key }}" min="0" step="1" inputmode="numeric" value="" data-price="{{ item.price|floatformat:2 }}" data-label="{{ item.label }}" />
+          <button type="button" class="btn hd-plus" aria-label="One more">+</button>
+        </div>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td>Nothing is set up to sell. Add line items in the program's accounting setup.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+
+<details class="dayof-section">
+  <summary>Other amount&hellip;</summary>
+  <div class="dayof-section-body">
+    <label class="checkbox"><input type="checkbox" name="custom" id="hd-custom" value="1" /> Charge a custom amount instead of the items above</label>
+    <div class="control-group"><label for="hd-amount">Amount</label>
+      <div class="input-prepend"><span class="add-on">$</span><input type="text" class="input-small" name="amount" id="hd-amount" inputmode="decimal" /></div></div>
+    <div class="control-group"><label for="hd-description">What it's for</label>
+      <input type="text" class="input-xlarge" name="description" id="hd-description" maxlength="200" /></div>
+  </div>
+</details>
+
+<div id="hd-total" class="dayof-total">Total: $<span id="hd-total-num">0.00</span></div>
+
+<div class="control-group"><label for="hd-payer">Payer name (for receipt, optional)</label>
+  <input type="text" class="input-xlarge" id="hd-payer" name="payer_name" maxlength="200" /></div>
+
+<div class="dayof-submit-row">
+  <button type="button" class="btn btn-primary hd-submit" data-action="cash_receipt">Cash/check + receipt</button>
+  <button type="button" class="btn hd-submit" data-action="cash">Cash/check, no receipt</button>
+</div>
+{% include "program/modules/dayof/card_pay.html" %}
+</form>
+
+<h2>Today's sales</h2>
+<p>Paid so far: cash/check ${{ totals.cash_check|default:0|floatformat:2 }} &middot; card ${{ totals.card|default:0|floatformat:2 }}</p>
+
+{% for sale in recent %}
+<div class="dayof-box{% if focus_sale and focus_sale.id == sale.id %} hd-focus{% endif %}">
+  <div class="dayof-box-heading">
+    <strong>#{{ sale.id }}</strong> {{ sale.created_at|date:"g:i a" }}
+    <span class="label{% if sale.status == 'paid' %} label-success{% elif sale.status == 'pending' %} label-warning{% elif sale.status == 'void' or sale.status == 'review' %} label-important{% endif %}">{{ sale.get_status_display }}</span>
+    {{ sale.get_method_display }}
+    <strong class="pull-right">${{ sale.total_dec|floatformat:2 }}</strong>
+  </div>
+  <div class="dayof-box-body">
+  {% if sale.payer_name %}<div>{{ sale.payer_name }}</div>{% endif %}
+  {% if sale.description %}<div>{{ sale.description }}</div>{% endif %}
+  {% if sale.transaction_id %}<div><small class="muted">CyberSource transaction {{ sale.transaction_id }}</small></div>{% endif %}
+  {% for line in sale.lines.all %}
+  <div><small class="muted">{{ line.quantity }}&times; {{ line.line_item.text }}{% if line.option %} ({{ line.option.description }}){% endif %} @ ${{ line.unit_price_dec|floatformat:2 }}</small></div>
+  {% endfor %}
+  <div><small class="muted">Recorded by {{ sale.recorded_by.username }}</small></div>
+  {% for r in sale.receipts.all %}
+  <div><small><a href="/onsite/{{ program.getUrlBase }}/helpdesk_receipt_view?receipt={{ r.id }}">Receipt {{ r.number }}</a>{% if r.voided_at %} <span class="label label-important">void</span>{% endif %}</small></div>
+  {% endfor %}
+  {% if sale.status == 'paid' %}
+  <form method="post" action="/onsite/{{ program.getUrlBase }}/helpdesk_receipt" class="form-inline" style="margin-top:4px">
+    {% csrf_token %}
+    <input type="hidden" name="sale" value="{{ sale.id }}" />
+    <input type="text" class="input-medium" name="payer_name" maxlength="200" placeholder="Payer name (optional)" />
+    <button type="submit" class="btn btn-mini">Receipt</button>
+  </form>
+  {% endif %}
+  {% if sale.status == 'pending' or sale.status == 'paid' and sale.method == 'cash_check' %}
+  <form method="post" action="/onsite/{{ program.getUrlBase }}/helpdesk_sale_void" style="margin-top:4px">
+    {% csrf_token %}
+    <input type="hidden" name="sale" value="{{ sale.id }}" />
+    <button type="button" class="btn btn-mini hd-void" data-confirm="Void sale #{{ sale.id }} (${{ sale.total_dec|floatformat:2 }})?">Void</button>
+  </form>
+  {% elif sale.status == 'paid' or sale.status == 'review' %}
+  <div><small class="muted">Paid by card: to void or refund, ask treasury (CyberSource).</small></div>
+  {% endif %}
+  </div>
+</div>
+{% empty %}
+<p class="muted"><small>No sales yet.</small></p>
+{% endfor %}
+
+{% include "program/modules/onsitecore/returnlink.html" %}
+{% endblock %}

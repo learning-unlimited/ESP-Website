@@ -43,7 +43,7 @@ from datetime import datetime, timedelta
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Min
 from django.db.models.query import Q
-from django.http import HttpResponse
+from django.http import HttpResponseNotAllowed, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 
@@ -58,6 +58,7 @@ from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function
 from esp.utils.models import Printer, PrintRequest
+from esp.program.controllers import dayof
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
@@ -182,10 +183,11 @@ class OnSiteClassList(ProgramModuleObj):
         if success:
             registration_profile.save()
 
-            for extension in ['attended', 'med', 'liab', 'onsite']:
+            for extension in ['med', 'liab', 'onsite']:
                 Record.createBit(extension, program, student)
-
-            IndividualAccountingController.updatePaid(self.program, student, paid=True)
+            #   Checking in records what they owe as paid (cash/check), tied
+            #   to the check-in so undoing it removes the payment too
+            dayof.check_in_request(program, student, request)
 
         json.dump({'status':success}, resp)
         return resp
@@ -243,26 +245,41 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def update_schedule_json(self, request, tl, one, two, module, extra, prog):
+        if request.method != 'POST':
+            #   It changes things (enrollment, check-in and the payment that
+            #   records, printing), so not by GET: an <img> on any page could
+            #   trigger it for whoever has onsite access
+            return HttpResponseNotAllowed(['POST'])
         resp = HttpResponse(content_type='application/json')
         result = {'user': None, 'sections': [], 'messages': []}
         try:
-            user = ESPUser.objects.get(id=int(request.GET['user']))
+            user = ESPUser.objects.get(id=int(request.POST['user']))
         except:
             user = None
-            result['messages'].append('Error: could find user %s' % request.GET.get('user', None))
+            result['messages'].append('Error: could find user %s' % request.POST.get('user', None))
         try:
-            desired_sections = json.loads(request.GET['sections'])
+            desired_sections = json.loads(request.POST['sections'])
         except:
-            result['messages'].append('Error: could not parse requested sections %s' % request.GET.get('sections', None))
+            result['messages'].append('Error: could not parse requested sections %s' % request.POST.get('sections', None))
             desired_sections = None
 
-        #   Check in student if not currently checked in, since if they're using this view they must be onsite
-        if not prog.isCheckedIn(user) and request.GET.get('check_in') == 'true':
-            rec = Record(user=user, program=prog, event='attended')
-            rec.save()
+        #   Check the student in if asked to (which records what they owe as
+        #   paid, cash/check). Class changes are only for checked-in students:
+        #   otherwise refuse, rather than check them in without being asked
+        if user is not None and request.POST.get('check_in') == 'true':
+            (rec, payment) = dayof.check_in_request(prog, user, request)
+            if rec is not None:
+                result['messages'].append(dayof.checkin_message(user, rec, payment))
+        if user is not None and desired_sections is not None and not prog.isCheckedIn(user):
+            result['messages'].append('Error: %s (%s) isn\'t checked in, so their classes weren\'t changed. Check them '
+                                      'in first, or tick "Check-in student when making schedule changes".'
+                                      % (user.name(), user.id))
+            desired_sections = None
+            result['user'] = user.id
+            result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=user.id).values_list('id', flat=True).distinct())
 
         if user and desired_sections is not None:
-            override_full = (request.GET.get("override", "") == "true")
+            override_full = (request.POST.get("override", "") == "true")
 
             current_sections = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=user.id).values_list('id', flat=True).order_by('id').distinct())
             sections_to_remove = ClassSection.objects.filter(id__in=list(set(current_sections) - set(desired_sections)))
@@ -349,7 +366,9 @@ class OnSiteClassList(ProgramModuleObj):
         context['timeslots'] = prog.getTimeSlots()
         context['printers'] = Printer.objects.all().values_list('name', flat=True)
         context['initial_student'] = request.GET.get('student_id', '')
-        context['check_in_default'] = datetime.today().date() in prog.dates()
+        #   Off by default: checking in records what the student owes as paid,
+        #   so only when the volunteer means to (see update_schedule_json)
+        context['check_in_default'] = False
 
         open_class_category = prog.open_class_category
         open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id', 'symbol', 'category'] ] )

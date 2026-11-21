@@ -1,0 +1,81 @@
+{% comment %} The standard user search form; usersearch.html and onsite pages include it. Needs forms.css. {% endcomment %}
+<div id="program_form">
+<form action="{{ request.path }}" method="get" class="form-inline">
+<table cellpadding="0" cellspacing="0" width="450" align="center">
+
+<tr><th align="center" colspan="2">User Search Options</th></tr>
+
+<tr><td>
+<input type="hidden" name="extra" value="{{extra}}" />
+<input type="hidden" name="op" value="usersearch" />
+<label for="userid"><strong>User ID:</strong></label></td><td>
+<input type="text" size="6" name="userid" id="userid" /> &nbsp; 
+  (<label for="userid_not">Not?</label> <input type="checkbox" value="true" name="userid__not" id="userid_not" />)</td>
+</tr>
+
+<tr><td>
+<label for="username"><strong>Username:</strong></label></td><td>
+<input type="text" size="30" name="username" id="username" /> &nbsp; 
+  (<label for="username_not">Not?</label> <input type="checkbox" value="true" name="username__not" id="username_not"  />)</td>
+</tr>
+
+<tr><td>
+<label for="last_name"><strong>Last Name:</strong></label></td><td>
+<input type="text" size="30" name="last_name" id="last_name" /> &nbsp; 
+   (<label for="last_name_not">Not?</label> <input type="checkbox" value="true" name="last_name__not" id="last_name_not"  />)</td>
+</tr>
+
+<tr><td>
+<label for="first_name"><strong>First Name:</strong></label></td><td>
+<input type="text" size="30" name="first_name" id="first_name" /> &nbsp; 
+  (<label for="f<br />irst_name_not">Not?</label> <input type="checkbox" value="true" name="first_name__not" id="first_name_not" />)</td>
+</tr>
+
+<tr><td>
+<label for="email"><strong>Email:</strong></label></td><td>
+<input type="text" size="30" name="email" id="email" /> &nbsp; 
+  (<label for="email_not">Not?</label> <input type="checkbox" value="true" name="email__not" id="email_not" />)</td>
+</tr>
+
+<tr><td>
+<label><strong>Zipcode:</strong></label></td><td>
+More than <input type="text" size="4" name="zipdistance_exclude" value="" />
+and less than <input type="text" size="4" name="zipdistance" value="" />
+miles from <input type="text" size="5" name="zipcode" value="02139" />.</td>
+</tr>
+
+<tr><td>
+<label><strong>States:</strong></label></td><td>
+  <input type="text" size="10" name="states" value="" />
+  (<label for="states_not">Not?</label> <input type="checkbox" value="true" name="states__not" id="states_not" />) <br />
+<small>Enter a list of state codes (e.g. 'MA,CT,NY')</small></td>
+</tr>
+
+<tr><td>
+<label><strong>School:</strong></label></td><td>
+  <input type="text" size="30" name="school" value="" />
+</tr>
+
+<tr><td><label><strong>Grade Limits (students):</strong></label></td> <td>
+Min: 
+<input type="text" size="3" name="grade_min" value="" /><br>
+Max:
+<input type="text" size="3" name="grade_max" value="" /></td>
+</tr>
+
+<tr><td><label><strong>Graduation Year (teachers):</strong></label></td> <td>
+Min: 
+<input type="text" size="3" name="gradyear_min" value="" /><br>
+Max:
+<input type="text" size="3" name="gradyear_max" value="" /></td>
+</tr>
+
+<tr><td><label><strong>Options:</strong></label></td><td align="center">
+<input class="fancybutton" type="submit" value="Search for user" name="submitform" />
+{% if list %} or
+&nbsp;&nbsp;<input class="fancybutton" type="submit" value="Use Filtered List" name="submitform" />
+{% endif %}</td>
+</tr>
+</table>
+</form>
+</div>
