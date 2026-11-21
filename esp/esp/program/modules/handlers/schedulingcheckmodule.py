@@ -129,7 +129,7 @@ class SchedulingCheckRunner:
         self.formatter = formatter
 
         request = get_current_request()
-        self.incl_unreview = bool(request and "unreviewed" in request.GET)
+        self.incl_unreview = "unreviewed" in request.GET
 
         self.lunch_blocks = self._getLunchByDay()
 
@@ -415,68 +415,27 @@ class SchedulingCheckRunner:
                                          if sec.meeting_times.all() or sec.resourceassignment_set.all()]
         return self.formatter.format_list(self._unapproved_sections, ["Classes"])
 
-    @staticmethod
-    def _sections_time_overlap(s1, s2):
-        """Return True if the actual calendar time ranges of s1 and s2 strictly overlap.
-
-        Two sections are consecutive (and therefore NOT a conflict) if one ends
-        exactly when the other begins (end == start).  We therefore use strict
-        less-than comparisons so that consecutive walk-in classes taught by the
-        same teacher are not incorrectly flagged.
-        """
-        s1_times = list(s1.meeting_times.all())
-        s2_times = list(s2.meeting_times.all())
-        if not s1_times or not s2_times:
-            return False
-        for t1 in s1_times:
-            for t2 in s2_times:
-                # Strict overlap: touching endpoints (end == start) is not a conflict.
-                if max(t1.start, t2.start) < min(t1.end, t2.end):
-                    return True
-        return False
-
     def teachers_teaching_two_classes_same_time(self):
         if self.p.hasModule("TeacherModeratorModule"):
             name_heading = 'Teacher/' + self.p.getModeratorTitle().capitalize() + "'s Name"
         else:
             name_heading = "Teacher's Name"
-        # d maps timeslot -> person -> first section seen at that timeslot.
-        # We store the section object (not its string representation) so that we
-        # can compare actual wall-clock times when a potential conflict is found.
-        d = self._timeslot_dict(slot=lambda: {})
-        l = []
+        # Compare actual start/end times (not timeslot keys) so walk-ins in open class time blocks are handled
+        d = defaultdict(list)
         for s in self._all_class_sections():
-            mt = self._section_meeting_times(s)
-            for t in mt:
-                # Walk-in sections may use 'Open Class Time Block' timeslots that
-                # are absent from the pre-built dict; add them lazily.
-                if t not in d:
-                    d[t] = {}
-                is_mod_prog = self.p.hasModule("TeacherModeratorModule")
-                for teach in self._section_teachers(s):
-                    if teach not in d[t]:
-                        d[t][teach] = s
-                    else:
-                        prev_s = d[t][teach]
-                        # Only flag a conflict when the sections' actual time
-                        # ranges strictly overlap.  Consecutive classes
-                        # (end-time of one == start-time of the next) are fine.
-                        if self._sections_time_overlap(s, prev_s):
-                            s_label    = str(s)      + (" (Teacher)" if is_mod_prog else "")
-                            prev_label = str(prev_s) + (" (Teacher)" if is_mod_prog else "")
-                            l.append({"Username": teach, name_heading: teach.name(),
-                                      "Timeslot": t, "Section 1": s_label, "Section 2": prev_label})
-                for mod in self._section_moderators(s):
-                    if mod not in d[t]:
-                        d[t][mod] = s
-                    else:
-                        prev_s = d[t][mod]
-                        if self._sections_time_overlap(s, prev_s):
-                            mod_title  = self.p.getModeratorTitle().capitalize()
-                            s_label    = str(s)      + " (" + mod_title + ")"
-                            prev_label = str(prev_s) + " (" + mod_title + ")"
-                            l.append({"Username": mod, name_heading: mod.name(),
-                                      "Timeslot": t, "Section 1": s_label, "Section 2": prev_label})
+            mt = list(self._section_meeting_times(s))
+            for teach in self._section_teachers(s):
+                d[teach].append((str(s) + (" (Teacher)" if self.p.hasModule("TeacherModeratorModule") else ""), mt))
+            for mod in self._section_moderators(s):
+                d[mod].append((str(s) + " (" + str(self.p.getModeratorTitle().capitalize()) + ")", mt))
+        l = []
+        for person, sections in d.items():
+            for i, (label1, mt1) in enumerate(sections):
+                for label2, mt2 in sections[:i]:
+                    for t in mt1:
+                        if any(t.start < t2.end and t2.start < t.end for t2 in mt2):
+                            l.append({"Username": person, name_heading: person.name(), "Timeslot": t,
+                                      "Section 1": label1, "Section 2": label2})
         return self.formatter.format_table(l, {'headings': ["Username", name_heading, "Timeslot", "Section 1", "Section 2"]})
 
     def multiple_classes_same_resource_same_time(self):
