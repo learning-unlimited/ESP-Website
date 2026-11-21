@@ -885,7 +885,7 @@ class PrintingTest(DayOfTestBase):
     def fake_print_server(self, location):
         """ Makes the faked print server act like one: jobs get CUPS ids, and
         their state is self.job_state. """
-        queue = print_server.queue_name(location.id)
+        queue = print_server.queue_name(location)
         self.job_state = {'state': 'processing', 'reasons': [], 'printer_reasons': [], 'printer_message': ''}
         self.job_count = 0
 
@@ -901,6 +901,48 @@ class PrintingTest(DayOfTestBase):
         self.server.side_effect = request
         return queue
 
+    def test_queue_names_are_per_connection_ulids(self):
+        """ Each network connection gets its own queue, named by a new ULID,
+        so sites sharing a print server can't collide (ids repeat across
+        sites); the new queue is made before the old one goes. """
+        import re
+        import time
+        from esp.utils.models import new_ulid
+        ids = []
+        for _ in range(20):
+            ids.append(new_ulid())
+            time.sleep(0.002)       # a later millisecond each, so they sort by creation
+        self.assertTrue(all(re.match(r'^[0-9a-hjkmnp-tv-z]{26}$', i) for i in ids))
+        self.assertEqual(len(set(ids)), 20)
+        self.assertEqual(sorted(ids), ids)
+        self.assertIsNone(self.desk.queue_id)
+        with self.assertRaises(ValueError):
+            print_server.queue_name(self.desk)
+
+        def connect(location, address):
+            printing.connect_network(location, address, {'model': 'X'}, 'ipp://%s/ipp/print' % address,
+                                     self.admin, take_over=True)
+            location.refresh_from_db()
+            return print_server.queue_name(location)
+        first = connect(self.desk, 'a.example')
+        self.assertTrue(load_print_server_script().QUEUE.match(first))
+        self.assertNotEqual(first, connect(self.other, 'a.example'))
+        self.server.reset_mock()
+        second = connect(self.desk, 'b.example')
+        self.assertNotEqual(first, second)
+        self.assertEqual([c[0][:2] for c in self.server.call_args_list if c[0][0] in ('PUT', 'DELETE')],
+                         [('PUT', '/queues/%s' % second), ('DELETE', '/queues/%s' % first)])
+        #   A failed connect leaves what was connected
+        self.server.side_effect = print_server.PrintServerError('Couldn\'t reach the print server.')
+        with self.assertRaises(printing.PrintingError):
+            connect(self.desk, 'c.example')
+        self.desk.refresh_from_db()
+        self.assertEqual((print_server.queue_name(self.desk), self.desk.network_address), (second, 'b.example'))
+        self.server.side_effect = None
+        printing.disconnect(self.desk, self.admin)
+        self.desk.refresh_from_db()
+        self.assertIsNone(self.desk.queue_id)
+
     def test_copies_go_to_the_print_server_as_one_job(self):
         printing.connect_network(self.desk, 'printer.example', {'model': 'X'}, 'ipp://printer.example/ipp/print',
                                  self.admin)
@@ -913,7 +955,8 @@ class PrintingTest(DayOfTestBase):
         info = {'model': 'Brother X', 'sides': ['one-sided', 'two-sided-long-edge']}
         printing.connect_network(self.desk, 'printer.example', info, 'ipp://printer.example/ipp/print',
                                  self.admin)
-        queue = print_server.queue_name(self.desk.id)
+        self.desk.refresh_from_db()
+        queue = print_server.queue_name(self.desk)
         (args, kwargs) = self.server.call_args
         self.assertEqual((args[0], args[1]), ('PUT', '/queues/%s' % queue))
         self.assertEqual(kwargs['json'], {'uri': 'ipp://printer.example/ipp/print', 'description': 'Help desk',
@@ -978,7 +1021,7 @@ class PrintingTest(DayOfTestBase):
         printing.connect_network(self.desk, 'printer.example', {'model': 'X', 'media': ['na_letter_8.5x11in', 'odd size']},
                                  'ipp://printer.example/ipp/print', self.admin)
         self.desk.refresh_from_db()
-        queue = print_server.queue_name(self.desk.id)
+        queue = print_server.queue_name(self.desk)
         bad = printing.queue('receipt', self.program, self.desk, receipt=self._receipt())
         good = printing.queue('receipt', self.program, self.desk, receipt=self._receipt())
         sent = []
@@ -1028,6 +1071,7 @@ class PrintingTest(DayOfTestBase):
         printing.connect_network(self.desk, 'printer.example', {'model': 'X'}, 'ipp://printer.example/ipp/print',
                                  self.admin)
         self.desk.refresh_from_db()
+        self.fake_print_server(self.desk)      # (a new connection: a new queue)
         job = printing.queue('receipt', self.program, self.desk, receipt=self._receipt())
         printing.run_network_jobs_once()
         self.assertEqual(printing.discard_waiting(self.desk, self.admin), 1)
@@ -1062,7 +1106,7 @@ class PrintingTest(DayOfTestBase):
         response = self.client.post(self.onsite_url('printers_claim'), {'location': self.desk.id, 'take_over': '1'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.server.call_args[0][:2],
-                         ('DELETE', '/queues/%s' % print_server.queue_name(self.desk.id)))
+                         ('DELETE', '/queues/%s' % print_server.queue_name(self.desk)))
         self.desk.refresh_from_db()
         self.assertEqual(self.desk.mode, 'laptop')
 
@@ -1099,6 +1143,8 @@ class PrintingTest(DayOfTestBase):
         from esp.program.templatetags.printing import print_locations
         printing.connect_network(self.other, 'printer.example', {'model': 'X'}, 'ipp://printer.example/ipp/print',
                                  self.admin)
+        self.other.refresh_from_db()
+        queue = print_server.queue_name(self.other)
         job = printing.queue('receipt', self.program, self.other, receipt=self._receipt())
         self.assertTrue(self.client.login(username=self.admin.username, password='password'))
         archive = {'location': self.other.id, 'action': 'archive'}
@@ -1111,7 +1157,8 @@ class PrintingTest(DayOfTestBase):
         self.other.refresh_from_db()
         #   Archived: disconnected (queue removed), hidden, kept with its jobs
         self.assertEqual((self.other.archived, self.other.mode), (True, 'none'))
-        self.assertEqual(self.server.call_args[0][:2], ('DELETE', '/queues/%s' % print_server.queue_name(self.other.id)))
+        self.assertEqual(self.server.call_args[0][:2], ('DELETE', '/queues/%s' % queue))
+        self.assertIsNone(self.other.queue_id)
         self.assertNotIn(self.other, print_locations())
         self.assertTrue(type(job).objects.filter(id=job.id).exists())
         with self.assertRaises(printing.PrintingError):
@@ -1226,7 +1273,11 @@ class PrintServerScriptTest(TestCase):
     def test_api(self):
         self.assertEqual(self.call('GET', '/queues/esp-location-2', token='wrong')[0], 401)
         self.assertEqual(self.call('GET', '/queues/esp-location-2', token=None)[0], 401)
-        #   Only esp-location-<n> queues, ipp(s) printer URIs, simple options, PDFs
+        #   Only esp-<ULID> queues (or the old esp-location-<n>), printer URIs, simple options, PDFs
+        self.assertEqual(self.call('DELETE', '/queues/esp-01jd3k8w6p0b2c4d5e6f7g8h9j')[0], 200)
+        self.assertEqual(self.call('DELETE', '/queues/esp-01JD3K8W6P0B2C4D5E6F7G8H9J')[0], 400)
+        self.assertEqual(self.call('DELETE', '/queues/esp-other')[0], 400)
+        self.run_cups.reset_mock()
         self.assertEqual(self.call('DELETE', '/queues/somebody-elses-printer')[0], 400)
         self.assertEqual(self.call('PUT', '/queues/esp-location-2', json={'uri': 'file:/etc/passwd'})[0], 400)
         self.assertEqual(self.call('POST', '/queues/esp-location-2/jobs', data=b'not a pdf')[0], 400)

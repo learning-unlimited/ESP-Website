@@ -35,6 +35,8 @@ Learning Unlimited, Inc.
 """
 
 import os
+import secrets
+import time
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
@@ -78,6 +80,18 @@ class PrinterQuerySet(models.QuerySet):
         return self.filter(archived=False)
 
 
+#   Crockford base32, lowercased (CUPS queue names are case-insensitive)
+ULID_ALPHABET = '0123456789abcdefghjkmnpqrstvwxyz'
+
+
+def new_ulid():
+    """ A ULID (https://github.com/ulid/spec): 48 bits of milliseconds then
+    80 random bits, as 26 base32 characters, so ids sort by creation time.
+    Keep this import path: migrations refer to it. """
+    value = (int(time.time() * 1000) << 80) | secrets.randbits(80)
+    return ''.join(ULID_ALPHABET[(value >> (5 * i)) & 31] for i in reversed(range(26)))
+
+
 class Printer(models.Model):
     """ A place that prints on the day of the program ("Troubleshooting",
     "Help desk", "Check-in A"). At most one printer is connected to it at a
@@ -94,6 +108,10 @@ class Printer(models.Model):
     printer_type = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)
     is_default = models.BooleanField(default=False, editable=False)
+    #   Network printer: names this connection's queue on the print server
+    #   (esp-<queue_id>), a new ULID for each connection, so unique across
+    #   every site sharing the print server (unlike the id). None otherwise.
+    queue_id = models.CharField(max_length=26, unique=True, null=True, blank=True, editable=False)
     #   Archived locations are hidden everywhere but keep their history and
     #   old print requests (the Printers page's "Archive" instead of deleting)
     archived = models.BooleanField(default=False)
@@ -183,7 +201,7 @@ class PrintRequest(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='queued', db_index=True)
     error = models.TextField(blank=True, default='')
     attempts = models.PositiveIntegerField(default=0)
-    #   A network job's id in the print server's CUPS (e.g. esp-location-6-12)
+    #   A network job's id in the print server's CUPS (e.g. esp-01jd3k8w6p0b2c4d5e6f7g8h9j-12)
     #   while it is 'sent', until CUPS says it printed
     server_job = models.CharField(max_length=100, blank=True, default='')
     requested_by = AjaxForeignKey(ESPUser, blank=True, null=True, related_name='+', on_delete=models.SET_NULL)

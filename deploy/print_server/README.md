@@ -83,7 +83,7 @@ Without `PRINT_SERVER`, the Printers page offers laptop printing only.
 
 Check it from the web server:
 
-    curl -H "Authorization: Bearer <token>" https://esp-print.mit.edu:8631/queues/esp-location-1
+    curl -H "Authorization: Bearer <token>" https://esp-print.mit.edu:8631/queues/esp-01jd3k8w6p0b2c4d5e6f7g8h9j
 
 (`{"error": "lpstat: Invalid destination name ..."}` until that location has a
 printer connected; 401 means a wrong token.)

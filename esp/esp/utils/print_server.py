@@ -44,8 +44,17 @@ def configured():
     return bool(server and server.get('url') and server.get('token'))
 
 
-def queue_name(location_id):
-    return 'esp-location-%d' % location_id
+def queue_name(location):
+    """ The queue on the print server for the location's network printer
+    (shared by every site that uses it, so named by the connection's ULID,
+    not the location's id). """
+    if not location.queue_id:
+        raise ValueError('%s has no network printer connected.' % location.name)
+    return queue_name_for(location.queue_id)
+
+
+def queue_name_for(queue_id):
+    return 'esp-%s' % queue_id
 
 
 def _request(method, path, timeout, **kwargs):
@@ -97,7 +106,7 @@ def remove_queue(name):
 
 def print_pdf(name, pdf, title='', options=None):
     """ Prints a PDF on the queue. Returns CUPS's job id (e.g.
-    'esp-location-6-12'). options are IPP job attributes, such as
+    'esp-01jd3k8w6p0b2c4d5e6f7g8h9j-12'). options are IPP job attributes, such as
     {'sides': 'two-sided-long-edge'}. """
     options = ['%s=%s' % (key, value) for (key, value) in sorted((options or {}).items())]
     data = _request('POST', '/queues/%s/jobs' % name, TIMEOUT, data=pdf,

@@ -3,7 +3,8 @@
 front of this host's CUPS, so the web server needs no CUPS.
 
 Every request needs "Authorization: Bearer <token>" (the token is in
-/etc/esp-print/token). Queues must be named esp-location-<number>.
+/etc/esp-print/token). Queues are named esp-<ULID> (lowercase; esp-location-<number> is the old form, still
+accepted so old queues can be removed).
 
     GET    /probe?address=<IP, hostname[:port] or ipp(s):// URI>
                                   asks the printer what it is and supports (IPP
@@ -54,8 +55,8 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
-QUEUE = re.compile(r'^esp-location-\d{1,9}$')
-JOB = re.compile(r'^esp-location-\d{1,9}-\d{1,9}$')
+QUEUE = re.compile(r'^esp-([0-9a-hjkmnp-tv-z]{26}|location-\d{1,9})$')
+JOB = re.compile(r'^esp-([0-9a-hjkmnp-tv-z]{26}|location-\d{1,9})-\d{1,9}$')
 URI = re.compile(r'^(ipps?|socket|lpd)://[A-Za-z0-9.:\[\]_-]+(/[A-Za-z0-9._/~-]*)?$')
 OPTION = re.compile(r'^[a-z][a-z0-9-]{0,40}=[A-Za-z0-9._-]{1,60}$')
 TEXT = re.compile(r'^[^\x00-\x1f]{0,100}$')

@@ -29,7 +29,7 @@ from django.test import RequestFactory
 from django.utils import timezone
 
 from esp.utils import print_server
-from esp.utils.models import Printer, PrinterChange, PrintRequest
+from esp.utils.models import Printer, PrinterChange, PrintRequest, new_ulid
 
 logger = logging.getLogger(__name__)
 
@@ -92,9 +92,12 @@ def release_all_stale():
 
 
 def _clear(loc):
+    """ Forgets what's connected (callers remove a network printer's queue
+    first). """
     loc.trouble = ''
     loc.trouble_since = None
     loc.mode = 'none'
+    loc.queue_id = None
     loc.laptop_token = ''
     loc.laptop_claimed_by = None
     loc.laptop_last_seen = None
@@ -130,7 +133,7 @@ def claim_for_laptop(location, recorded_by, take_over=False):
     previous = _describe_connection(loc)
     if loc.mode == 'network':
         _recall_network_jobs(loc)
-        print_server.remove_queue(print_server.queue_name(loc.id))
+        print_server.remove_queue(print_server.queue_name(loc))
     _clear(loc)
     loc.mode = 'laptop'
     loc.laptop_token = secrets.token_urlsafe(24)
@@ -167,19 +170,26 @@ def connect_network(location, address, info, uri, recorded_by, take_over=False):
     loc = _locked(location.id, take_over or location.mode == 'network')
     previous = _describe_connection(loc)
     keep_settings = loc.mode == 'network' and loc.settings_json
+    if 'driver' in info and not info['driver']:
+        raise PrintingError('%s doesn\'t take anything the print server can send it (it accepts %s).' % (
+            address.strip(), ', '.join(info.get('formats') or ['nothing it says'])))
+    #   Each connection gets its own queue. Make the new one first, so a
+    #   failure leaves what was connected as it was.
+    queue_id = new_ulid()
+    try:
+        offered = print_server.add_queue(print_server.queue_name_for(queue_id), uri, loc.name, info.get('driver'))
+    except print_server.PrintServerError as e:
+        raise PrintingError('Couldn\'t set up %s for printing: %s' % (address.strip(), e))
+    if loc.mode == 'network':
+        _recall_network_jobs(loc)
+        print_server.remove_queue(print_server.queue_name(loc))
     _clear(loc)
     loc.mode = 'network'
+    loc.queue_id = queue_id
     loc.network_address = address.strip()
     loc.network_uri = uri
     loc.last_result = ''
     loc.last_error = ''
-    if 'driver' in info and not info['driver']:
-        raise PrintingError('%s doesn\'t take anything the print server can send it (it accepts %s).' % (
-            loc.network_address, ', '.join(info.get('formats') or ['nothing it says'])))
-    try:
-        offered = print_server.add_queue(print_server.queue_name(loc.id), uri, loc.name, info.get('driver'))
-    except print_server.PrintServerError as e:
-        raise PrintingError('Couldn\'t set up %s for printing: %s' % (loc.network_address, e))
     #   An older printer doesn't say what it can do; its driver does
     info = dict(info)
     for key in ('sides', 'color_modes', 'qualities', 'media', 'scaling'):
@@ -202,7 +212,7 @@ def disconnect(location, recorded_by):
     previous = _describe_connection(loc)
     if loc.mode == 'network':
         _recall_network_jobs(loc)
-        print_server.remove_queue(print_server.queue_name(loc.id))
+        print_server.remove_queue(print_server.queue_name(loc))
     _clear(loc)
     loc.network_address = loc.network_uri = loc.network_info = ''
     loc.save()
@@ -495,7 +505,7 @@ def send_to_network_printer(location, pdf, job_name, copies=1, settings=None):
     has gone, e.g. the print server was rebuilt), with the location's
     settings and, over them, settings (the job's own). Raises
     print_server.PrintServerError. """
-    name = print_server.queue_name(location.id)
+    name = print_server.queue_name(location)
     options = location_options(location, settings)
     if copies > 1:
         options['copies'] = copies
@@ -563,14 +573,14 @@ def test_page(location, recorded_by):
 def _in_flight(location):
     """ The location's job at the print server, waiting for CUPS to print it
     (at most one; its CUPS job id starts with the queue's name). """
-    return PrintRequest.objects.filter(status='sent', server_job__startswith=print_server.queue_name(location.id) + '-')
+    return PrintRequest.objects.filter(status='sent', server_job__startswith=print_server.queue_name(location) + '-')
 
 
 def _recall_network_jobs(location, cancel=False):
     """ Takes the location's job back from the print server (on take-over,
     disconnect, or "cancel all waiting"): cancels it there and puts it back
     in the queue, or cancels it. Returns how many. """
-    name = print_server.queue_name(location.id)
+    name = print_server.queue_name(location)
     count = 0
     for job in _in_flight(location):
         try:
@@ -600,7 +610,7 @@ def _check_in_flight(location, job):
     location is free for the next one. Raises PrintServerError if the print
     server can't be asked. """
     try:
-        state = print_server.job_status(print_server.queue_name(location.id), job.server_job)
+        state = print_server.job_status(print_server.queue_name(location), job.server_job)
     except print_server.PrintServerError as e:
         if 'CUPS has no job' not in str(e):
             raise
