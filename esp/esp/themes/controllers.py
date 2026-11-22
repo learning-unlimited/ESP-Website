@@ -53,6 +53,7 @@ from urllib.parse import quote, unquote
 from django.conf import settings
 from django.core.exceptions import SuspiciousFileOperation
 from django.template.loader import render_to_string
+from django.utils.html import format_html
 
 from esp.utils.models import TemplateOverride
 from esp.utils.template import Loader as TemplateOverrideLoader
@@ -647,11 +648,17 @@ class ThemeController(object):
         if sass_process.returncode != 0:
             sass_output = err_data.decode('UTF-8', errors='replace')
             raise ESPError(
-                f'The stylesheet compiler (sass) returned error code {sass_process.returncode}. '
-                f'Please check the SCSS sources and settings you are using to generate the theme, '
-                f'or contact the <a href="mailto:{settings.DEFAULT_EMAIL_ADDRESSES["support"]}">Web support team</a>.'
-                f'<br />SCSS compile command was: <pre>{" ".join(sass_args)}</pre>'
-                f'<br />Sass output: <pre>{sass_output}</pre>',
+                format_html(
+                    'The stylesheet compiler (sass) returned error code {}. '
+                    'Please check the SCSS sources and settings you are using to generate the theme, '
+                    'or contact the <a href="mailto:{}">Web support team</a>.'
+                    '<br />SCSS compile command was: <pre>{}</pre>'
+                    '<br />Sass output: <pre>{}</pre>',
+                    sass_process.returncode,
+                    settings.DEFAULT_EMAIL_ADDRESSES["support"],
+                    " ".join(sass_args),
+                    sass_output,
+                ),
                 log=True,
             )
         return css_data
@@ -780,11 +787,29 @@ class ThemeController(object):
             #   compiled CSS just because the form was submitted.
             allowed_substitutions = set(overridden)
         else:
-            scss_data = (var_data
+            #   Without Bootswatch every supplied variable is still substituted
+            #   (the legacy behaviour, where the editor values are the source of
+            #   truth), but $esp-overridden is injected here too, diffed against
+            #   the theme's own SCSS defaults.  A rule that must only take effect
+            #   when the admin genuinely edited a field — e.g. the footer colors,
+            #   which otherwise have to keep inheriting the navbar — cannot tell
+            #   "left at the default" from "deliberately set to the default"
+            #   without it.  Names come from the theme's own SCSS and are
+            #   filtered to plain identifiers, so nothing user-tainted is
+            #   interpolated into the stylesheet.
+            scss_defaults = self.find_scss_variables(theme_name, flat=True)
+            overridden = [
+                name for name in scss_defaults
+                if name in variable_data
+                and re.match(r'^[a-zA-Z0-9_]+$', name)
+                and str(variable_data[name]).strip().lower()
+                    != str(scss_defaults[name]).strip().lower()
+            ]
+            esp_overridden = '(' + ''.join("'%s', " % n for n in overridden) + ')'
+            scss_data = (f'$esp-overridden: {esp_overridden};\n'
+                         + var_data
                          + f'\n@import "{_BOOTSTRAP5_SCSS}";\n'
                          + css_data_pre)
-            #   No Bootswatch theme: substitute every supplied variable (the
-            #   legacy behaviour, where the editor values are the source of truth).
             allowed_substitutions = None
 
         #   Replace all SCSS variable declarations for which we have a value defined.

@@ -216,6 +216,12 @@ the {{ theme }} template variable.  For example, if your configuration form
 has a field called 'sponsors' your template could say: "Thanks to our sponsors,
 {{ theme.sponsors }}."
 
+Put ``{% include "elements/banners.html" %}`` directly above
+``{% block content %}`` so your theme shows the standard status banners
+(testing mode, required page, permission info, admin tag notices and Django
+messages).  Edit those banners in esp/templates/elements/banners.html rather
+than in individual themes.
+
 Create additional template overrides where the default templates would
 significantly compromise the desired look and feel of the site.
 

@@ -1,11 +1,14 @@
 from copy import deepcopy
+import functools
 import json
+import os
 
+from django.conf import settings
 from django.db import transaction
 from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.urls import reverse
-from django.db import connection
+from django.db import connection, models
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 
@@ -16,7 +19,7 @@ from esp.customforms.DynamicForm import FormHandler
 from esp.customforms.linkfields import cf_cache
 from esp.tagdict.models import Tag
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth.decorators import user_passes_test, login_required
+from django.contrib.auth.decorators import login_required
 
 from esp.users.models import ESPUser
 from esp.middleware import ESPError, Http403
@@ -25,7 +28,20 @@ from esp.utils.web import render_to_response, zip_download, error404
 def test_func(user):
     return user.is_authenticated and (user.is_morphed() or user.isTeacher() or user.isAdministrator())
 
-@user_passes_test(test_func)
+def form_builder_required(view):
+    """Send anonymous users to log in, and refuse logged-in users who fail test_func.
+
+    user_passes_test would send both to the login page, which sends a
+    logged-in user straight back: a redirect loop.
+    """
+    @functools.wraps(view)
+    def _view(request, *args, **kwargs):
+        if not test_func(request.user):
+            raise Http403('Only teachers and administrators can use custom forms.')
+        return view(request, *args, **kwargs)
+    return login_required(_view)
+
+@form_builder_required
 def landing(request):
     forms = Form.objects.all().order_by('-link_type', '-link_id', '-id')
     if not (request.user.isAdministrator() or request.user.is_morphed()):
@@ -41,7 +57,7 @@ def landing(request):
                     form.link_obj = "(deleted)"
     return render_to_response("customforms/landing.html", request, {'form_list': forms})
 
-@user_passes_test(test_func)
+@form_builder_required
 def formBuilder(request):
     prog_list = Program.objects.all()
     form_list = Form.objects.all().order_by('-id')
@@ -52,7 +68,7 @@ def formBuilder(request):
         context['edit'] = request.GET.get('edit')
     return render_to_response('customforms/index.html', request, context)
 
-@user_passes_test(test_func)
+@form_builder_required
 def formBuilderData(request):
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'GET':
@@ -66,6 +82,7 @@ def formBuilderData(request):
             return HttpResponse(json.dumps(data))
     return HttpResponse(status=400)
 
+@form_builder_required
 def getPerms(request):
     """
     Returns the various permissions available for the current program via AJAX.
@@ -74,9 +91,12 @@ def getPerms(request):
         if request.method == 'GET':
             try:
                 prog_id = int(request.GET['prog_id'])
-            except ValueError:
+            except (KeyError, ValueError):
                 return HttpResponse(status=400)
-            prog = Program.objects.get(pk=prog_id)
+            try:
+                prog = Program.objects.get(pk=prog_id)
+            except Program.DoesNotExist:
+                return error404(request)
             perms = {'teachers': [], 'students': []}
             for module in prog.getModules(None):
                 teach_desc = module.teacherDesc()
@@ -90,7 +110,20 @@ def getPerms(request):
             return HttpResponse(json.dumps(perms))
     return HttpResponse(status=400)
 
-@user_passes_test(test_func)
+def check_no_anonymous_link_fields(anonymous, metadata):
+    """
+    Raises an error if an anonymous form contains linked fields, since their
+    answers are stored in the submitting user's own records
+    """
+    if not anonymous:
+        return
+    for page in metadata['pages']:
+        for section in page['sections']:
+            for field in section['fields']:
+                if cf_cache.isLinkField(field['data']['field_type']):
+                    raise ESPError('Anonymous forms cannot contain linked fields.', log=False)
+
+@form_builder_required
 @transaction.atomic
 def onSubmit(request):
     #Stores form metadata in the database.
@@ -111,7 +144,9 @@ def onSubmit(request):
 
                 # Validate that title is not empty or missing
                 if not title or not title.strip():
-                    return JsonResponse({'message': 'Form Name/Title is required and cannot be empty.'}, status=400)
+                    raise ESPError('Form Name/Title is required and cannot be empty.', log=False)
+
+                check_no_anonymous_link_fields(metadata['anonymous'], metadata)
 
                 # Creating form
                 form = Form.objects.create(title=title,
@@ -125,9 +160,9 @@ def onSubmit(request):
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError(f'No program with ID {metadata["link_id"]}')
+                        raise ESPError(f'No program with ID {metadata["link_id"]}', log=False)
                     if not prog.hasModule(metadata['link_module']):
-                        return ESPError(f'Program does not have {metadata["link_module"]} enabled')
+                        raise ESPError(f'Program does not have {metadata["link_module"]} enabled', log=False)
                     if metadata['link_module'] == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherCustomFormModule':
@@ -135,7 +170,7 @@ def onSubmit(request):
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented')
+                        raise ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented', log=False)
 
                 # Inserting pages
                 for page in metadata['pages']:
@@ -165,7 +200,10 @@ def onSubmit(request):
 
                 return HttpResponse('OK')
             except Exception as err:
+                #   Rollback any changes if an error is raised
+                transaction.set_rollback(True)
                 return JsonResponse({'message': str(err)}, status=400)
+    return HttpResponse(status=400)
 
 def get_or_create_altered_obj(model, initial_id, **attrs):
     if model.objects.filter(id=initial_id).exists():
@@ -183,7 +221,7 @@ def get_or_create_altered_obj(model, initial_id, **attrs):
 def get_new_or_altered_obj(*args, **kwargs):
     return get_or_create_altered_obj(*args, **kwargs)[0]
 
-@user_passes_test(test_func)
+@form_builder_required
 @transaction.atomic
 def onModify(request):
     """
@@ -209,7 +247,9 @@ def onModify(request):
                 title_raw = (metadata.get('title') or '').strip()
                 title_normalized = title_raw[0:Form._meta.get_field('title').max_length]
                 if not title_normalized or not title_normalized.strip():
-                    return JsonResponse({'message': 'Form Name/Title is required and cannot be empty.'}, status=400)
+                    raise ESPError('Form Name/Title is required and cannot be empty.', log=False)
+
+                check_no_anonymous_link_fields(form.anonymous, metadata)
 
                 # NOT updating 'anonymous'
                 form.__dict__.update(title=title_normalized, description=metadata['desc'], perms=metadata['perms'],
@@ -226,9 +266,9 @@ def onModify(request):
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError(f'No program with ID {metadata["link_id"]}')
+                        raise ESPError(f'No program with ID {metadata["link_id"]}', log=False)
                     if not prog.hasModule(metadata['link_module']):
-                        return ESPError(f'Program does not have {metadata["link_module"]} enabled')
+                        raise ESPError(f'Program does not have {metadata["link_module"]} enabled', log=False)
                     if metadata['link_module'] == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherCustomFormModule':
@@ -236,7 +276,7 @@ def onModify(request):
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented')
+                        raise ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented', log=False)
 
                 # Check if only_fkey links have changed
                 if form.link_type != metadata['link_type'] or form.link_id != metadata['link_id']:
@@ -297,7 +337,10 @@ def onModify(request):
 
                 return HttpResponse('OK')
             except Exception as err:
+                #   Rollback any changes if an error is raised
+                transaction.set_rollback(True)
                 return JsonResponse({'message': str(err)}, status=400)
+    return HttpResponse(status=400)
 
 def hasPerm(user, form):
     """
@@ -353,10 +396,10 @@ def success(request, form_id):
     """
     try:
         form_id = int(form_id)
-    except ValueError:
+        form = Form.objects.get(pk=form_id)
+    except (ValueError, Form.DoesNotExist):
         return error404(request)
 
-    form = Form.objects.get(pk=form_id)
     return render_to_response('customforms/success.html', request, {'success_message': form.success_message,
                                                             'success_url': form.success_url})
 
@@ -377,7 +420,7 @@ def viewResponse(request, form_id):
         raise Http403('You do not have permission to view responses for this form.')
     return render_to_response('customforms/view_results.html', request, {'form': form})
 
-@user_passes_test(test_func)
+@form_builder_required
 def getExcelData(request, form_id):
     """
     Returns the response data as an excel spreadsheet
@@ -396,7 +439,7 @@ def getExcelData(request, form_id):
     response['Content-Disposition']=f'attachment; filename={form.title}.xlsx'
     return response
 
-@user_passes_test(test_func)
+@form_builder_required
 def getData(request):
     """
     Returns response data via Ajax
@@ -415,7 +458,7 @@ def getData(request):
             return HttpResponse(resp_data)
     return HttpResponse(status=400)
 
-@user_passes_test(test_func)
+@form_builder_required
 def bulkDownloadFiles(request):
     """
     Returns a download of a zip file containing all of the file responses to a single custom form field
@@ -434,11 +477,17 @@ def bulkDownloadFiles(request):
             raise Http403('You do not have permission to download files for this form.')
         dmh = DMH(form=form)
         dyn = dmh.createDynModel()
+        #   Only file questions hold paths; any other answer is free text.
+        fields = {field.attname: field for field in dyn._meta.concrete_fields}
+        if not isinstance(fields.get(question_name), models.FileField):
+            return error404(request)
         filenames = [resp[question_name] for resp in dyn.objects.all().values()]
-        return zip_download(filenames, 'surveyfiles')
+        #   Stored paths are relative to MEDIA_ROOT; os.path.join() leaves the
+        #   absolute paths that older versions stored unchanged.
+        return zip_download([os.path.join(settings.MEDIA_ROOT, filename) for filename in filenames if filename], 'surveyfiles')
     return HttpResponse(status=400)
 
-@user_passes_test(test_func)
+@form_builder_required
 def getRebuildData(request):
     """
     Returns form metadata for rebuilding via AJAX
@@ -457,7 +506,7 @@ def getRebuildData(request):
                 return HttpResponse(json.dumps({'message': str(err)}), status=400)
     return HttpResponse(status=400)
 
-@user_passes_test(test_func)
+@form_builder_required
 def get_links(request):
     """
     Returns the instances for the specified model, to link to in the form builder.
@@ -479,7 +528,7 @@ def get_links(request):
             return HttpResponse(json.dumps(retval))
     return HttpResponse(status=400)
 
-@user_passes_test(test_func)
+@form_builder_required
 def get_modules(request):
     """
     Returns the modules that are enabled for the program that use custom forms.
@@ -491,9 +540,13 @@ def get_modules(request):
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'GET':
             try:
-                prog = Program.objects.get(id=request.GET.get('program'))
-            except Program.DoesNotExist:
+                prog_id = int(request.GET['program'])
+            except (ValueError, KeyError):
                 return HttpResponse(status=400)
+            try:
+                prog = Program.objects.get(id=prog_id)
+            except Program.DoesNotExist:
+                return error404(request)
             retval = {'learn': [(mod.module.handler, mod.module.admin_title) for mod in prog.getModules(tl = 'learn') if mod.module.handler in learn_handlers],
                       'teach': [(mod.module.handler, mod.module.admin_title) for mod in prog.getModules(tl = 'teach') if mod.module.handler in teach_handlers]}
             return HttpResponse(json.dumps(retval))

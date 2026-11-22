@@ -54,6 +54,7 @@ from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_S
 from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, FurnishingFormForProgram, ClassroomImportForm, TimeslotImportForm, ResTypeImportForm, EquipmentImportForm
 
 from esp.program.controllers.resources import ResourceController
+from esp.utils.ids import filter_by_id
 
 class ResourceModule(ProgramModuleObj):
     doc = """ Manage the resources used by a program.  This includes classrooms and LCD equipment.
@@ -488,7 +489,7 @@ class ResourceModule(ProgramModuleObj):
                     autocreated = res_type.autocreated,
                     hidden = res_type.hidden
                 )
-            if import_mode == 'save':
+            if import_mode == 'save' and str(old_res.id) in to_import:
                 new_res_type.save()
             #   Create associated furnishing
             new_furnishing = Resource(
@@ -593,7 +594,7 @@ class ResourceModule(ProgramModuleObj):
                                 autocreated = res_type.autocreated,
                                 hidden = res_type.hidden
                             )
-                        if import_mode == 'save':
+                        if import_mode == 'save' and str(equipment.id) in to_import:
                             new_res_type.save()
                         new_equip = Resource(
                             name = equipment.name,
@@ -760,7 +761,7 @@ class ResourceModule(ProgramModuleObj):
         '''Create a resource assignment from the POST data, and return its detail display.'''
         if request.method != 'POST' or 'resource' not in request.POST or 'target' not in request.POST:
             return HttpResponseBadRequest('')
-        results = ClassSection.objects.filter(id=request.POST['target'])
+        results = filter_by_id(ClassSection.objects, request.POST['target'])
         if not len(results): #Use len() since we will evaluate it anyway
             return HttpResponseBadRequest('')
         section = results[0]
@@ -788,7 +789,7 @@ class ResourceModule(ProgramModuleObj):
         '''Given a post request, take extra as the id of the resource assignment, update whether it's returned using the post data, and return its new name display.'''
         if request.method != 'POST' or 'id' not in request.POST or 'returned' not in request.POST:
             return HttpResponseBadRequest('')
-        results = ResourceAssignment.objects.filter(id=request.POST['id'])
+        results = filter_by_id(ResourceAssignment.objects, request.POST['id'])
         if not len(results): #Use len() since we will evaluate it anyway
             return HttpResponseBadRequest('')
         assignments = ResourceAssignment.objects.filter(assignment_group = results[0].assignment_group)
@@ -803,7 +804,7 @@ class ResourceModule(ProgramModuleObj):
     def getavailableequipment(self, request, tl, one, two, module, extra, prog):
         if request.method != 'POST' or 'secid' not in request.POST:
             return HttpResponseBadRequest('')
-        results = ClassSection.objects.filter(id=request.POST['secid'])
+        results = filter_by_id(ClassSection.objects, request.POST['secid'])
         if not len(results): #Use len() since we will evaluate it anyway
             return HttpResponseBadRequest('')
         section = results[0]
@@ -822,7 +823,7 @@ class ResourceModule(ProgramModuleObj):
         '''Given a post request with the ID, delete the resource assignment.'''
         if request.method != 'POST' or 'id' not in request.POST:
             return HttpResponseBadRequest('')
-        results = ResourceAssignment.objects.filter(id=request.POST['id'])
+        results = filter_by_id(ResourceAssignment.objects, request.POST['id'])
         if not len(results): #Use len() since we will evaluate it anyway
             return HttpResponseBadRequest('')
         ResourceAssignment.objects.filter(assignment_group = results[0].assignment_group).delete()
