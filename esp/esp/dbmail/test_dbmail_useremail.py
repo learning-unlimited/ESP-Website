@@ -43,6 +43,7 @@ class UserEmailTest(CacheFlushTestCase):
         handler = _make_handler()
         handler.process('nonexistent_user_xyz', None)
         self.assertFalse(handler.send)
+        self.assertFalse(handler.preserve_headers)
 
     def test_teacher_user_sends(self):
         msg = Message()
@@ -53,7 +54,7 @@ class UserEmailTest(CacheFlushTestCase):
 
         self.assertTrue(handler.send)
         self.assertTrue(handler.preserve_headers)
-        self.assertIn(self.teacher.email, handler.recipients)
+        self.assertEqual(handler.recipients, [self.teacher.email])
 
     def test_non_teacher_no_list_id(self):
         msg = Message()
@@ -134,24 +135,9 @@ class UserEmailTest(CacheFlushTestCase):
         self.assertTrue(handler.send)
         self.assertIn(self.teacher.email, handler.recipients)
 
-    def test_recipients_set_correctly(self):
-        msg = Message()
-        msg['to'] = 'original@learningu.org'
-
-        handler = _make_handler(msg)
-        handler.process(self.teacher.username, None)
-
-        self.assertEqual(handler.recipients, [self.teacher.email])
-        self.assertTrue(handler.preserve_headers)
-
     def test_send_false_before_process(self):
         handler = _make_handler()
         self.assertFalse(handler.send)
-
-    def test_preserve_headers_not_set_for_nonexistent_user(self):
-        handler = _make_handler()
-        handler.process('nonexistent_user', None)
-        self.assertFalse(handler.preserve_headers)
 
     def test_admin_user_sends(self):
         admin_user, _ = ESPUser.objects.get_or_create(
