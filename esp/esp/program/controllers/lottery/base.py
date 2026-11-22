@@ -866,7 +866,7 @@ class BaseLotteryAssignmentController(object):
 
         fullfilename = directory + "/screwed_csv_" + tday + ".csv"
 
-        csvfile = open(fullfilename, "wb")
+        csvfile = open(fullfilename, 'w', newline='', encoding='utf-8')
         csvwriter = csv.writer(csvfile)
 
         csvwriter.writerow(["Student", "Student ID", "StudentScrewedScore", "#Classes"])
@@ -874,7 +874,7 @@ class BaseLotteryAssignmentController(object):
         for s in studentlist:
             csvwriter.writerow(
                 [
-                    ESPUser.objects.get(id=s[1]).name().encode("ascii", "ignore"),
+                    ESPUser.objects.get(id=s[1]).name(),
                     s[1],
                     s[0],
                     len(self.get_computed_schedule(s[1])),

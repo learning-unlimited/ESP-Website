@@ -81,7 +81,7 @@ class ClassChangeController(object):
                     ", ".join(cls.parent_class.getTeacherNames()) +
                     "</td>\n<td>" + cls.emailcode() + "</td>\n</tr>\n")
         schedule += "</table>\n"
-        return schedule.encode('ascii', 'ignore')
+        return schedule
 
     def get_changed_student_email_text(self, student_ind, for_real = False):
         if not self.check_in_room:
@@ -100,7 +100,6 @@ class ClassChangeController(object):
         text += "We hope you enjoy your new schedule. See you soon!<br /><br />"
         text += "The " + self.program.niceName() + " Directors\n"
         text += "</html>"
-        text = text.encode('ascii', 'ignore')
         return text
 
     def get_unchanged_student_email_text(self, student_ind, for_real = False):
@@ -116,7 +115,6 @@ class ClassChangeController(object):
             text += "and we hope to see you at a future ESP program.<br /><br />\n\n"
         text += "The " + self.program.niceName() + " Directors\n"
         text += "</html>"
-        text = text.encode('ascii', 'ignore')
         return text
 
     def _init_Q_objects(self):
@@ -811,7 +809,7 @@ class ClassChangeController(object):
             logger.info(text_fn(student_ind, for_real=False) + sent_to)
             sys.stdout.flush()
         if f:
-            f.write((text_fn(student_ind, for_real=False) + sent_to).replace(six.u('\u2019'), "'").replace(six.u('\u201c'), '"').replace(six.u('\u201d'), '"').encode('ascii', 'ignore'))
+            f.write((text_fn(student_ind, for_real=False) + sent_to).replace(six.u('\u2019'), "'").replace(six.u('\u201c'), '"').replace(six.u('\u201d'), '"'))
         if for_real:
             send_mail(self.subject, text_fn(student_ind, for_real=True), self.from_email, recipient_list, bcc=self.bcc, extra_headers=self.extra_headers)
             time.sleep(self.timeout)
@@ -825,7 +823,7 @@ class ClassChangeController(object):
             self.timeout = settings.EMAILTIMEOUT
         else:
             self.timeout = 2
-        f = open(os.getenv("HOME")+'/'+"classchanges.txt", 'w')
+        f = open(os.getenv("HOME")+'/'+"classchanges.txt", 'w', encoding='utf-8')
         self.subject = "[" + self.program.niceName() + "] Class Change"
         self.from_email = ESPUser.email_sendto_address(self.program.director_email, self.program.niceName())
         self.bcc = [self.from_email]

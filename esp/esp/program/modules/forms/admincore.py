@@ -163,7 +163,7 @@ class ReceiptsForm(BetterForm):
                 receipt_text = get_template_source(['program/confemails/%s_confemail_pretext.html' %(self.program.id), 'program/confemails/default_pretext.html'])
             else:
                 receipt_text = ""
-            self.fields[action].initial = receipt_text.encode('UTF-8')
+            self.fields[action].initial = receipt_text
 
     def save(self):
         for action in ['confirm', 'confirmemail', 'cancel']:
