@@ -265,7 +265,9 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def full_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
-        data = [[section.id, section.isFull(webapp=True)] for section in
+        #   ignore_changes=true matches the fullness check used by the scrolling class list
+        ignore_changes = request.GET.get('ignore_changes') == 'true'
+        data = [[section.id, section.isFullIgnoreChanges() if ignore_changes else section.isFull(webapp=True)] for section in
                      ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0,
                                                  parent_class__parent_program=prog)]
         json.dump(data, resp)
