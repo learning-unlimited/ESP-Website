@@ -136,7 +136,11 @@ async def visit(context, base_url, row, role, args):
     page.on('console', lambda m: js_errors.append(m.text[:300]) if m.type == 'error' else None)
     page.on('pageerror', lambda e: js_errors.append(f'uncaught: {str(e)[:300]}'))
 
+    doc_statuses = []
+
     def on_response(resp):
+        if resp.request.is_navigation_request() and resp.request.frame == page.main_frame:
+            doc_statuses.append(resp.status)
         if resp.status >= 400 and resp.request.resource_type in ('script', 'stylesheet', 'image', 'font'):
             asset_errors.append(f'{resp.status} {resp.url}')
 
@@ -147,6 +151,8 @@ async def visit(context, base_url, row, role, args):
             asset_errors.append(f'failed {req.url} ({req.failure})')
     page.on('response', on_response)
     page.on('requestfailed', on_failed)
+    navigations = []
+    page.on('framenavigated', lambda f: navigations.append(f.url) if f == page.main_frame else None)
 
     async def guard(route):
         if route.request.method in ('GET', 'HEAD', 'OPTIONS') or args.allow_post:
@@ -158,7 +164,9 @@ async def visit(context, base_url, row, role, args):
 
     result = {'url': url, 'role': role, 'status': '', 'final_url': '', 'title': '', 'screenshot': ''}
     text = ''
-    try:
+
+    async def load():
+        nonlocal text
         response = await page.goto(base_url + url, wait_until='load', timeout=args.timeout * 1000)
         if args.settle_ms:
             await page.wait_for_timeout(args.settle_ms)
@@ -172,19 +180,37 @@ async def visit(context, base_url, row, role, args):
             name = os.path.join('screenshots', role, slug(url) + '.jpg')
             try:
                 await page.screenshot(path=os.path.join(args.out, name), type='jpeg', quality=60,
-                                      full_page=args.screenshots == 'full')
+                                      full_page=args.screenshots == 'full', timeout=args.timeout * 1000)
                 result['screenshot'] = name
             except PlaywrightError:
                 pass
+        return outcome
+
+    try:
+        # A page that keeps navigating (e.g. a redirect loop) can stall Playwright calls indefinitely
+        outcome = await asyncio.wait_for(load(), timeout=2 * args.timeout)
+    except asyncio.TimeoutError:
+        outcome = 'load-failed'
+        js_errors.append(f'visit timed out after {2 * args.timeout}s'
+                         + (f' (redirect loop? {len(navigations)} navigations)' if len(navigations) > 5 else ''))
     except PlaywrightError as e:
         message = str(e)
         if 'Download is starting' in message or 'net::ERR_ABORTED' in message:
             outcome = 'download'
+        elif 'ERR_HTTP_RESPONSE_CODE_FAILURE' in message and doc_statuses:
+            # Chromium fails navigation to an error status with an empty body
+            result['status'] = doc_statuses[-1]
+            outcome = classify(doc_statuses[-1], urlparse(url).path, urlparse(url).path, '')
         else:
             outcome = 'load-failed'
             js_errors.append(f'navigation: {message.splitlines()[0][:300]}')
+            if 'context was destroyed' in message:
+                js_errors.append(f'page kept navigating after load (redirect loop?): {" -> ".join(navigations[:4])}')
     finally:
-        await page.close()
+        try:
+            await asyncio.wait_for(page.close(), timeout=30)
+        except (asyncio.TimeoutError, PlaywrightError):
+            pass
 
     result.update(
         outcome=outcome,
