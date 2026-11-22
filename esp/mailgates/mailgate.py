@@ -222,6 +222,10 @@ def deliver(message, recipients, cc_all, sender):
     `recipients` always comes from an EmailList handler, never from the incoming
     message's own To/Cc/Bcc headers, so this cannot be used to relay mail to an
     arbitrary address.
+
+    Returns the recipients the message was handed off for. A recipient the server
+    refuses, or whose address is malformed, is skipped so the rest still receive
+    the message. Transient errors propagate so the MTA retries the whole message.
     """
     # Rewrite From: to the sender's site alias so the message passes DMARC
     _alias_sender(message, sender)
@@ -230,17 +234,26 @@ def deliver(message, recipients, cc_all, sender):
     # recipient gets their own copy addressed to them alone.
     batches = [recipients] if cc_all else [[recipient] for recipient in recipients]
 
+    delivered = []
     connection = _mail_connection()
     connection.open()
     try:
         for batch in batches:
             del message['To']
             message['To'] = ', '.join(batch)
-            connection.send_messages(
-                [_ForwardedMessage(message, BOUNCES, batch, connection)])
+            try:
+                connection.send_messages(
+                    [_ForwardedMessage(message, BOUNCES, batch, connection)])
+            except (smtplib.SMTPRecipientsRefused, ValueError):
+                logger.warning("Could not forward message to %s; skipping",
+                               batch, exc_info=True)
+                continue
+            delivered += batch
     finally:
         connection.close()
-    logger.info("Forwarded message to %s", recipients)
+    if delivered:
+        logger.info("Forwarded message to %s", delivered)
+    return delivered
 
 
 def dispatch(local_part, message, sender):
@@ -248,7 +261,8 @@ def dispatch(local_part, message, sender):
 
     Returns True if the message was actually delivered to at least one recipient.
     False means the message was not delivered either because no handler recognised
-    the address, or that the matched handler(s) declined to send.
+    the address, the matched handler(s) declined to send, or every recipient was
+    refused.
     """
     for handler_row in EmailList.objects.all():  # Meta.ordering = ('seq',)
         try:
@@ -283,8 +297,7 @@ def dispatch(local_part, message, sender):
                            handler_row.handler, local_part)
             return False
 
-        deliver(message, instance.recipients, handler_row.cc_all, sender)
-        return True
+        return bool(deliver(message, instance.recipients, handler_row.cc_all, sender))
 
     return False
 
@@ -301,10 +314,8 @@ def _bounce_allowed(sender_email):
         return True
     key = 'mailgate:bounce:%s' % hashlib.sha256(
         sender_email.strip().lower().encode('utf-8')).hexdigest()
-    if cache.get(key):
-        return False
-    cache.set(key, True, interval)
-    return True
+    # add() is atomic, so concurrent mailgate processes cannot both claim the slot
+    return bool(cache.add(key, True, interval))
 
 
 def bounce(delivery_address, message):
@@ -385,9 +396,10 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (smtplib.SMTPException, ConnectionError, TimeoutError):
-        # Transient delivery problem: exit EX_TEMPFAIL so the MTA queues the
-        # message and retries, rather than dropping it silently.
+    except OSError:
+        # Transient delivery problem (SMTP, network or DNS; all subclass OSError):
+        # exit EX_TEMPFAIL so the MTA queues the message and retries, rather than
+        # dropping it silently.
         logger.warning("Mail transport failure while forwarding; asking the MTA to retry",
                        exc_info=True)
         sys.exit(75)

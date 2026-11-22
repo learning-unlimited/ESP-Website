@@ -36,7 +36,7 @@ Each ``EmailList`` may also set ``subject_prefix``, ``from_email``, and ``cc_all
 Who may send
 ~~~~~~~~~~~~
 
-The ``From`` address must belong to an account on the site.  Where several accounts share that address, the most privileged one is used: administrator, then teacher, then the earliest account created.
+The ``From`` address must belong to an account on the site.  A ``From`` of ``username@<site domain>`` (which the mailgate writes when forwarding; see below) also counts, so mail forwarded from one site address to another is not dropped when it re-enters the mailgate.  Where several accounts share that address, the most privileged one is used: administrator, then teacher, then the earliest account created.
 
 ``UserEmail`` applies a further rule.  An alias belonging to a teacher or administrator accepts mail from any registered sender; anyone else's alias accepts mail only from a teacher or administrator.  This keeps students reachable by their own teachers while leaving them unreachable by other senders.  On sites with ``USE_MAILMAN`` set, messages carrying a ``List-Id`` header are also accepted.
 
@@ -53,10 +53,15 @@ Group broadcasts (i.e., everything except ``UserEmail``) also get:
 
 Every delivery appends a ``Delivered-To`` header naming the address it was delivered to to prevent future loops.
 
+Delivery failures
+~~~~~~~~~~~~~~~~~
+
+A recipient that the mail server refuses, or whose address is malformed, is skipped and logged; the remaining recipients still receive the message.  A transient failure (an SMTP error, or a network or DNS problem) makes the mailgate exit with status 75, so Exim keeps the message queued and retries it.  If that happens partway through a list, recipients who already received the message may get a second copy.
+
 Bounces
 ~~~~~~~
 
-When no handler delivers a message, an "undeliverable" notice goes back to the sender, provided they have an account on the site.  Notices are limited to one per sender per ``MAILGATE_BOUNCE_INTERVAL`` seconds (default 24 hours; set to ``0`` to disable), which prevents a forged ``From`` being used to aim a run of them at one user.
+When no handler delivers a message, or every recipient is refused, an "undeliverable" notice goes back to the sender, provided they have an account on the site.  Notices are limited to one per sender per ``MAILGATE_BOUNCE_INTERVAL`` seconds (default 24 hours; set to ``0`` to disable), which prevents a forged ``From`` being used to aim a run of them at one user.
 
 Configuration
 ~~~~~~~~~~~~~

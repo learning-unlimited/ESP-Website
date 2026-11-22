@@ -10,11 +10,15 @@ from __future__ import absolute_import
 import email
 import importlib.util
 import os
+import smtplib
+from unittest.mock import patch
 
 from django.core import mail
 from django.core.cache import cache
+from django.core.mail.backends.locmem import EmailBackend as LocmemBackend
 from django.test import override_settings
 
+from esp.dbmail.base import sender_account
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.models import ESPUser
 
@@ -41,6 +45,18 @@ def _message(frm='teacher@example.com', to='list@dev.learningu.org',
            'Content-Type: text/plain\r\n\r\n%s\r\n'
            % (frm, to, subject, body)).encode('utf-8')
     return email.message_from_bytes(raw, _class=mailgate._RawMIMEMessage)
+
+
+class _RefusingBackend(LocmemBackend):
+    """Locmem backend that refuses `@refused.invalid`, as an SMTP server would."""
+
+    def send_messages(self, messages):
+        for message in messages:
+            refused = [r for r in message.recipients() if r.endswith('@refused.invalid')]
+            if refused:
+                raise smtplib.SMTPRecipientsRefused(
+                    {r: (550, b'No such user') for r in refused})
+        return super().send_messages(messages)
 
 
 class MailgateHelperTest(TestCase):
@@ -149,6 +165,63 @@ class MailgateDeliveryTest(TestCase):
                          False, self.teacher)
         self.assertIn(b'attachment stand-in',
                       mail.outbox[0].message().as_bytes(linesep='\r\n'))
+
+    def test_refused_recipient_does_not_block_the_rest(self):
+        """Raising would make the MTA retry, duplicating earlier copies and
+        never reaching later recipients."""
+        with patch.object(mailgate, '_mail_connection', return_value=_RefusingBackend()):
+            delivered = mailgate.deliver(
+                _message(), ['a@x.com', 'gone@refused.invalid', 'b@y.com'],
+                False, self.teacher)
+
+        self.assertEqual(delivered, ['a@x.com', 'b@y.com'])
+        self.assertEqual([m.to for m in mail.outbox], [['a@x.com'], ['b@y.com']])
+
+    def test_all_recipients_refused_delivers_nothing(self):
+        with patch.object(mailgate, '_mail_connection', return_value=_RefusingBackend()):
+            delivered = mailgate.deliver(
+                _message(), ['gone@refused.invalid'], False, self.teacher)
+
+        self.assertEqual(delivered, [])
+        self.assertEqual(mail.outbox, [])
+
+
+@override_settings(MAILGATE_EMAIL_BACKEND=LOCMEM)
+class SenderAccountTest(TestCase):
+    """sender_account(): which From addresses resolve to an account."""
+
+    def setUp(self):
+        super().setUp()
+        user_role_setup()
+        self.teacher = ESPUser.objects.create_user(
+            username='mg_sender', email='sender@example.com', password='pw')
+        self.teacher.makeRole('Teacher')
+        mail.outbox = []
+
+    def test_personal_address_resolves(self):
+        self.assertEqual(sender_account(_message(frm='Sender@Example.com')),
+                         self.teacher)
+
+    def test_site_alias_resolves(self):
+        frm = 'MG_Sender@%s' % mailgate.SITE_DOMAIN
+        self.assertEqual(sender_account(_message(frm=frm)), self.teacher)
+
+    def test_alias_on_another_domain_does_not_resolve(self):
+        """Usernames are per site, so another chapter's alias is someone else."""
+        self.assertIsNone(sender_account(_message(frm='mg_sender@other.learningu.org')))
+
+    def test_unknown_sender_does_not_resolve(self):
+        self.assertIsNone(sender_account(_message(frm='stranger@evil.com')))
+
+    def test_forwarded_message_still_resolves_on_second_hop(self):
+        """A redirect to another site address re-enters the mailgate with the
+        From already rewritten to the sender's alias."""
+        mailgate.deliver(_message(frm='sender@example.com'),
+                         ['other@%s' % mailgate.SITE_DOMAIN], False, self.teacher)
+
+        raw = mail.outbox[0].message().as_bytes(linesep='\r\n')
+        second_hop = email.message_from_bytes(raw, _class=mailgate._RawMIMEMessage)
+        self.assertEqual(sender_account(second_hop), self.teacher)
 
 
 @override_settings(MAILGATE_EMAIL_BACKEND=LOCMEM,
