@@ -307,4 +307,4 @@ class VolunteerSignupTestCase(TestCase):
         self.assertTrue(form.is_valid(), msg=f"Form errors: {form.errors}")
         offers = form.save()
         self.assertEqual(len(offers), 1)
-        self.assertEqual(offers[0].request_id, self.volunteer_request.id)
+        self.assertEqual(int(offers[0].request_id), self.volunteer_request.id)

@@ -236,7 +236,7 @@ class VolunteerOfferForm(forms.Form):
                 o.shirt_type = self.cleaned_data['shirt_type']
             if 'comments' in self.cleaned_data:
                 o.comments = self.cleaned_data['comments']
-            o.request_id = req
+            o.request_id = int(req)
             o.save()
             offer_list.append(o)
         return offer_list
