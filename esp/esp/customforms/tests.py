@@ -77,20 +77,29 @@ class CustomFormsTest(TestCase):
             dmh.purgeDynModel()
 
     def testAuthentication(self):
-        """ Make sure custom forms pages are not viewable to unprivileged users,
-            but are viewable to admins. """
+        """ Make sure custom forms pages send anonymous users to log in, refuse
+            unprivileged users, and are viewable to admins. """
 
         urls = ['/customforms/', '/customforms/create/']
+        builder_urls = urls + [
+            '/customforms/submit/', '/customforms/modify/', '/customforms/getData/',
+            '/customforms/metadata/', '/customforms/getperms/', '/customforms/getlinks/',
+            '/customforms/getmodules/', '/customforms/builddata/', '/customforms/exceldata/1/',
+            '/customforms/bulkdownloadfiles/',
+        ]
 
         self.client.logout()
-        for url in urls:
+        for url in builder_urls:
             response = self.client.get(url)
             self.assertRedirects(response, f'/accounts/login/?next={url}')
 
+        # Logged-in users without access get an error, not a redirect back to the login page
         self.client.login(username=self.student.username, password='password')
-        for url in urls:
-            response = self.client.get(url)
-            self.assertRedirects(response, f'/accounts/login/?next={url}')
+        for url in builder_urls:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 403)
+                self.assertContains(response, 'Only teachers and administrators can use custom forms.', status_code=403)
 
         self.client.login(username=self.admin.username, password='password')
         for url in urls:
@@ -281,10 +290,10 @@ class LandingViewTest(TestCase):
         self.assertNotIn(self.admin_form.id, form_ids)
 
     def test_student_cannot_access(self):
-        """Student should be redirected (no teacher/admin/morphed role)."""
+        """Student should be refused (no teacher/admin/morphed role)."""
         self.client.login(username='landing_student', password='password')
         response = self.client.get('/customforms/')
-        self.assertRedirects(response, '/accounts/login/?next=/customforms/')
+        self.assertEqual(response.status_code, 403)
 
     def test_unauthenticated_redirected(self):
         """Unauthenticated user should be redirected to login."""
@@ -503,10 +512,10 @@ class FormBuilderViewTest(TestCase):
         response = self.client.get('/customforms/create?edit=%d' % self.teacher_form.id)
         self.assertEqual(response.context['edit'], str(self.teacher_form.id))
     def test_student_cannot_access(self):
-        """Student should be redirected."""
+        """Student should be refused."""
         self.client.login(username='builder_student', password='password')
         response = self.client.get('/customforms/create')
-        self.assertRedirects(response, '/accounts/login/?next=/customforms/create')
+        self.assertEqual(response.status_code, 403)
 
 class EmptyFormTitleValidationTest(TestCase):
     """Tests for validating that form title cannot be empty."""
