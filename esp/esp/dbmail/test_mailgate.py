@@ -223,6 +223,16 @@ class MailgateSMTPTest(TestCase):
         self.assertEqual(delivered, ['valid@example.com', 'also@example.com'])
         self.assertEqual(envelopes, [['valid@example.com', 'also@example.com']])
 
+    def test_internationalized_domain_is_punycoded(self):
+        """formataddr rejects non-ASCII addresses, which once dropped the whole list."""
+        delivered, envelopes = self._deliver(['user@bücher.de', 'b@y.com'], cc_all=True)
+        self.assertEqual(delivered, ['user@xn--bcher-kva.de', 'b@y.com'])
+        self.assertEqual(envelopes, [['user@xn--bcher-kva.de', 'b@y.com']])
+
+    def test_unicode_display_name_is_kept(self):
+        self.assertEqual(mailgate._split_recipients(['José <j@x.com>']),
+                         ['=?utf-8?b?Sm9zw6k=?= <j@x.com>'])
+
     def test_permanently_refused_recipient_is_skipped(self):
         """Raising would make the MTA retry, duplicating earlier copies and
         never reaching later recipients."""

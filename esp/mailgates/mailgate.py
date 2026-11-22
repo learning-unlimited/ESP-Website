@@ -224,12 +224,16 @@ def _split_recipients(recipients):
     A PlainRedirect destination may list several addresses in one entry. Django's
     SMTP backend rejects a whole message if any one address fails to parse, so a
     single bad entry would otherwise block every recipient of a cc_all list.
+
+    Internationalized domains are punycoded, since formataddr needs an ASCII address.
     """
     valid = []
     for name, address in email.utils.getaddresses(recipients):
         try:
             validate_email(address)
-        except ValidationError:
+            local, _at, domain = address.rpartition('@')
+            address = '%s@%s' % (local, domain.encode('idna').decode('ascii'))
+        except (ValidationError, UnicodeError):
             logger.warning("Skipping malformed recipient address %r", address)
             continue
         valid.append(email.utils.formataddr((name, address)))

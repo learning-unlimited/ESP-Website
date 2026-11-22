@@ -56,7 +56,7 @@ Every delivery appends a ``Delivered-To`` header naming the address it was deliv
 Delivery failures
 ~~~~~~~~~~~~~~~~~
 
-Recipient entries containing several comma-separated addresses (as a ``PlainRedirect`` destination may) are split into individual addresses.  A malformed address, or a recipient that the mail server permanently refuses (a 5xx reply), is skipped and logged; the remaining recipients still receive the message.  A transient failure (a temporary 4xx refusal, another SMTP error, or a network or DNS problem) makes the mailgate exit with status 75, so Exim keeps the message queued and retries it.  If that happens partway through a list, recipients who already received the message may get a second copy.
+Recipient entries containing several comma-separated addresses (as a ``PlainRedirect`` destination may) are split into individual addresses, and internationalized domains are converted to their ASCII (punycode) form.  A malformed address, or a recipient that the mail server permanently refuses (a 5xx reply), is skipped and logged; the remaining recipients still receive the message.  A transient failure (a temporary 4xx refusal, another SMTP error, or a network or DNS problem) makes the mailgate exit with status 75, so Exim keeps the message queued and retries it.  If that happens partway through a list, recipients who already received the message may get a second copy.
 
 Bounces
 ~~~~~~~
