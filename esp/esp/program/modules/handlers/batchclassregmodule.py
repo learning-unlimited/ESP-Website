@@ -187,7 +187,7 @@ class BatchClassRegModule(ProgramModuleObj):
         users = filterobj.getList(ESPUser).distinct()
 
         if not users.exists():
-            raise ESPError()("Your query did not match any users")
+            raise ESPError("Your query did not match any users", log=False)
 
         # Materialize once — reuse for count and iteration
         user_list = list(users)

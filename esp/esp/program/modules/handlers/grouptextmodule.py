@@ -157,7 +157,7 @@ class GroupTextModule(ProgramModuleObj):
             pass
 
         if not users:
-            raise ESPError()("Your query did not match any users")
+            raise ESPError("Your query did not match any users", log=False)
 
         account_sid = settings.TWILIO_ACCOUNT_SID
         auth_token = settings.TWILIO_AUTH_TOKEN

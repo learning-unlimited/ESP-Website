@@ -130,7 +130,7 @@ class UserGroupModule(ProgramModuleObj):
             pass
 
         if not users:
-            raise ESPError()("Your query did not match any users")
+            raise ESPError("Your query did not match any users", log=False)
 
         group, created = Group.objects.get_or_create(name = group_name)
 
