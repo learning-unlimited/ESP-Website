@@ -238,17 +238,17 @@ span {
     width: 150px;
 }
 
-.tooltip {
+.onsite-tooltip {
     position: relative; /*this is the key*/
     color: #000000 !important;
     text-decoration: none !important;
 }
 
-.tooltip span.tooltip_hover {
+.onsite-tooltip span.tooltip_hover {
     display: none;
 }
 
-.tooltip:hover span.tooltip_hover { /*the span will display just on :hover state*/
+.onsite-tooltip:hover span.tooltip_hover { /*the span will display just on :hover state*/
     display: block;
     position: absolute;
     z-index: 25;
