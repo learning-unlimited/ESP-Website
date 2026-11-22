@@ -32,7 +32,8 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from django.http     import HttpResponseRedirect
+from django.http     import Http404, HttpResponseNotAllowed, HttpResponseRedirect
+from django.utils.http import url_has_allowed_host_and_scheme
 from esp.users.views import search_for_user
 from esp.utils.web import render_to_response
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
@@ -54,19 +55,46 @@ class OnsiteClassSchedule(ProgramModuleObj):
             "choosable": 1,
             }
 
+    def _is_onsite_or_admin(self, request):
+        """Same test as needs_onsite_no_switchback: onsite or admin, either
+        directly or as the original user behind a morph."""
+        user = request.user
+        if user.isOnsite(self.program) or user.isAdmin(self.program):
+            return True
+        user.updateOnsite(request)
+        ouser = user.get_old(request)
+        return bool(user.other_user and (ouser.isOnsite(self.program) or ouser.isAdmin(self.program)))
+
     @aux_call
     @needs_student_in_grade
     def printschedule(self, request, tl, one, two, module, extra, prog):#(self, request, *args, **kwargs):
-        '''Sends a schedule printing request to the schedule-printing script.  Defaults to the current (probably onsite-morphed) user, but can take a GET parameter instead.'''
+        '''Sends a schedule printing request to the schedule-printing script.  Defaults to the current (probably onsite-morphed) user, but onsite users and admins can take a GET parameter instead.  Creates a PrintRequest, so it only accepts POST.'''
+        if request.method != 'POST':
+            return HttpResponseNotAllowed(['POST'])
+
         printer = request.GET.get('printer', None)
         if printer is not None:
-            # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
-            printer = Printer.objects.get(name=printer)
+            try:
+                printer = Printer.objects.get(name=printer)
+            except Printer.DoesNotExist:
+                raise Http404('No such printer.')
+
         if 'user' in request.GET:
             user = get_by_id_or_404(ESPUser, request.GET['user'])
+            if user != request.user and not self._is_onsite_or_admin(request):
+                response = render_to_response('errors/program/notonsite.html', request, {})
+                response.status_code = 403
+                return response
         else:
             user = request.user
-        redirectURL = request.GET.get('next', '/learn/%s/studentreg' % self.program.getUrlBase())
+
+        redirectURL = request.GET.get('next')
+        if not redirectURL or not url_has_allowed_host_and_scheme(
+                url=redirectURL,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure()):
+            redirectURL = '/learn/%s/studentreg' % self.program.getUrlBase()
+
         PrintRequest.objects.create(user=user, printer=printer)
         return HttpResponseRedirect(redirectURL)
 

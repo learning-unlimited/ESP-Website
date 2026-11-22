@@ -12,10 +12,14 @@
 <br />
 {% if printers %}
 {% for printer in printers %}
-<a href="/onsite/{{program.getUrlBase}}/printschedule?printer={{ printer }}">Print Student Schedule to {{ printer }}</a><br />
+<form action="/onsite/{{program.getUrlBase}}/printschedule?printer={{ printer }}" method="post">{% csrf_token %}
+<a href="#" onclick="this.parentNode.submit();return false;">Print Student Schedule to {{ printer }}</a>
+</form>
 {% endfor %}
 {% else %}
-<a href="/onsite/{{program.getUrlBase}}/printschedule">Print Student Schedule</a>
+<form action="/onsite/{{program.getUrlBase}}/printschedule" method="post">{% csrf_token %}
+<a href="#" onclick="this.parentNode.submit();return false;">Print Student Schedule</a>
+</form>
 {% endif %}
 </center>
 

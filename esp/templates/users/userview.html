@@ -86,10 +86,14 @@
                 {% endif %}
                 <div id="print-student-schedule">
                     <a id="getstudentschedulelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/studentschedule?user={{user.id}}" target="_new">Print schedule locally</a>
-                    <a id="printstudentschedulelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&next=/manage/userview?username={{user.username}}">Print schedule to default printer</a>
+                    <form action="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&amp;next=/manage/userview?username={{user.username}}" method="post">{% csrf_token %}
+                        <a id="printstudentschedulelink" class="sidelink" onclick="$j(this).parent().submit();return false;" href="#">Print schedule to default printer</a>
+                    </form>
                     {% if printers %}
                         {% for printer in printers %}
-                        <a id="printstudentschedulelink-{{printer|slugify}}" class="sidelink" href="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&printer={{ printer }}&next=/manage/userview?username={{user.username}}">Print schedule to {{ printer }}</a>
+                        <form action="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&amp;printer={{ printer }}&amp;next=/manage/userview?username={{user.username}}" method="post">{% csrf_token %}
+                            <a id="printstudentschedulelink-{{printer|slugify}}" class="sidelink" onclick="$j(this).parent().submit();return false;" href="#">Print schedule to {{ printer }}</a>
+                        </form>
                         {% endfor %}
                     {% endif %}
                 </div>

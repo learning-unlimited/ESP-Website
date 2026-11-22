@@ -36,7 +36,7 @@ BAD_IDS = ('abc', '999999')
 # Views that take an id in a request parameter: (method, section, view, parameter).
 BAD_ID_PARAMS = [
     ('get', 'onsite', 'studentschedule', 'user'),
-    ('get', 'onsite', 'printschedule', 'user'),
+    ('post', 'onsite', 'printschedule', 'user'),
     ('post', 'onsite', 'checkin', 'userid'),
     ('get', 'volunteer', 'volunteerschedule', 'user'),
     ('post', 'manage', 'volunteering', 'id', {'op': 'delete'}),
