@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 from django.core import mail
 
 from esp.program.class_status import ClassStatus
-from esp.program.models import ClassSection, ClassSubject
+from esp.program.models import ClassSection, ClassSubject, Program
 from esp.program.modules.forms.management import ClassCancellationForm
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
@@ -456,3 +456,104 @@ class ClassAvailabilityConflictTest(ProgramFrameworkTest):
             self.assertIn(key, response.context)
         self.assertEqual(response.context['class'], self.cls)
         self.assertEqual(response.context['program'], self.program)
+
+
+class CrossProgramAdminClassTest(ProgramFrameworkTest):
+    """An admin of one program must not be able to change another program's classes (#4799)."""
+
+    def setUp(self):
+        super().setUp()
+        self.admin = self.admins[0]
+        self.client.login(username=self.admin.username, password='password')
+        self.cls = self.program.classes()[0]
+        self.manage_url = self.program.get_manage_url()
+        self.other_sec = self._create_other_program_section()
+        self.other_cls = self.other_sec.parent_class
+
+    def _create_other_program_section(self):
+        """A second program with one accepted class and section."""
+        other_prog = Program.objects.create(
+            url='TestProgram/OtherAdminClass',
+            name='TestProgram Other AdminClass',
+            grade_min=7,
+            grade_max=12,
+            director_email='info@test.learningu.org',
+            program_size_max=3000,
+        )
+        other_prog.program_modules.set(self.program.program_modules.all())
+        other_prog.class_categories.set(self.program.class_categories.all())
+        other_class = ClassSubject.objects.create(
+            title='Other Program Class',
+            category=self.program.class_categories.first(),
+            grade_min=7,
+            grade_max=12,
+            parent_program=other_prog,
+            class_size_max=30,
+            class_info='Class of another program for cross-program checks',
+        )
+        other_class.makeTeacher(self.teachers[0])
+        other_class.accept()
+        if not other_class.get_sections().exists():
+            other_class.add_section(duration=50 / 60.0)
+        return other_class.get_sections()[0]
+
+    def test_reviewclass_ignores_class_of_another_program(self):
+        """reviewClass with a class id from another program leaves that class alone."""
+        url = f'{self.manage_url}reviewClass'
+        status_before = self.other_cls.status
+        unknown = self.client.post(url, {'class_id': 999999, 'review_status': 'REJECT'})
+        response = self.client.post(url, {'class_id': self.other_cls.id, 'review_status': 'REJECT'})
+        self.other_cls.refresh_from_db()
+        self.assertEqual(self.other_cls.status, status_before)
+        self.assertEqual(response.status_code, unknown.status_code)
+
+    def test_reviewclass_still_works_for_own_program(self):
+        """Control: reviewClass still changes a class of the current program."""
+        url = f'{self.manage_url}reviewClass'
+        response = self.client.post(url, {'class_id': self.cls.id, 'review_status': 'REJECT'})
+        self.assertEqual(response.status_code, 200)
+        self.cls.refresh_from_db()
+        self.assertLess(self.cls.status, 0)
+
+    def _deletesection_url(self, sec_id):
+        return f'{self.manage_url}deletesection/{self.cls.id}?sec_id={sec_id}'
+
+    def test_deletesection_post_ignores_section_of_another_program(self):
+        """Confirming a delete with a section id from another program deletes nothing."""
+        unknown = self.client.post(self._deletesection_url(999999), {'sure': 'True'})
+        response = self.client.post(self._deletesection_url(self.other_sec.id), {'sure': 'True'})
+        self.assertTrue(ClassSection.objects.filter(pk=self.other_sec.id).exists())
+        self.assertEqual(response.status_code, unknown.status_code)
+
+    def test_deletesection_get_hides_section_of_another_program(self):
+        """The confirmation page does not show a section of another program."""
+        unknown = self.client.get(self._deletesection_url(999999))
+        response = self.client.get(self._deletesection_url(self.other_sec.id))
+        self.assertEqual(response.status_code, unknown.status_code)
+        self.assertTrue(ClassSection.objects.filter(pk=self.other_sec.id).exists())
+
+    def test_modify_sec_ignores_section_of_another_program(self):
+        """modify_sec with a secid from another program leaves that section alone."""
+        # Same setup as the valid modify_sec test: the class needs a scheduled section.
+        sec = self.cls.sections.first()
+        timeslot = self.program.getTimeSlots().first()
+        sec.meeting_times.clear()
+        sec.meeting_times.add(timeslot)
+
+        original_capacity = self.other_sec.max_class_capacity
+        prefix = f'sec{sec.index()}'
+        post_data = {
+            f'{prefix}-secid': self.other_sec.id,
+            f'{prefix}-status': ClassStatus.ACCEPTED,
+            f'{prefix}-reg_status': '',
+            f'{prefix}-times': [timeslot.id],
+            f'{prefix}-room': [],
+            f'{prefix}-resources': [],
+            f'{prefix}-class_size': 45,
+        }
+        url = f'{self.manage_url}manageclass/{self.cls.id}?action=modify_sec'
+        response = self.client.post(url, post_data)
+
+        self.other_sec.refresh_from_db()
+        self.assertEqual(self.other_sec.max_class_capacity, original_capacity)
+        self.assertEqual(response.status_code, 404)
