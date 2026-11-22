@@ -686,7 +686,9 @@ def send_to_network_printer(location, pdf, job_name, copies=1, settings=None):
     name = print_server.queue_name(location)
     options = location_options(location, settings)
     if copies > 1:
+        #   CUPS prints copies uncollated (1,1,2,2,...) unless told otherwise
         options['copies'] = copies
+        options['collate'] = 'true'
     try:
         return print_server.print_pdf(name, pdf, job_name, options)
     except print_server.PrintServerError as e:

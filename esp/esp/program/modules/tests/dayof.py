@@ -1015,6 +1015,7 @@ class PrintingTest(DayOfTestBase):
         self.desk.refresh_from_db()
         printing.send_to_network_printer(self.desk, b'%PDF-1.4', 'Notes', copies=3)
         self.assertIn('copies=3', self.server.call_args[1]['params']['o'])
+        self.assertIn('collate=true', self.server.call_args[1]['params']['o'])
 
     def test_network_worker(self):
         from esp.utils.models import Printer, PrintRequest
