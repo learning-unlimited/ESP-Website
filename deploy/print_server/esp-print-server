@@ -61,7 +61,7 @@ from urllib.parse import parse_qs, urlsplit
 
 QUEUE = re.compile(r'^esp-([0-9a-hjkmnp-tv-z]{26}|location-\d{1,9})$')
 JOB = re.compile(r'^esp-([0-9a-hjkmnp-tv-z]{26}|location-\d{1,9})-\d{1,9}$')
-URI = re.compile(r'^(ipps?|socket|lpd)://[A-Za-z0-9.:\[\]_-]+(/[A-Za-z0-9._/~-]*)?$')
+URI = re.compile(r'^(ipps?|socket|esppjl|lpd)://[A-Za-z0-9.:\[\]_-]+(/[A-Za-z0-9._/~-]*)?$')
 OPTION = re.compile(r'^[a-z][a-z0-9-]{0,40}=[A-Za-z0-9._-]{1,60}$')
 TEXT = re.compile(r'^[^\x00-\x1f]{0,100}$')
 MAX_PDF = 50 * 1024 * 1024
@@ -128,6 +128,11 @@ MODEL_DRIVER = re.compile(r'^model:([A-Za-z0-9._:/+-]{1,200})$')
 #   two-sided printing is offered (printers without one print one-sided)
 DUPLEX_UNIT_OPTIONS = ('HPOption_Duplexer', 'Option1', 'Duplexer', 'OptionDuplex')
 SNMP_BACKEND = '/usr/lib/cups/backend/snmp'
+#   This print server's own backend for printers that speak PJL on port 9100
+#   (esp-pjl-backend here): unlike CUPS's socket backend, it waits for the
+#   printer to say it has printed the job, and holds the job while the
+#   printer is out of paper or jammed
+PJL_BACKEND = '/usr/lib/cups/backend/esppjl'
 
 
 def normalize_address(address):
@@ -337,6 +342,16 @@ def port_open(host, port):
         return False
 
 
+def raw_uri(host, device):
+    """ The URI for printing raw to port 9100: through PJL_BACKEND when the
+    printer's SNMP device ID says it speaks PJL (and the backend is
+    installed), else CUPS's socket backend. """
+    name = '[%s]' % host if ':' in host else host
+    languages = [c.strip().upper() for c in device.get('CMD', '').split(',')]
+    scheme = 'esppjl' if 'PJL' in languages and os.path.exists(PJL_BACKEND) else 'socket'
+    return '%s://%s:9100' % (scheme, name)
+
+
 def probe_without_ipp(host, why):
     """ For a printer that doesn't answer IPP (e.g. Canon's UFR II LT ones):
     what SNMP says it is, its maker's driver if installed, and raw printing
@@ -351,7 +366,7 @@ def probe_without_ipp(host, why):
                            'the maker\'s Linux driver there (see deploy/print_server/README.md).' % (model, why))
     name = '[%s]' % host if ':' in host else host
     if port_open(host, 9100):
-        uri = 'socket://%s:9100' % name
+        uri = raw_uri(host, device)
     elif port_open(host, 515):
         uri = 'lpd://%s/' % name
     else:
@@ -408,7 +423,7 @@ def probe(address):
             #   IPP: an older printer's IPP server takes a job in one HTTP request,
             #   and dropped a large one partway (CUPS then stops the queue); port
             #   9100 took the same 70 MB job in 40 s
-            uri = 'socket://%s:9100' % ('[%s]' % host if ':' in host else host)
+            uri = raw_uri(host, device)
     return {'uri': uri, 'info': info}
 
 

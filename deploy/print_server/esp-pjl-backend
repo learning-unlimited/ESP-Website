@@ -1,0 +1,384 @@
+#!/usr/bin/env python3
+"""CUPS backend for printers that speak PJL on port 9100 (HP, Brother, ...):
+esppjl://<printer>[:port]. Install as /usr/lib/cups/backend/esppjl, mode 755
+(so CUPS runs it as lp, not root); see README.md here.
+
+CUPS's own socket backend only hands the job over: CUPS then calls the job
+completed as soon as the printer has the data, even if the printer is out of
+paper and never prints it. This backend asks the printer instead, over the
+same connection (PJL, the printer's job-control language):
+
+  - before sending, it asks the printer's status (@PJL INFO STATUS), and while
+    the printer can't print (out of paper, jammed, offline) it holds the job
+    here, telling CUPS why (so the job can still be cancelled or moved,
+    rather than sitting in the printer and printing whenever someone loads
+    paper);
+  - it sends the job inside @PJL JOB NAME=... / @PJL EOJ, with job status
+    reports on (@PJL USTATUS JOB=ON), and waits for the printer's
+    "USTATUS JOB END", which the printer sends once the job's last page is
+    in the output bin, telling CUPS about any trouble meanwhile (the
+    printer's own status reports, USTATUS DEVICE=ON);
+  - only then does it exit, so the job is "completed" in CUPS once it has
+    actually printed.
+
+If the connection drops before all the data is sent, it fails the job (CUPS
+retries it, as for the socket backend). If it drops after, it can't tell
+whether the job printed, and calls it done (what the socket backend says).
+
+Standard library only.
+"""
+import os
+import re
+import select
+import socket
+import sys
+import time
+from urllib.parse import urlsplit
+
+UEL = b'\x1b%-12345X'           # Universal Exit Language: back to PJL
+#   CUPS backend exit codes
+OK, FAILED = 0, 1
+CONNECT_TIMEOUT = 10
+#   Seconds to wait for the printer to answer PJL at all
+REPLY_TIMEOUT = 10
+#   Seconds between status questions while waiting (also keeps the printer
+#   from closing an idle connection)
+POLL = 5
+#   Seconds between tries to reach a printer that doesn't answer
+RETRY_CONNECT = 30
+CHUNK = 64 * 1024
+
+
+def say(line, out=None):
+    """ A line for CUPS (on stderr: INFO:, STATE:, PAGE:, DEBUG:, ...). """
+    out = out or sys.stderr
+    out.write(line + '\n')
+    out.flush()
+
+
+class Lost(Exception):
+    """ The printer closed the connection. """
+
+
+def parse_message(text):
+    """ (kind, fields) from one PJL reply (without its form feed): kind is
+    its first line without "@PJL " (e.g. "USTATUS JOB", "INFO STATUS",
+    "ECHO esp-1"); fields maps each NAME=value line to the value (quotes
+    taken off) and each bare word (START, END) to True. """
+    lines = [line.strip() for line in text.replace('\r', '').split('\n') if line.strip()]
+    if not lines:
+        return ('', {})
+    kind = lines[0][len('@PJL'):].strip()
+    fields = {}
+    for line in lines[1:]:
+        if '=' in line:
+            (name, value) = line.split('=', 1)
+            fields[name.strip().upper()] = value.strip().strip('"')
+        else:
+            fields[line.upper()] = True
+    return (kind, fields)
+
+
+def problem(status):
+    """ What a PJL status (CODE, DISPLAY, ONLINE) says, as (CUPS
+    printer-state-reason, message, whether the printer can print now), or
+    None when all is well. Code families (HP's PJL reference): 10xxx
+    informational, 35xxx possible operator intervention (e.g. power save),
+    40xxx operator intervention (40000: sleep), 41xxx load paper, 42xxx and
+    44xxx paper jams. A printer that can't print says ONLINE=FALSE. """
+    try:
+        code = int(status.get('CODE') or 0)
+    except ValueError:
+        code = 0
+    display = status.get('DISPLAY') or ('status code %d' % code if code else 'not ready')
+    online = str(status.get('ONLINE', 'TRUE')).upper() != 'FALSE'
+    family = code // 1000
+    if family == 41:
+        return ('media-empty-error', display, False)
+    if family in (42, 44):
+        return ('media-jam-error', display, False)
+    if not online:
+        if family in (10, 35) or code == 40000:
+            #   Paused, warming up, waking: it will get there
+            return ('offline-report', display, True)
+        return ('other-error', display, False)
+    return None
+
+
+class Connection:
+    """ A connection to the printer, sending and reading at once (a printer
+    out of paper stops taking data, but still says why). """
+
+    def __init__(self, host, port):
+        self.sock = socket.create_connection((host, port), timeout=CONNECT_TIMEOUT)
+        self.sock.setblocking(False)
+        self.out = b''
+        self.buffer = b''
+
+    def queue(self, data):
+        self.out += data
+
+    def step(self, timeout):
+        """ Sends what it can and reads what the printer says, waiting up to
+        timeout seconds for either. Returns the printer's replies, each as
+        (kind, fields) or ('', {'TEXT': ...}) for anything that isn't PJL
+        (e.g. a PostScript error message). Raises Lost. """
+        (readable, writable, _) = select.select([self.sock], [self.sock] if self.out else [], [], timeout)
+        replies = []
+        if readable:
+            try:
+                data = self.sock.recv(CHUNK)
+            except (BlockingIOError, InterruptedError):
+                data = None
+            except OSError as e:
+                raise Lost(str(e))
+            if data == b'':
+                raise Lost('the printer closed the connection')
+            if data:
+                self.buffer += data
+                while b'\x0c' in self.buffer:
+                    (message, self.buffer) = self.buffer.split(b'\x0c', 1)
+                    text = message.decode('latin-1')
+                    start = text.find('@PJL')
+                    if start < 0:
+                        if text.strip():
+                            replies.append(('', {'TEXT': text.strip()}))
+                        continue
+                    if text[:start].strip():
+                        replies.append(('', {'TEXT': text[:start].strip()}))
+                    replies.append(parse_message(text[start:]))
+        if writable and self.out:
+            try:
+                sent = self.sock.send(self.out[:CHUNK])
+            except (BlockingIOError, InterruptedError):
+                sent = 0
+            except OSError as e:
+                raise Lost(str(e))
+            self.out = self.out[sent:]
+        return replies
+
+    def close(self):
+        try:
+            self.sock.close()
+        except OSError:
+            pass
+
+
+class Job:
+    def __init__(self, host, port, name, out=None):
+        (self.host, self.port, self.name, self.out) = (host, port, name, out or sys.stderr)
+        self.connection = None
+        self.status = {}            # the printer's latest status (CODE, DISPLAY, ONLINE)
+        self.reasons = set()        # printer-state-reasons we've told CUPS about
+        self.message = None
+        self.echoes = set()
+        self.job_reports = False    # whether the printer can report job ends
+        self.ended = None           # the USTATUS JOB END fields, once it comes
+        self.data_sent = False
+        self.echo_count = 0
+
+    def say(self, line):
+        say(line, self.out)
+
+    #   Telling CUPS
+
+    def report(self):
+        """ Tells CUPS what's wrong with the printer, if anything (or that
+        it's cleared). """
+        found = problem(self.status)
+        reasons = {found[0]} if found else set()
+        for reason in self.reasons - reasons:
+            self.say('STATE: -%s' % reason)
+        for reason in reasons - self.reasons:
+            self.say('STATE: +%s' % reason)
+        self.reasons = reasons
+        message = found[1] if found else None
+        if message != self.message and (message or self.message):
+            self.say('INFO: %s' % (message or 'Ready.'))
+        self.message = message
+
+    def clear(self):
+        for reason in self.reasons:
+            self.say('STATE: -%s' % reason)
+        self.reasons = set()
+
+    #   Talking to the printer
+
+    def connect(self):
+        """ Connects, retrying until the printer answers (or CUPS cancels the
+        job, which stops this process). """
+        while True:
+            try:
+                self.connection = Connection(self.host, self.port)
+                self.say('STATE: -connecting-to-device')
+                return
+            except OSError as e:
+                self.say('STATE: +connecting-to-device')
+                self.say('INFO: Waiting for the printer at %s (%s).' % (self.host, e))
+                time.sleep(RETRY_CONNECT)
+
+    def handle(self, replies):
+        for (kind, fields) in replies:
+            if kind in ('INFO STATUS', 'USTATUS DEVICE'):
+                self.status = fields
+                self.report()
+            elif kind == 'INFO USTATUS':
+                self.job_reports = 'JOB' in fields
+            elif kind == 'USTATUS JOB':
+                if fields.get('END') and (fields.get('NAME') == self.name or self.data_sent):
+                    self.ended = fields
+            elif kind.startswith('ECHO '):
+                self.echoes.add(kind[len('ECHO '):].strip())
+            elif kind == '' and fields.get('TEXT'):
+                #   e.g. a PostScript error, which says why a job didn't print
+                self.say('INFO: The printer said: %s' % fields['TEXT'][:200])
+
+    def echo(self):
+        """ Queues a PJL ECHO; returns its token. Its reply comes once the
+        printer has read everything sent before it. """
+        self.echo_count += 1
+        token = 'esp-%d-%d' % (os.getpid(), self.echo_count)
+        self.connection.queue(UEL + b'@PJL ECHO ' + token.encode('ascii') + b'\r\n')
+        return token
+
+    def wait(self, until, timeout=None):
+        """ Pumps the connection until until() is true, asking the printer's
+        status every POLL seconds. Returns False if timeout seconds pass
+        first. Raises Lost. """
+        start = last_poll = time.monotonic()
+        while not until():
+            now = time.monotonic()
+            if timeout is not None and now - start > timeout:
+                return False
+            if now - last_poll >= POLL and not self.connection.out:
+                self.connection.queue(UEL + b'@PJL INFO STATUS\r\n')
+                last_poll = now
+            self.handle(self.connection.step(0.5))
+        return True
+
+    def ready(self):
+        """ Connects and waits until the printer can print. """
+        self.connect()
+        self.connection.queue(UEL + b'@PJL\r\n@PJL USTATUS DEVICE=ON\r\n@PJL INFO USTATUS\r\n'
+                              b'@PJL INFO STATUS\r\n')
+        token = self.echo()
+        if not self.wait(lambda: token in self.echoes, timeout=REPLY_TIMEOUT):
+            #   Busy with another connection's job, perhaps. (Only printers
+            #   that said they speak PJL get this backend, so don't send the
+            #   job without knowing it can print.)
+            self.say('INFO: Waiting for the printer at %s to answer.' % self.host)
+            self.wait(lambda: token in self.echoes)
+        while True:
+            found = problem(self.status)
+            if not found or found[2]:
+                return
+            #   Hold the job here until the printer's status changes (it
+            #   reports it, or the next poll shows it)
+            before = dict(self.status)
+            self.wait(lambda: self.status != before)
+
+    def send(self, chunks):
+        """ Sends the job; returns once the printer reports it printed (or,
+        for a printer that doesn't report job ends, once it has it all). """
+        name = self.name.encode('ascii')
+        self.connection.queue(b'@PJL USTATUS JOB=ON\r\n@PJL JOB NAME="' + name + b'"\r\n' + UEL)
+        for chunk in chunks:
+            self.connection.queue(chunk)
+            self.wait(lambda: len(self.connection.out) < CHUNK)
+        self.connection.queue(UEL + b'@PJL EOJ NAME="' + name + b'"\r\n' + UEL)
+        token = self.echo()
+        self.wait(lambda: not self.connection.out)
+        self.data_sent = True
+        self.say('INFO: Printing.')
+        if self.job_reports:
+            self.wait(lambda: self.ended is not None)
+        else:
+            self.wait(lambda: token in self.echoes)
+
+    def quiet(self):
+        """ Turns the printer's status reports off again (it keeps them on
+        for the next connection otherwise) and disconnects. """
+        try:
+            self.connection.queue(UEL + b'@PJL USTATUS DEVICE=OFF\r\n@PJL USTATUS JOB=OFF\r\n' + UEL)
+            deadline = time.monotonic() + REPLY_TIMEOUT
+            while self.connection.out and time.monotonic() < deadline:
+                self.connection.step(0.5)
+        except Lost:
+            pass
+        self.connection.close()
+
+    def run(self, chunks):
+        while True:
+            try:
+                self.ready()
+                break
+            except Lost as e:
+                #   Nothing sent yet: start over
+                self.connection.close()
+                self.say('INFO: Lost the printer (%s); trying again.' % e)
+                time.sleep(POLL)
+        try:
+            self.send(chunks)
+        except Lost as e:
+            if not self.data_sent:
+                self.say('ERROR: Lost the printer partway through sending the job (%s).' % e)
+                return FAILED
+            self.say('WARNING: Lost the printer after it had the whole job (%s), so it can\'t be told whether it '
+                     'printed.' % e)
+            self.clear()
+            return OK
+        finally:
+            self.quiet()
+        self.clear()
+        pages = (self.ended or {}).get('PAGES')
+        if pages and str(pages).isdigit():
+            self.say('PAGE: total %s' % pages)
+        self.say('INFO: Printed%s.' % (' (%s pages)' % pages if pages else ''))
+        return OK
+
+
+def file_chunks(path, copies):
+    for _ in range(max(1, copies)):
+        with open(path, 'rb') as f:
+            while True:
+                chunk = f.read(CHUNK)
+                if not chunk:
+                    break
+                yield chunk
+
+
+def stream_chunks(stream):
+    while True:
+        chunk = stream.read(CHUNK)
+        if not chunk:
+            return
+        yield chunk
+
+
+def main(argv, environ=os.environ):
+    if len(argv) == 1:
+        #   What CUPS lists for lpinfo -v
+        print('network esppjl "Unknown" "PJL printer, port 9100 (waits until it has printed)"')
+        return OK
+    if len(argv) not in (6, 7):
+        say('Usage: %s job-id user title copies options [file]' % argv[0])
+        return FAILED
+    uri = urlsplit(environ.get('DEVICE_URI', ''))
+    if uri.scheme != 'esppjl' or not uri.hostname:
+        say('ERROR: Bad device URI (esppjl://<printer>[:port]).')
+        return FAILED
+    port = uri.port or 9100
+    if not re.match(r'^\d{1,9}$', argv[1]):
+        say('ERROR: Bad job id.')
+        return FAILED
+    job = Job(uri.hostname, port, 'esp-cups-%s' % argv[1])
+    if len(argv) == 7:
+        #   A file (no filters ran): CUPS leaves copies to the backend
+        chunks = file_chunks(argv[6], int(argv[4]) if argv[4].isdigit() else 1)
+    else:
+        chunks = stream_chunks(sys.stdin.buffer)
+    return job.run(chunks)
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))

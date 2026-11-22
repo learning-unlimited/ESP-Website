@@ -22,6 +22,7 @@ the rest of the network open connections to it.
     sudo apt install cups cups-filters certbot
     sudo useradd --system --no-create-home --shell /usr/sbin/nologin --groups lpadmin espprint
     sudo install -m 755 esp-print-server /usr/local/bin/esp-print-server
+    sudo install -m 755 esp-pjl-backend /usr/lib/cups/backend/esppjl
     sudo install -m 755 esp-print-cert-deploy /usr/local/sbin/esp-print-cert-deploy
     sudo install -d -m 750 -o root -g espprint /etc/esp-print
     python3 -c 'import secrets; print(secrets.token_urlsafe(32))' | sudo install -m 640 -o root -g espprint /dev/stdin /etc/esp-print/token
@@ -89,6 +90,36 @@ sample of real jobs (schedules, receipts, deposit slips, and PDFs from Word,
 Canva, Firefox and Google) Cairo's output was 2-35x smaller and rendered the
 same. Copies are never repeated in the data: the filters ask the printer for
 them (`NumCopies` in the PostScript or the raster header).
+
+## Knowing a job printed (PJL printers)
+
+Over port 9100 CUPS's own backend (`socket://`) only hands the job over, so
+CUPS calls a job completed as soon as the printer has the data, even when the
+printer is out of paper and the job sits in its memory (and prints whenever
+someone loads paper, even after it was printed elsewhere). So a printer whose
+SNMP device ID lists PJL (`CMD:PJL,...`: HP, Brother, most lasers) gets this
+server's own backend instead, `esppjl://<printer>:9100` (`esp-pjl-backend`,
+installed as `/usr/lib/cups/backend/esppjl`, mode 755 so CUPS runs it as
+`lp`, not root). Over the same connection it:
+
+- asks the printer's status first (`@PJL INFO STATUS`) and, while the printer
+  is out of paper, jammed or offline, holds the job here, telling CUPS why
+  (`STATE: +media-empty-error`, and the printer's display text as the
+  queue's message), which the website shows on Printer Setup at once;
+- sends the job as a named PJL job (`@PJL JOB NAME=...` / `@PJL EOJ`) with
+  job reports on (`@PJL USTATUS JOB=ON`) and the printer's status changes
+  (`USTATUS DEVICE=ON`), and exits only when the printer reports
+  `USTATUS JOB END`, which it sends once the job's last page is in the
+  output bin; so CUPS's "completed" means printed.
+
+Printers without PJL (e.g. Canon's UFR II LT ones) stay on `socket://`. An
+existing queue changes only when its location is reconnected on Printer
+Setup. To watch a job by hand: `lpstat -l -p <queue>` (the backend's
+messages), or CUPS's `error_log`.
+
+To check a printer speaks PJL (this prints nothing):
+
+    python3 -c 'import socket; s = socket.create_connection(("<printer>", 9100), 5); s.sendall(b"\x1b%-12345X@PJL INFO STATUS\r\n\x1b%-12345X"); s.settimeout(5); print(s.recv(4096))'
 
 ## Stopped queues
 

@@ -1565,16 +1565,16 @@ class PrintServerClientTest(TestCase):
             print_server.probe('10.0.0.9')
 
 
-def load_print_server_script():
-    """ deploy/print_server/esp-print-server, which runs on the print server
-    (not part of the website), loaded as a module. """
+def load_print_server_script(name='esp-print-server'):
+    """ A script in deploy/print_server/ (esp-print-server, or its CUPS
+    backend esp-pjl-backend), which runs on the print server (not part of
+    the website), loaded as a module. """
     import importlib.machinery
     import importlib.util
-    import os
-    path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', 'deploy', 'print_server',
-                        'esp-print-server')
-    loader = importlib.machinery.SourceFileLoader('esp_print_server', os.path.normpath(path))
-    module = importlib.util.module_from_spec(importlib.util.spec_from_loader('esp_print_server', loader))
+    path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', 'deploy', 'print_server', name)
+    module_name = name.replace('-', '_')
+    loader = importlib.machinery.SourceFileLoader(module_name, os.path.normpath(path))
+    module = importlib.util.module_from_spec(importlib.util.spec_from_loader(module_name, loader))
     loader.exec_module(module)
     return module
 
@@ -1683,9 +1683,14 @@ class PrintServerScriptTest(TestCase):
         self.assertIsNone(script.model_ppd('Canon LBP6230/6240'))
         #   An IPP 1.1 PostScript printer gets its model's driver, and is printed to on port 9100 if it's open
         reply = (0, {script.PRINTER_ATTRIBUTES: {'document-format-supported': ['application/postscript']}})
-        for (open_9100, uri) in ((True, 'socket://10.0.0.9:9100'), (False, 'ipp://10.0.0.9/ipp/print')):
+        #   (through the PJL backend, which waits for it to print, when that's installed: SNMP says it
+        #   speaks PJL)
+        for (open_9100, backend, uri) in ((True, False, 'socket://10.0.0.9:9100'),
+                                          (True, True, 'esppjl://10.0.0.9:9100'),
+                                          (False, True, 'ipp://10.0.0.9/ipp/print')):
             with mock.patch.object(script, 'ipp_post', side_effect=[(script.VERSION_NOT_SUPPORTED, {}), reply]), \
-                    mock.patch.object(script, 'port_open', return_value=open_9100) as port_open:
+                    mock.patch.object(script, 'port_open', return_value=open_9100) as port_open, \
+                    mock.patch.object(script, 'PJL_BACKEND', __file__ if backend else '/nonexistent'):
                 found = script.probe('10.0.0.9')
             self.assertEqual((found['info']['driver'], found['info']['model'], found['uri']),
                              ('model:' + ppd, 'HP Color LaserJet CP4520 Series', uri))
@@ -1711,8 +1716,10 @@ class PrintServerScriptTest(TestCase):
                 '"MFG:Canon;MDL:LBP6230/6240;CLS:PRINTER;CID:CA_UFRIILT_OIP;CMD:LIPSLX,CPCA;" ""\n')
         self.run_cups.side_effect = lambda args, stdin=None: lpinfo if args[0] == 'lpinfo' else snmp
         unreachable = script.Refused(502, 'Couldn\'t reach http://10.31.171.64:631/ipp/print (refused).')
+        #   (its device ID doesn't list PJL, so CUPS's socket backend, even with the PJL one installed)
         with mock.patch.object(script, 'ipp_post', side_effect=unreachable), \
-                mock.patch.object(script, 'port_open', return_value=True):
+                mock.patch.object(script, 'port_open', return_value=True), \
+                mock.patch.object(script, 'PJL_BACKEND', __file__):
             result = script.probe('10.31.171.64')
         self.assertEqual(result['uri'], 'socket://10.31.171.64:9100')
         self.assertEqual((result['info']['driver'], result['info']['model']),
@@ -1745,6 +1752,7 @@ class PrintServerScriptTest(TestCase):
         self.assertIn(['lpadmin', '-p', 'esp-location-3', '-o', 'PageSize=Letter'], calls)
         self.assertTrue(script.URI.match('socket://10.31.171.64:9100'))
         self.assertTrue(script.URI.match('lpd://10.31.171.64/'))
+        self.assertTrue(script.URI.match('esppjl://10.90.5.145:9100'))
         self.assertFalse(script.URI.match('file:///etc/passwd'))
 
     def test_older_ipp_path(self):
@@ -1827,3 +1835,155 @@ class PrintServerScriptTest(TestCase):
             self.assertEqual(self.call('GET', '/probe', params={'address': 'p'})[1]['info']['model'],
                              'Brother HL-L2350DW')
         probe.assert_called_with('p')
+
+
+class FakePJLPrinter(object):
+    """ A printer on localhost that speaks PJL on its print port, as an HP
+    LaserJet does: it answers INFO STATUS / INFO USTATUS / ECHO, reports
+    START at JOB and, once self.printed is set, END at EOJ. status is
+    (CODE, DISPLAY, ONLINE). """
+
+    def __init__(self, status, close_after_eoj=False):
+        import socket
+        import threading
+        self.status = status
+        self.close_after_eoj = close_after_eoj
+        self.received = b''
+        self.printed = threading.Event()
+        self.lock = threading.Lock()
+        self.conn = None
+        self.listener = socket.socket()
+        self.listener.bind(('127.0.0.1', 0))
+        self.listener.listen(1)
+        self.port = self.listener.getsockname()[1]
+        threading.Thread(target=self.serve, daemon=True).start()
+
+    def send(self, text):
+        with self.lock:
+            self.conn.sendall(text.encode('latin-1') + b'\x0c')
+
+    def status_message(self, kind):
+        return '@PJL %s\r\nCODE=%d\r\nDISPLAY="%s"\r\nONLINE=%s\r\n' % ((kind,) + self.status)
+
+    def set_status(self, status):
+        """ The printer's status changes; it says so (USTATUS DEVICE=ON). """
+        self.status = status
+        self.send(self.status_message('USTATUS DEVICE'))
+
+    def serve(self):
+        import re
+        import threading
+        (self.conn, _) = self.listener.accept()
+        done = 0
+        while True:
+            data = self.conn.recv(65536)
+            if not data:
+                return
+            self.received += data
+            for match in re.finditer(rb'@PJL ?([^\r\n]*)\r\n', self.received[done:]):
+                command = match.group(1).decode('latin-1')
+                if command == 'INFO STATUS':
+                    self.send(self.status_message('INFO STATUS'))
+                elif command == 'INFO USTATUS':
+                    self.send('@PJL INFO USTATUS\r\nDEVICE=OFF [3 ENUMERATED]\r\n\tOFF\r\n\tON\r\n'
+                              'JOB=OFF [2 ENUMERATED]\r\n\tOFF\r\n\tON\r\n')
+                elif command.startswith('ECHO '):
+                    self.send('@PJL %s\r\n' % command)
+                elif command.startswith('JOB NAME='):
+                    self.send('@PJL USTATUS JOB\r\nSTART\r\n%s\r\n' % command[len('JOB '):])
+                elif command.startswith('EOJ NAME='):
+                    if self.close_after_eoj:
+                        self.conn.close()
+                        return
+                    name = command[len('EOJ '):]
+                    threading.Thread(target=self.end_job, args=(name,), daemon=True).start()
+            done = len(self.received) - len(self.received[done:].rsplit(b'\r\n', 1)[-1])
+
+    def end_job(self, name):
+        self.printed.wait(10)
+        self.send('@PJL USTATUS JOB\r\nEND\r\n%s\r\nPAGES=2\r\n' % name)
+
+
+class PJLBackendTest(TestCase):
+    """ deploy/print_server/esp-pjl-backend, the print server's CUPS backend
+    for PJL printers: a job is done only once the printer says it printed. """
+
+    def setUp(self):
+        self.backend = load_print_server_script('esp-pjl-backend')
+        mock.patch.object(self.backend, 'POLL', 0.05).start()
+        self.addCleanup(mock.patch.stopall)
+
+    def wait_for(self, condition):
+        import time
+        deadline = time.time() + 10
+        while not condition():
+            if time.time() > deadline:
+                self.fail('timed out')
+            time.sleep(0.02)
+
+    def start(self, printer):
+        import io
+        import threading
+        out = io.StringIO()
+        job = self.backend.Job('127.0.0.1', printer.port, 'esp-cups-126', out=out)
+        result = []
+        thread = threading.Thread(target=lambda: result.append(job.run(iter([b'%!PS page one\n', b'%!PS page two\n']))),
+                                  daemon=True)
+        thread.start()
+        return (out, result, thread)
+
+    def test_out_of_paper(self):
+        import time
+        printer = FakePJLPrinter((41202, 'LOAD TRAY 2 PLAIN LETTER', 'FALSE'))
+        (out, result, thread) = self.start(printer)
+        #   Out of paper: the job stays here (so it can still be cancelled or
+        #   moved), and CUPS hears why
+        self.wait_for(lambda: 'INFO: LOAD TRAY 2 PLAIN LETTER' in out.getvalue())
+        time.sleep(0.3)
+        self.assertNotIn(b'%!PS', printer.received)
+        self.assertIn('STATE: +media-empty-error', out.getvalue())
+        #   Paper in: it's sent, inside a named PJL job with job reports on
+        printer.set_status((10001, '00 READY', 'TRUE'))
+        self.wait_for(lambda: b'EOJ' in printer.received)
+        self.assertIn('STATE: -media-empty-error', out.getvalue())
+        self.assertRegex(printer.received, rb'USTATUS JOB=ON\r\n@PJL JOB NAME="esp-cups-126"\r\n\x1b%-12345X'
+                                           rb'%!PS page one\n%!PS page two\n\x1b%-12345X@PJL EOJ NAME="esp-cups-126"')
+        #   Out of paper partway: CUPS hears it, and the job isn't done
+        printer.set_status((41202, 'LOAD TRAY 2 PLAIN LETTER', 'FALSE'))
+        self.wait_for(lambda: out.getvalue().count('STATE: +media-empty-error') == 2)
+        time.sleep(0.3)
+        self.assertTrue(thread.is_alive())
+        #   Done only when the printer says it printed
+        printer.set_status((10001, '00 READY', 'TRUE'))
+        printer.printed.set()
+        thread.join(10)
+        self.assertEqual(result, [self.backend.OK])
+        self.assertIn('PAGE: total 2', out.getvalue())
+        self.assertTrue(out.getvalue().rstrip().endswith('INFO: Printed (2 pages).'))
+        #   and its status reports are off again (the printer keeps them on for the next connection)
+        self.wait_for(lambda: b'USTATUS DEVICE=OFF' in printer.received)
+
+    def test_lost_after_the_whole_job(self):
+        """ The printer had it all, then went away: it can't be told whether
+        it printed, so it's done (as CUPS's socket backend would say),
+        rather than sent again and maybe printed twice. """
+        printer = FakePJLPrinter((10001, '00 READY', 'TRUE'), close_after_eoj=True)
+        (out, result, thread) = self.start(printer)
+        thread.join(10)
+        self.assertEqual(result, [self.backend.OK])
+        self.assertIn('can\'t be told whether it printed', out.getvalue())
+
+    def test_status(self):
+        backend = self.backend
+        self.assertEqual(backend.problem({'CODE': '41202', 'DISPLAY': 'LOAD TRAY 2', 'ONLINE': 'FALSE'}),
+                         ('media-empty-error', 'LOAD TRAY 2', False))
+        self.assertEqual(backend.problem({'CODE': '42000', 'DISPLAY': 'JAM', 'ONLINE': 'FALSE'})[0], 'media-jam-error')
+        #   Ready, asleep (a Brother says 40000 Sleep, online), or paused: sent
+        self.assertIsNone(backend.problem({'CODE': '10001', 'DISPLAY': 'Ready', 'ONLINE': 'TRUE'}))
+        self.assertIsNone(backend.problem({'CODE': '40000', 'DISPLAY': 'Sleep', 'ONLINE': 'TRUE'}))
+        self.assertEqual(backend.problem({'CODE': '10003', 'DISPLAY': 'Warming up', 'ONLINE': 'FALSE'})[2], True)
+        #   Anything else offline: held
+        self.assertEqual(backend.problem({'CODE': '40021', 'DISPLAY': 'CLOSE DOOR', 'ONLINE': 'FALSE'}),
+                         ('other-error', 'CLOSE DOOR', False))
+        self.assertEqual(backend.parse_message('@PJL USTATUS JOB\r\nEND\r\nNAME="esp-cups-1"\r\nPAGES=3\r\n'),
+                         ('USTATUS JOB', {'END': True, 'NAME': 'esp-cups-1', 'PAGES': '3'}))
