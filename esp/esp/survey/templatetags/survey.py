@@ -1,3 +1,4 @@
+from pathlib import Path
 from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -297,7 +298,7 @@ def histogram(answer_list, args='format=html'):
 
     import hashlib
     file_base = hashlib.sha256(pickle.dumps(context)).hexdigest()
-    file_name = os.path.join(tempfile.gettempdir(), file_base+'.eps')
+    file_name = str(Path(tempfile.gettempdir()) / (file_base + '.eps'))
     template_file = os.path.join(settings.TEMPLATES[0]['DIRS'][0],
                                  'survey', 'histogram_base.eps')
 
@@ -313,10 +314,10 @@ def histogram(answer_list, args='format=html'):
     #   it into the output.
     png_filename = f"{file_base}.png"
     if args_dict.get('format') == 'tex':
-        image_path = os.path.join(tempfile.gettempdir(), png_filename)
+        image_path = str(Path(tempfile.gettempdir()) / png_filename)
     elif args_dict.get('format') == 'html':
         image_path = os.path.join(HISTOGRAM_DIR, png_filename)
-    if not os.path.exists(image_path):
+    if not Path(image_path).exists():
         subprocess.call([
             'gs',
             '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
