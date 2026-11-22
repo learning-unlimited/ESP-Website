@@ -813,7 +813,11 @@ def _check_in_flight(location, job):
         mark_printed(job, ok=False, error='The print server %s it (%s).' % (
             'cancelled' if state['state'] == 'canceled' else 'gave up on', ', '.join(state.get('reasons', []))))
         return True
-    if job.time_executed and timezone.now() - job.time_executed > STUCK_AFTER:
+    #   A printer error (e.g. out of paper, which the print server's PJL
+    #   backend reports while it holds the job) shows at once; otherwise
+    #   only a job that's taking long says anything
+    error = any(r.endswith('-error') for r in state.get('printer_reasons', []))
+    if error or (job.time_executed and timezone.now() - job.time_executed > STUCK_AFTER):
         why = state.get('printer_message') or ', '.join(state.get('printer_reasons', [])) or \
             'it hasn\'t finished printing %s' % job.describe()
         _set_trouble(location, 'Printer: %s' % why)

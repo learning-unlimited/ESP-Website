@@ -1057,6 +1057,13 @@ class PrintingTest(DayOfTestBase):
         self.desk.refresh_from_db()
         self.assertEqual((first.status, first.server_job, self.desk.trouble), ('sent', queue + '-1', ''))
         self.assertEqual(printing.run_network_jobs_once(), 0)
+        #   A printer error (e.g. the print server's PJL backend holding the
+        #   job while the printer is out of paper) shows at once
+        self.job_state.update({'printer_reasons': ['media-empty-error'], 'printer_message': 'LOAD TRAY 2 PLAIN LETTER'})
+        self.assertEqual(printing.run_network_jobs_once(), 0)
+        self.desk.refresh_from_db()
+        self.assertEqual(self.desk.trouble, 'Printer: LOAD TRAY 2 PLAIN LETTER')
+        self.job_state.update({'printer_reasons': [], 'printer_message': ''})
         #   Stuck at the printer: shown as the printer's trouble
         PrintRequest.objects.filter(id=first.id).update(time_executed=timezone.now() - timedelta(minutes=5))
         self.job_state['printer_message'] = 'Out of paper'
