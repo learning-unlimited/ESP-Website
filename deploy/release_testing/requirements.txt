@@ -1,0 +1,3 @@
+# Only for deploy/release_testing/crawl.py; the site itself does not need these.
+# After installing, run `playwright install chromium` (or pass --chromium).
+playwright==1.65.2

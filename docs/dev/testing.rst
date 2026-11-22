@@ -388,4 +388,5 @@ Further Reading
 - Factories source: ``esp/tests/factories.py``
 - Example handler tests: ``esp/program/modules/tests/test_finaidapprove.py``
 - Example view tests: ``esp/program/modules/tests/test_class_creation.py``
+- Testing a release with the URL inventory and browser crawl: ``release_testing.rst``
 
