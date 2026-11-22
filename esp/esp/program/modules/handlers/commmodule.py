@@ -213,15 +213,23 @@ class CommModule(ProgramModuleObj):
             raise ESPError("The selected recipient filter is no longer valid.  "
                            "Please go back and reselect your recipient list.")
 
+    @staticmethod
+    def get_required_post_fields(request, fields):
+        """ Return the values of the given POST fields, in order, or raise an
+            ESPError listing every field that is missing. """
+        missing_fields = [field for field in fields if field not in request.POST]
+        if missing_fields:
+            raise ESPError(f"Missing required POST fields: {', '.join(missing_fields)}.  "
+                           "Please go back and try again.")
+        return [request.POST[field] for field in fields]
+
     @aux_call
     @needs_admin
     def commprev(self, request, tl, one, two, module, extra, prog):
         from django.conf import settings
 
-        filterid, listcount, subject, body = [request.POST['filterid'],
-                                              request.POST['listcount'],
-                                              request.POST['subject'],
-                                              request.POST['body']    ]
+        filterid, listcount, subject, body = CommModule.get_required_post_fields(
+            request, ['filterid', 'listcount', 'subject', 'body'])
         body, _ = strip_base64_images(body)
         body = _make_image_urls_absolute(body, request)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
@@ -330,12 +338,8 @@ class CommModule(ProgramModuleObj):
     def commfinal(self, request, tl, one, two, module, extra, prog):
         from esp.dbmail.models import MessageRequest # noqa: F811
 
-        filterid, fromemail, replytoemail, subject, body = [
-                                    request.POST['filterid'],
-                                    request.POST['from'],
-                                    request.POST['replyto'],
-                                    request.POST['subject'],
-                                    request.POST['body']    ]
+        filterid, fromemail, replytoemail, subject, body = CommModule.get_required_post_fields(
+            request, ['filterid', 'from', 'replyto', 'subject', 'body'])
         body, _ = strip_base64_images(body)
         body = _make_image_urls_absolute(body, request)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
@@ -505,13 +509,8 @@ class CommModule(ProgramModuleObj):
     @needs_admin
     def maincomm2(self, request, tl, one, two, module, extra, prog):
 
-        filterid, listcount, fromemail, replytoemail, subject, body = [
-                                                         request.POST['filterid'],
-                                                         request.POST['listcount'],
-                                                         request.POST['from'],
-                                                         request.POST['replyto'],
-                                                         request.POST['subject'],
-                                                         request.POST['body']    ]
+        filterid, listcount, fromemail, replytoemail, subject, body = CommModule.get_required_post_fields(
+            request, ['filterid', 'listcount', 'from', 'replyto', 'subject', 'body'])
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
         public_view = 'public_view' in request.POST
