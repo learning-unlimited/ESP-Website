@@ -19,11 +19,11 @@
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 
 <style>
-table, th, tr, td {
+.phasezero-entry table, .phasezero-entry th, .phasezero-entry tr, .phasezero-entry td {
     text-align:center;
 }
 
-th, td {
+.phasezero-entry th, .phasezero-entry td {
     padding: 4px !important;
 }
 
@@ -49,6 +49,7 @@ input {
 {% endblock %}
 
 {% block module_content %}
+<div class="phasezero-entry">
 <h1>Program Lottery for {{program.niceName}}</h1>
 {% inline_program_qsd_block program "learn:studentregphasezero/top" %}
 Welcome to the Program Lottery for {{program.niceName}}. Any student that submits interest to the program before the lottery closes will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. Only students selected in the program lottery may proceed to register for classes.
@@ -116,4 +117,5 @@ Welcome to the Program Lottery for {{program.niceName}}. Any student that submit
 </table>
 
 
+</div>
 {% endblock %}

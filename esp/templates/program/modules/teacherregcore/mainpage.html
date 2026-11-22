@@ -1,10 +1,10 @@
-{% extends "program/modules/teacherregcore/teacher_module_base.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}{{ program.niceName }} Registration{% endblock %}
 
 {% block module_header %}
 {% load render_qsd %}
-<header class="teacher-reg-hero">
+<header class="reg-hero">
   <h1>Teacher registration for {{ program.niceName }}</h1>
   {% inline_program_qsd_block program "teach:teacherreg" %}
   <p>
@@ -15,10 +15,10 @@
 {% endblock %}
 
 {% block module_content %}
-<section class="teacher-reg-modules">
+<section class="reg-modules">
   {% for module in modules %}
   {% if module.useTemplate or module.getTemplate %}
-  <div class="teacher-reg-module-block" id="module-{{ module.id }}">
+  <div class="reg-module-block" id="module-{{ module.id }}">
     {% include module.getTemplate %}
   </div>
   {% endif %}
