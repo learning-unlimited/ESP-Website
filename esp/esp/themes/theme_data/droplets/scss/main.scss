@@ -433,6 +433,22 @@ div.navbar-collapse {
     @if index($esp-overridden, 'footerBackground') {
         .footer-container .navbar.bg-dark { background: $footerBackground !important; }
     }
+
+    //  Apply content background to #main when customized by the admin (Issue #3939).
+    //  Diffing via $esp-overridden ensures #main is only styled when the admin explicitly
+    //  customized contentBackground or bodyBackground, rather than comparing
+    //  ($contentBackground != $bodyBackground) which would falsely trigger on Bootswatch
+    //  dark skins where $bodyBackground defaults to dark while $contentBackground is #ffffff.
+    @if index($esp-overridden, 'contentBackground') or index($esp-overridden, 'bodyBackground') {
+        #main {
+            background-color: $contentBackground;
+            @if not index($esp-overridden, 'textColor') {
+                color: color-contrast($contentBackground);
+            }
+            padding: 20px;
+            border-radius: 4px;
+        }
+    }
 } @else {
     .navbar.bg-dark {
         background-color: $navbarInverseBackground !important;
@@ -446,6 +462,19 @@ div.navbar-collapse {
     @if index($esp-overridden, 'footerBackground') {
         .footer-container .navbar.bg-dark {
             background-color: $footerBackground !important;
+        }
+    }
+
+    //  Apply content background to #main when customized by the admin (Issue #3939).
+    //  Unified with the Bootswatch branch above to consistently check $esp-overridden.
+    @if index($esp-overridden, 'contentBackground') or index($esp-overridden, 'bodyBackground') {
+        #main {
+            background-color: $contentBackground;
+            @if not index($esp-overridden, 'textColor') {
+                color: color-contrast($contentBackground);
+            }
+            padding: 20px;
+            border-radius: 4px;
         }
     }
 
