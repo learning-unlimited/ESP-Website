@@ -60,6 +60,8 @@ Financial Aid Application (FinancialAidAppModule)
 
 We recommend that you include this module in all programs.  It will add a step to registration for students so that they can request financial aid.  You will be emailed whenever someone submits the form.  Students indicating that they receive free or reduced price lunch at school will automatically be granted financial aid.
 
+Students who don't need financial aid can click "I don't need financial aid" on the application page instead. That completes the step without an application, so the module can be required (for example, to have students see it before a lottery) without every student having to apply. Students can still apply later; completing an application replaces their earlier answer.
+
 To review financial aid applications, go to /admin/ and click "Financial aid requests" under
 "Program"; if you would like to grant financial aid, fill out the form at the
 bottom of the page under "Financial aid grant."  You can specify the grant as either a dollar amount or a percentage of the program cost.  Typically you will specify 100% of the program cost so that the student does not have to pay for the program regardless of their choices.
