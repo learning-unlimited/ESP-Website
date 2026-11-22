@@ -15,6 +15,7 @@ class VolunteerSignupTestCase(TestCase):
         # Create a basic Program fixture
         self.program = Program.objects.create(
             name='Test Volunteer Program',
+            url='VolunteerTest/Main',
             grade_min=7,
             grade_max=12,
         )
@@ -68,6 +69,7 @@ class VolunteerSignupTestCase(TestCase):
         """Verify saving volunteer shifts replaces offers only in the active program."""
         other_program = Program.objects.create(
             name='Other Volunteer Program',
+            url='VolunteerTest/Other1',
             grade_min=7,
             grade_max=12,
         )
@@ -150,6 +152,7 @@ class VolunteerSignupTestCase(TestCase):
         """Verify cancelling shifts removes offers only in the active program."""
         other_program = Program.objects.create(
             name='Other Volunteer Program 2',
+            url='VolunteerTest/Other2',
             grade_min=7,
             grade_max=12,
         )
@@ -215,6 +218,7 @@ class VolunteerSignupTestCase(TestCase):
         """Verify unauthenticated volunteer operations are scoped by program and contact info."""
         other_program = Program.objects.create(
             name='Other Volunteer Program 3',
+            url='VolunteerTest/Other3',
             grade_min=7,
             grade_max=12,
         )
