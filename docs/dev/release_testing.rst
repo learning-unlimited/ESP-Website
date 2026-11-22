@@ -99,6 +99,10 @@ Running a crawl
    ``--area learn --area teach`` or ``--url-regex`` narrow the crawl, and
    ``--limit 20`` makes a quick trial run. ``--help`` lists the rest.
 
+   On a seeded dev database with ``manage.py runserver``, 525 URLs as six
+   roles (about 3,150 visits) took about 16 minutes at ``--concurrency 6``.
+   A copy of a large chapter will have more QSD pages and take longer.
+
    Each visit is saved to ``progress.jsonl`` in the output directory as it
    finishes. If the crawl is interrupted, run the same command with
    ``--resume`` to skip the visits already done.
@@ -122,7 +126,8 @@ Reading the report
 Each (URL, role) visit gets one verdict, most serious first:
 
 ``server-error``
-    HTTP 5xx, or the page didn't load.
+    HTTP 5xx, or the page didn't load. A page that keeps navigating after it
+    loads (a redirect loop) also ends up here, with the URLs it visited.
 ``unexpected-allow``
     The role got the page, but its access decorators say it shouldn't have.
     Check these first: they can be security problems.
@@ -140,6 +145,11 @@ Each (URL, role) visit gets one verdict, most serious first:
     image or font failed to load.
 ``closed``
     A deadline, grade or capacity page. Check the program's setup.
+``needs-input``
+    HTTP 400 or 405, or ESP's "Your request could not be processed" page
+    (``ESPError(log=False)``, which is sent as HTTP 500): the view wants
+    parameters such as a class ID, or a POST. Low priority, but each one
+    should get a manual check with real input.
 ``ok`` / ``info``
     Loaded as expected (``info``: access is custom, so nothing to compare).
 

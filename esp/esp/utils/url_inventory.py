@@ -358,7 +358,9 @@ def urlconf_rows(program=None):
         else:
             info = _function_info(callback)
         decorators = info.decorators
-        if is_admin_site:
+        if is_admin_site and pattern == 'admin/login/':
+            roles, note = ROLES, ''
+        elif is_admin_site:
             roles, note = ['admin'], 'Django admin site (staff only)'
         else:
             roles, note = expected_roles(decorators)
@@ -468,7 +470,8 @@ def qsd_rows():
         rows.append(_row(
             area='qsd', url=f'/{url}.html', url_pattern='/<url>.html',
             view='esp.qsd.views.qsd', call_type='qsd', kind='page',
-            expected_roles=', '.join(ROLES), crawlable='yes',
+            # The QSD view only lets admins read pages under manage/
+            expected_roles='admin' if url.startswith('manage/') else ', '.join(ROLES), crawlable='yes',
             source='database (QuasiStaticData)',
         ))
     return rows

@@ -167,9 +167,11 @@ class InventoryTest(TestCase):
         self.assertIn(f'/manage/{prog_type}/{prog_term}/module_schedule/', self.by_url)
 
     def test_django_admin_site_expects_admin(self):
-        admin_rows = [r for r in self.rows if r['view'].startswith('django.contrib.admin.')]
+        admin_rows = [r for r in self.rows if r['view'].startswith('django.contrib.admin.')
+                      and r['url'] != '/admin/login/']
         self.assertTrue(admin_rows)
         self.assertEqual({r['expected_roles'] for r in admin_rows}, {'admin'})
+        self.assertEqual(self.by_url['/admin/login/']['expected_roles'], ', '.join(inv.ROLES))
 
     def test_urls_are_unique(self):
         urls = [r['url'] for r in self.rows if r['url']]
@@ -178,8 +180,10 @@ class InventoryTest(TestCase):
     def test_qsd_pages_are_listed(self):
         author = make_user('Administrator', username='qsd_author')
         QuasiStaticData.objects.create(url='inventory_test_page', title='T', content='C', author=author)
-        rows = inv.build_inventory([self.program])
-        self.assertIn('/inventory_test_page.html', {r['url'] for r in rows})
+        QuasiStaticData.objects.create(url='manage/inventory_test_page', title='T', content='C', author=author)
+        rows = {r['url']: r for r in inv.build_inventory([self.program])}
+        self.assertEqual(rows['/inventory_test_page.html']['expected_roles'], ', '.join(inv.ROLES))
+        self.assertEqual(rows['/manage/inventory_test_page.html']['expected_roles'], 'admin')
 
     def test_command_writes_csv_and_json(self):
         with tempfile.TemporaryDirectory() as out:

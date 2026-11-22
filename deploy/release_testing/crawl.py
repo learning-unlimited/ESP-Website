@@ -48,6 +48,11 @@ DENIED_MARKERS = (
     'The user account is not a student',
     'you did not register as a teacher',
     'Sorry, you are not authorized to access this page',
+    'It appears you are logged in. This page is not useful for you',
+)
+# ESPError(log=False): ESP blames the request but answers HTTP 500
+USER_ERROR_MARKERS = (
+    'Your request could not be processed. Please check what you submitted',
 )
 CLOSED_MARKERS = (
     'is not currently open, possibly because you are either too early or too late',
@@ -57,7 +62,7 @@ CLOSED_MARKERS = (
 
 # Most serious first; a result's verdict is the first that applies
 VERDICTS = ['server-error', 'unexpected-allow', 'not-found', 'unexpected-deny',
-            'endpoint-error', 'js-error', 'asset-error', 'closed', 'ok', 'info']
+            'endpoint-error', 'js-error', 'asset-error', 'closed', 'needs-input', 'ok', 'info']
 VERDICT_HELP = {
     'server-error': 'HTTP 5xx or the page did not load',
     'unexpected-allow': 'role got the page but its access decorators say it should not',
@@ -69,6 +74,8 @@ VERDICT_HELP = {
     'js-error': 'page loaded but logged JavaScript errors',
     'asset-error': 'page loaded but a script, stylesheet or image failed',
     'closed': 'deadline, grade or capacity page (check the program setup)',
+    'needs-input': "HTTP 400/405 or ESP's \"request could not be processed\" page: the view wants "
+                   'parameters or a POST (that page is sent as HTTP 500, which it should not be)',
     'ok': 'loaded as expected',
     'info': 'loaded; access is decided by custom code so nothing to compare',
 }
@@ -81,6 +88,8 @@ def classify(status, requested_path, final_path, text):
     """What happened when the page was requested, from the role's point of view."""
     if status is None:
         return 'load-failed'
+    if status >= 500 and any(m in text for m in USER_ERROR_MARKERS):
+        return 'user-error'
     if status >= 500:
         return 'server-error'
     if status == 404:
@@ -103,15 +112,14 @@ def verdict(row, role, outcome, js_errors, asset_errors):
     endpoint = row.get('kind') == 'endpoint'
     if outcome in ('load-failed', 'server-error'):
         return 'endpoint-error' if endpoint else 'server-error'
-    # Endpoints reject a GET without their parameters
-    if endpoint and outcome == 'client-error':
-        return 'info'
+    if outcome in ('user-error', 'client-error'):
+        return 'needs-input'
     if expected and role not in expected and outcome in ('ok', 'download'):
         return 'unexpected-allow'
     if expected and role in expected:
         if outcome == 'not-found':
             return 'not-found'
-        if outcome in ('denied', 'login-required', 'client-error'):
+        if outcome in ('denied', 'login-required'):
             return 'unexpected-deny'
     if outcome in ('ok', 'download', 'closed'):
         if js_errors:
@@ -171,10 +179,19 @@ async def visit(context, base_url, row, role, args):
         if args.settle_ms:
             await page.wait_for_timeout(args.settle_ms)
         status = response.status if response else None
+        # A page may navigate once more after load (e.g. the login page's meta refresh); let it settle
+        for attempt in range(3):
+            try:
+                title = await page.title()
+                text = await page.evaluate("document.body ? document.body.innerText : ''")
+                break
+            except PlaywrightError as e:
+                if 'context was destroyed' not in str(e) or attempt == 2:
+                    raise
+                await page.wait_for_load_state('load', timeout=args.timeout * 1000)
         final = urlparse(page.url)
         result.update(status=status, final_url=final.path + (f'?{final.query}' if final.query else ''),
-                      title=(await page.title())[:200])
-        text = await page.evaluate("document.body ? document.body.innerText : ''")
+                      title=title[:200])
         outcome = classify(status, urlparse(url).path, final.path, text)
         if args.screenshots != 'none':
             name = os.path.join('screenshots', role, slug(url) + '.jpg')

@@ -19,6 +19,10 @@ def test_classify():
     assert classify(200, '/a', '/a', 'Sorry Bob, you are not an administrator of this program.') == 'denied'
     assert classify(200, '/a', '/a', 'This page is not currently open, possibly because you are '
                                      'either too early or too late') == 'closed'
+    assert classify(200, '/a', '/a', 'It appears you are logged in. This page is not useful for you.') == 'denied'
+    assert classify(500, '/a', '/a', 'Your request could not be processed. Please check what you '
+                                     'submitted and try again.') == 'user-error'
+    assert classify(400, '/a', '/a', '') == 'client-error'
     assert classify(200, '/a', '/a', 'Welcome') == 'ok'
 
 
@@ -28,6 +32,8 @@ def test_verdict():
     assert verdict(PAGE, 'student', 'denied', [], []) == 'ok'
     assert verdict(PAGE, 'teacher', 'denied', [], []) == 'unexpected-deny'
     assert verdict(PAGE, 'teacher', 'server-error', [], []) == 'server-error'
+    assert verdict(PAGE, 'teacher', 'user-error', [], []) == 'needs-input'
+    assert verdict(PAGE, 'teacher', 'client-error', [], []) == 'needs-input'
     assert verdict(PAGE, 'teacher', 'ok', ['TypeError'], []) == 'js-error'
     assert verdict(PAGE, 'teacher', 'ok', [], ['404 /x.css']) == 'asset-error'
     assert verdict({'expected_roles': '', 'kind': 'page'}, 'teacher', 'ok', [], []) == 'info'
@@ -36,7 +42,7 @@ def test_verdict():
 def test_endpoint_verdicts():
     endpoint = dict(PAGE, kind='endpoint')
     assert verdict(endpoint, 'teacher', 'server-error', [], []) == 'endpoint-error'
-    assert verdict(endpoint, 'teacher', 'client-error', [], []) == 'info'
+    assert verdict(endpoint, 'teacher', 'client-error', [], []) == 'needs-input'
 
 
 def test_compare():
