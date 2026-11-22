@@ -175,6 +175,33 @@ class GroupTextModuleConfiguredTest(ProgramFrameworkTest):
         ):
             self.assertFalse(GroupTextModule.is_configured())
 
+    def test_is_configured_false_with_empty_list_numbers(self):
+        """Verify that is_configured returns False when TWILIO_ACCOUNT_NUMBERS is an empty list."""
+        with override_settings(
+            TWILIO_ACCOUNT_SID='sid',
+            TWILIO_AUTH_TOKEN='tok',
+            TWILIO_ACCOUNT_NUMBERS=[],
+        ):
+            self.assertFalse(GroupTextModule.is_configured())
+
+    def test_is_configured_false_with_empty_tuple_numbers(self):
+        """Verify that is_configured returns False when TWILIO_ACCOUNT_NUMBERS is an empty tuple."""
+        with override_settings(
+            TWILIO_ACCOUNT_SID='sid',
+            TWILIO_AUTH_TOKEN='tok',
+            TWILIO_ACCOUNT_NUMBERS=(),
+        ):
+            self.assertFalse(GroupTextModule.is_configured())
+
+    def test_is_configured_true_with_tuple_numbers(self):
+        """Verify that is_configured returns True when TWILIO_ACCOUNT_NUMBERS is a valid non-empty tuple."""
+        with override_settings(
+            TWILIO_ACCOUNT_SID='sid',
+            TWILIO_AUTH_TOKEN='tok',
+            TWILIO_ACCOUNT_NUMBERS=('+15005550006',),
+        ):
+            self.assertTrue(GroupTextModule.is_configured())
+
     @override_settings(**TWILIO_SETTINGS)
     def test_panel_renders_when_configured(self):
         self.assertTrue(
@@ -193,6 +220,28 @@ class GroupTextModuleConfiguredTest(ProgramFrameworkTest):
             self.assertEqual(response.status_code, 200)
             self.assertTemplateUsed(
                 response, 'program/modules/grouptextmodule/not_configured.html'
+            )
+
+    def test_panel_not_configured_with_empty_numbers(self):
+        """Verify that grouptextpanel renders not_configured.html on GET and POST when numbers are empty."""
+        with override_settings(
+            TWILIO_ACCOUNT_SID='sid',
+            TWILIO_AUTH_TOKEN='tok',
+            TWILIO_ACCOUNT_NUMBERS=[],
+        ):
+            self.assertTrue(
+                self.client.login(username=self.admins[0].username, password='password')
+            )
+            get_response = self.client.get('/manage/%s/grouptextpanel' % self.program.url)
+            self.assertEqual(get_response.status_code, 200)
+            self.assertTemplateUsed(
+                get_response, 'program/modules/grouptextmodule/not_configured.html'
+            )
+
+            post_response = self.client.post('/manage/%s/grouptextpanel' % self.program.url)
+            self.assertEqual(post_response.status_code, 200)
+            self.assertTemplateUsed(
+                post_response, 'program/modules/grouptextmodule/not_configured.html'
             )
 
     def test_student_cannot_access_panel(self):

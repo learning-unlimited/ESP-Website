@@ -398,6 +398,9 @@ CYBERSOURCE_CONFIG = {
 }
 
 FILEBROWSER_CUSTOM_ADMIN = 'esp.admin.admin_site'
+# Otherwise filebrowser registers a model on Django's default admin site, whose
+# URLs we don't serve, and admindocs (which uses that site) can't link to it.
+FILEBROWSER_SHOW_IN_DASHBOARD = False
 
 #   Allow Filebrowser to edit anything under media/
 #   (not just '/media/uploads/' which is the default)

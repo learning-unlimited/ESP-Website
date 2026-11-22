@@ -34,6 +34,11 @@
   </a>
   {% endif %}
 </nav>
+{% if messages %}
+{% for message in messages %}
+<div class="webapp_message {{ message.tags }}">{{ message }}</div>
+{% endfor %}
+{% endif %}
 {% block body %}{% endblock %}
 </body>
 </html>

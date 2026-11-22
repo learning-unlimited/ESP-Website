@@ -91,6 +91,39 @@ var inDefaultCategory = function(field_type) {
     return false;
 }
 
+// Linked fields store answers in the user's own records, so anonymous forms can't use them
+var isLinkedFieldType = function(field_type) {
+    for (var category in model_instance_cache) {
+        if (field_type in formElements[category])
+            return true;
+    }
+    return false;
+};
+
+var updateLinkedCategories = function() {
+    var anonymous = $j('#id_anonymous').prop('checked');
+    // Switch away from a linked category before disabling it, while its value is still readable
+    if (anonymous && $j('#cat_selector').val() in model_instance_cache)
+        $j('#cat_selector').val('Generic').trigger("change");
+    $j.each(Object.keys(model_instance_cache), function(idx, model) {
+        $j("#cat_selector").children("[value="+model+"]").prop("disabled", anonymous).css("color", anonymous ? "lightgrey" : "").prop("title", anonymous ? "Anonymous forms cannot contain linked fields" : "");
+    });
+};
+
+var onChangeAnonymous = function() {
+    if ($j(this).prop('checked')) {
+        var has_linked = $j('div.field_wrapper').filter(function() {
+            var field_data = $j.data(this, 'data');
+            return field_data && isLinkedFieldType(field_data['field_type']);
+        }).length > 0;
+        if (has_linked) {
+            alert("Anonymous forms cannot contain linked fields. Please remove them first.");
+            $j(this).prop('checked', false);
+        }
+    }
+    updateLinkedCategories();
+};
+
 var only_fkey_models=[];
 
 var model_instance_cache={};
@@ -147,6 +180,7 @@ $j(document).ready(function() {
 			$j('#submit').val('Modify Form');
 		else $j('#submit').val('Create Form');
 	});
+	$j('#id_anonymous').on("change", onChangeAnonymous);
 	$j('#cat_selector').on("change", function(){onSelectCategory($j(this).val());});
 	$j('#elem_selector').on("change", function(){onSelectElem($j('#elem_selector').val());});
 	$j('#main_cat_spec').on("change", onChangeMainCatSpec);
@@ -339,7 +373,7 @@ var initUI=function(){
 var clearPermsArea=function(){
 	//Initializes the permissions area
 	$j('#id_prog_belong').prop('checked', false).parent().hide();
-	$j('#id_perm_program').val("-1").hide();
+	$j('#id_perm_program').val("-1").parent().hide();
 	$j('#id_sub_perm').children().remove();
 	$j('#id_sub_perm').parent().hide();
 };
@@ -478,22 +512,25 @@ var onChangeMainPerm=function(){
 var onChangeProgBelong=function(){
 	var belongs=$j(this).prop('checked');
 	if(belongs){
-		$j('#id_perm_program').show();
+		$j('#id_perm_program').parent().show();
 	}
 	else {
 		$j('#id_sub_perm').parent().hide();
-		$j('#id_perm_program').val("-1").hide();
+		$j('#id_perm_program').val("-1").parent().hide();
 	}
 };
 
 var onChangePermProg=function(){
-	var prog=$j('#id_perm_program');
+	var prog=$j('#id_perm_program').val();
 	if(prog!="-1"){
+		perms={};
 		setPerms();
 		$j('#id_sub_perm').parent().show();
 	}
-	else
+	else {
+		$j('#id_sub_perm').children().remove();
 		$j('#id_sub_perm').parent().hide();
+	}
 };
 
 var onChangeMainCatSpec=function() {
@@ -1615,7 +1652,7 @@ var addElement=function(item, $field=null) {
 var submit=function() {
 	//submits the created form to the server
 
-	var form={'title':$j('#form_title').html(), 'desc':$j('#form_description').html(), 'anonymous':($j('#id_anonymous').prop('checked') == "checked"), 'pages':[]}, section, elem, page, section_seq, page_seq=0;
+	var form={'title':$j('#form_title').html(), 'desc':$j('#form_description').html(), 'anonymous':$j('#id_anonymous').prop('checked'), 'pages':[]}, section, elem, page, section_seq, page_seq=0;
 	form['link_type']=$j('#links_id_main').val();
 	if(form['link_type']!='-1' && $j('#links_id_specify').val()=='particular'){
 		form['link_id']=$j('#links_id_pick').val();
@@ -1765,6 +1802,7 @@ var createFromBase=function(){
 		$j('#input_form_title').val('').trigger("change");
 		$j('#input_form_description').val('').trigger("change");
 		$j('#id_anonymous').prop('checked', false);
+		updateLinkedCategories();
 	}
 };
 
@@ -1778,6 +1816,7 @@ var rebuild=function(metadata) {
 	//Setting other form options
 	if(metadata['anonymous'])
 		$j('#id_anonymous').prop('checked', true);
+	updateLinkedCategories();
 	//Setting fkey-only links
 	$j('#links_id_main').val(metadata['link_type']);
 	//console.log($j('#links_id_main').val());
@@ -1840,10 +1879,6 @@ var rebuild=function(metadata) {
 	});
     // Delete empty sections that are generated when making pages
     $j(".section:empty").parent('.outline').remove();
-    // Disable linked model fields
-    $j.each(Object.keys(model_instance_cache), function(idx, model) {
-        $j("#cat_selector").children("[value="+model+"]").prop("disabled", true).css("color", "lightgrey").prop("title", "Can not add linked fields to existing forms");
-    });
     // Reset add field form
 	deSelectField($j());
     // Set up permissions if needed

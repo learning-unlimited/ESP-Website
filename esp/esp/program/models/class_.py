@@ -74,7 +74,6 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
 from esp.users.models import ESPUser, Permission, PersistentQueryFilter
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile
-from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
 from esp.resources.models         import Resource, ResourceRequest, ResourceAssignment, ResourceType
 from argcache                     import cache_function, wildcard
@@ -90,6 +89,7 @@ __all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'ClassCategories', 'C
 STATUS_CHOICES = (
         (ClassStatus.CANCELLED, "cancelled"),
         (ClassStatus.REJECTED, "rejected"),
+        (ClassStatus.DRAFT, "draft"),
         (ClassStatus.UNREVIEWED, "unreviewed"),
         (ClassStatus.HIDDEN, "accepted but hidden"),
         (ClassStatus.ACCEPTED, "accepted"),
@@ -149,18 +149,18 @@ class ClassManager(Manager):
 
         return self.filter(status = ClassStatus.ACCEPTED)
 
-    def catalog(self, program, ts=None, force_all=False, initial_queryset=None, use_cache=True, cache_only=False, order_args_override=None):
+    def catalog(self, program, ts=None, force_all=False, initial_queryset=None, use_cache=True, cache_only=False, order_args_override=None, include_drafts=False):
         # Try getting the catalog straight from cache
-        catalog = self.catalog_cached(program, ts, force_all, initial_queryset, cache_only=True, order_args_override=order_args_override)
+        catalog = self.catalog_cached(program, ts, force_all, initial_queryset, cache_only=True, order_args_override=order_args_override, include_drafts=include_drafts)
         if catalog is None:
             # Get it from the DB, then try prefetching class sizes
-            catalog = self.catalog_cached(program, ts, force_all, initial_queryset, use_cache=use_cache, cache_only=cache_only, order_args_override=order_args_override)
+            catalog = self.catalog_cached(program, ts, force_all, initial_queryset, use_cache=use_cache, cache_only=cache_only, order_args_override=order_args_override, include_drafts=include_drafts)
 
         return catalog
 
 
     @cache_function
-    def catalog_cached(self, program, ts=None, force_all=False, initial_queryset=None, order_args_override=None):
+    def catalog_cached(self, program, ts=None, force_all=False, initial_queryset=None, order_args_override=None, include_drafts=False):
         """ Return a queryset of classes for view in the catalog.
 
         In addition to just giving you the classes, it also
@@ -178,6 +178,9 @@ class ClassManager(Manager):
 
         if not force_all:
             classes = classes.filter(self.approved(return_q_obj=True))
+
+        if not include_drafts:
+            classes = classes.exclude(status = ClassStatus.DRAFT)
 
         classes = classes.select_related('category')
 
@@ -776,7 +779,8 @@ class ClassSection(models.Model):
 
         #   This means we have to clear the classrooms.
         #   But we will try to re-assign the same room at the new times if it is available.
-        current_rooms = self.initial_rooms()
+        #   list() so this is evaluated before clearRooms() deletes the assignments.
+        current_rooms = list(self.initial_rooms())
 
         self.clearRooms()
         self.clearFloatingResources()
@@ -788,7 +792,7 @@ class ClassSection(models.Model):
         availability = True
         for e in event_list:
             for room in current_rooms:
-                if not room.is_available(e):
+                if not room.is_available(timeslot=e):
                     availability = False
 
         #   If the desired rooms are available, assign them.  (If not, no big deal.)
@@ -955,38 +959,13 @@ class ClassSection(models.Model):
         return self.meeting_times.all().values_list('id', flat=True)
     timeslot_ids.depend_on_m2m('program.ClassSection', 'meeting_times', lambda instance, object: {'self': instance})
 
-    def cannotRemove(self, user):
-        relevantConstraints = self.parent_program.getScheduleConstraints()
-        if relevantConstraints:
-            sm = ScheduleMap(user, self.parent_program)
-            sm.remove_section(self)
-            for exp in relevantConstraints:
-                if not exp.evaluate(sm, recursive=False):
-                    return f"You can't remove this class from your schedule because it would violate the requirement that you {exp.requirement.label}.  You can go back and correct this."
-        return False
-
-    def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True, ignore_constraints=False, webapp=False):
+    def cannotAdd(self, user, checkFull=True, webapp=False):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
 
         # Check if section is full
         if checkFull and self.isFull(webapp=webapp):
             scrmi = self.parent_class.parent_program.studentclassregmoduleinfo
             return scrmi.temporarily_full_text
-
-        # Test any scheduling constraints
-        if ignore_constraints:
-            relevantConstraints = ScheduleConstraint.objects.none()
-        else:
-            relevantConstraints = self.parent_program.getScheduleConstraints()
-
-        if relevantConstraints:
-            # Set up a ScheduleMap; fake-insert this class into it
-            sm = ScheduleMap(user, self.parent_program)
-            sm.add_section(self)
-
-            for exp in relevantConstraints:
-                if not exp.evaluate(sm, recursive=autocorrect_constraints):
-                    return f"Adding <i>{self.title()}</i> to your schedule requires that you {exp.requirement.label}.  You can go back and correct this."
 
         scrmi = self.parent_program.studentclassregmoduleinfo
         section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
@@ -1047,9 +1026,11 @@ class ClassSection(models.Model):
         user = teacher
         if meeting_times is None:
             meeting_times = self.meeting_times.all()
+        meeting_times = list(meeting_times)
         for sec in user.getTaughtSections(self.parent_program, include_cancelled = False).exclude(id=self.id):
             for time in sec.meeting_times.all():
-                if meeting_times.filter(id = time.id).exists():
+                # Compare actual times so overlapping blocks of different types conflict
+                if any(mt.start < time.end and time.start < mt.end for mt in meeting_times):
                     return (sec, time)
 
         return None
@@ -1410,7 +1391,8 @@ class ClassSection(models.Model):
 
     def isAccepted(self): return self.status > 0
     def isHidden(self): return self.status == ClassStatus.HIDDEN
-    def isReviewed(self): return self.status != ClassStatus.UNREVIEWED
+    def isDraft(self): return self.status == ClassStatus.DRAFT
+    def isReviewed(self): return self.status not in (ClassStatus.UNREVIEWED, ClassStatus.DRAFT)
     def isRejected(self): return self.status == ClassStatus.REJECTED
     def isCancelled(self): return self.status == ClassStatus.CANCELLED
     isCanceled = isCancelled
@@ -1576,7 +1558,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     message_for_directors = models.TextField(blank=True)
     class_size_optimal = models.IntegerField(blank=True, null=True)
     optimal_class_size_range = models.ForeignKey(ClassSizeRange, blank=True, null=True, on_delete=models.CASCADE)
-    allowable_class_size_ranges = models.ManyToManyField(ClassSizeRange, related_name='classsubject_allowedsizes', blank=True, null=True)
+    allowable_class_size_ranges = models.ManyToManyField(ClassSizeRange, related_name='classsubject_allowedsizes', blank=True)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     class_size_min = models.IntegerField(blank=True, null=True)
@@ -1725,6 +1707,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         if duration is None:
             duration = self.duration
+        if duration is None:
+            #   ClassSubject.duration is nullable, but callers that total up
+            #   section durations assume a number, so fall back to the same
+            #   default add_default_section uses rather than formatting None.
+            duration = 0.0
         if status is None:
             status = self.status
 
@@ -1971,7 +1958,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         # check to see if there's a conflict with each section of the subject, or if the user
         # has already signed up for one of the sections of this class
         for section in sections:
-            res = section.cannotAdd(user, checkFull, autocorrect_constraints=False, webapp=webapp)
+            res = section.cannotAdd(user, checkFull, webapp=webapp)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
         #   Pass on any errors that were triggered by the individual sections
@@ -1994,11 +1981,13 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def conflicts(self, teacher):
         user = teacher
+        my_sections = [(sec.id, list(sec.meeting_times.all())) for sec in self.sections.all()]
         for cls in user.getTaughtClasses(self.parent_program, include_cancelled = False):
             for section in cls.get_sections():
                 for time in section.meeting_times.all():
-                    for sec in self.sections.all().exclude(id=section.id):
-                        if sec.meeting_times.filter(id = time.id).exists():
+                    # Compare actual times so overlapping blocks of different types conflict
+                    for sec_id, times in my_sections:
+                        if sec_id != section.id and any(t.start < time.end and time.start < t.end for t in times):
                             return True
 
         #   Check that adding this teacher as a coteacher would not overcommit them
@@ -2026,7 +2015,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def isAccepted(self): return self.status > 0
     def isHidden(self): return self.status == ClassStatus.HIDDEN
-    def isReviewed(self): return self.status != ClassStatus.UNREVIEWED
+    def isDraft(self): return self.status == ClassStatus.DRAFT
+    def isReviewed(self): return self.status not in (ClassStatus.UNREVIEWED, ClassStatus.DRAFT)
     def isRejected(self): return self.status == ClassStatus.REJECTED
     def isCancelled(self): return self.status == ClassStatus.CANCELLED
     isCanceled = isCancelled    # Yay alternative spellings
@@ -2298,7 +2288,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if self.status < ClassStatus.UNREVIEWED: #ie, all rejected or cancelled classes.
+        if self.status in (ClassStatus.REJECTED, ClassStatus.CANCELLED):
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
             teachers = self.get_teachers()
             for t in teachers:

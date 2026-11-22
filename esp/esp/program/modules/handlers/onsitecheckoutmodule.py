@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django.db import transaction
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.program.models import ClassSection
 from esp.utils.web import render_to_response
@@ -41,6 +42,7 @@ from esp.users.models    import ESPUser, Record, RecordType
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 from esp.middleware.esperrormiddleware import ESPError
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+from esp.utils.ids import parse_id
 
 class OnSiteCheckoutModule(ProgramModuleObj):
     doc = """Check students out (temporarily or indefinitely) from a program."""
@@ -61,11 +63,14 @@ class OnSiteCheckoutModule(ProgramModuleObj):
         context = {}
 
         if "checkoutall" in request.POST and "confirm" in request.POST:
-            students = prog.currentlyCheckedInStudents()
+            students = list(prog.currentlyCheckedInStudents())
+            checkout_count = len(students)
             rt = RecordType.objects.get(name="checked_out")
-            for student in students:
-                Record.objects.create(user=student, event=rt, program=prog)
-            context['checkout_all_message'] = f"Successfully checked out {students.count()} students"
+            with transaction.atomic():
+                for student in students:
+                    Record.objects.create(user=student, event=rt, program=prog)
+            unit = "student" if checkout_count == 1 else "students"
+            context['checkout_all_message'] = f"Successfully checked out {checkout_count} {unit}"
 
         target_id = None
         student = None
@@ -102,7 +107,8 @@ class OnSiteCheckoutModule(ProgramModuleObj):
 
                 # Unenroll student from selected classes
                 verbs = RTC.getVisibleRegistrationTypeNames(prog)
-                for sec in ClassSection.objects.filter(id__in=[_f for _f in request.POST.getlist('unenroll') if _f]).distinct():
+                unenroll_ids = [i for i in map(parse_id, request.POST.getlist('unenroll')) if i is not None]
+                for sec in ClassSection.objects.filter(id__in=unenroll_ids).distinct():
                     sec.unpreregister_student(student, verbs)
                 context['checkout_message_success'] = f"Successfully checked out {student.name()} ({student.username})"
 

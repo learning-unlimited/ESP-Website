@@ -87,7 +87,7 @@ class GroupTextModule(ProgramModuleObj):
             return False
         if not hasattr(settings, 'TWILIO_AUTH_TOKEN') or not isinstance(settings.TWILIO_AUTH_TOKEN, str):
             return False
-        if not hasattr(settings, 'TWILIO_ACCOUNT_NUMBERS') or (not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, list) and not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, tuple)):
+        if not hasattr(settings, 'TWILIO_ACCOUNT_NUMBERS') or not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, (list, tuple)) or not settings.TWILIO_ACCOUNT_NUMBERS:
             return False
 
         return True
@@ -185,6 +185,10 @@ class GroupTextModule(ProgramModuleObj):
                 send_log.append(str(user)+" does not want text messages, fine")
                 continue
             client = Client(account_sid, auth_token)
+
+            if not contactInfo.phone_cell:
+                send_log.append("No cell phone number found for " + str(user))
+                continue
 
             # format the number for Twilio
             formattedNumber = format_number(contactInfo.phone_cell, PhoneNumberFormat.E164)

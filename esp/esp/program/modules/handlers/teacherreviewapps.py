@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, aux_call
 from esp.middleware.esperrormiddleware import ESPError
-from esp.program.modules import module_ext
+from esp.program.modules import program_settings
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration, StudentApplication
@@ -41,6 +41,8 @@ from datetime import datetime
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from esp.middleware.threadlocalrequest import get_current_request
+from esp.utils.ids import get_by_id_or_404
+from django.http import Http404
 
 __all__ = ['TeacherReviewApps']
 
@@ -65,8 +67,8 @@ class TeacherReviewApps(ProgramModuleObj):
     @method_decorator(never_cache)
     def review_students(self, request, tl, one, two, module, extra, prog):
         try:
-            cls = ClassSubject.objects.get(id = extra)
-        except ClassSubject.DoesNotExist:
+            cls = get_by_id_or_404(ClassSubject, extra)
+        except Http404:
             raise ESPError(f'Cannot find class with ID {extra}.', log=False)
 
         if not request.user.canEdit(cls):
@@ -132,7 +134,7 @@ class TeacherReviewApps(ProgramModuleObj):
         """ Edit the subject-specific questions that students will respond to on
         their applications. """
         subjects = request.user.getTaughtClasses(prog)
-        clrmi = module_ext.ClassRegModuleInfo.objects.get(program=self.program)
+        clrmi = program_settings.ClassRegModuleInfo.objects.get(program=self.program)
         question_list = []
 
         #   Provide forms to modify existing questions, and also blank forms for new questions
@@ -190,8 +192,8 @@ class TeacherReviewApps(ProgramModuleObj):
             return self.goToCore(tl)
 
         try:
-            cls = ClassSubject.objects.get(id = extra)
-        except ClassSubject.DoesNotExist:
+            cls = get_by_id_or_404(ClassSubject, extra)
+        except Http404:
             raise ESPError('Cannot find class.', log=False)
 
         if not request.user.canEdit(cls):
@@ -250,7 +252,7 @@ class TeacherReviewApps(ProgramModuleObj):
                                    'form': form})
 
     def prepare(self, context):
-        clrmi = module_ext.ClassRegModuleInfo.objects.get(program=self.program)
+        clrmi = program_settings.ClassRegModuleInfo.objects.get(program=self.program)
         context['num_teacher_questions'] = clrmi.num_teacher_questions;
         context['classes'] = get_current_request().user.getTaughtClasses().filter(parent_program = self.program)
         return context

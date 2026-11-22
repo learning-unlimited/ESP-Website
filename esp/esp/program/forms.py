@@ -33,13 +33,14 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import copy
 import re
 import unicodedata
 
 from django.conf import settings
-from esp.middleware import ESPError
 from esp.users.models import StudentInfo, K12School, RecordType
-from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
+from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories, \
+                               program_name_validator, program_url_validator
 from esp.dbmail.models import PlainRedirect
 from esp.utils.widgets import DateTimeWidget
 from django import forms
@@ -48,7 +49,8 @@ from django.contrib.redirects.models import Redirect
 from django.contrib.sites.models import Site
 from form_utils.forms import BetterModelForm, BetterForm
 from django.utils.safestring import mark_safe
-from esp.tagdict import all_global_tags, tag_categories
+from esp.tagdict import (all_global_tags, tag_categories, initial_choices,
+                         is_visible, join_choices, preserve_current_choice)
 from esp.tagdict.models import Tag
 from collections import OrderedDict
 
@@ -148,7 +150,8 @@ def make_id_tuple(object_list):
 class ProgramCreationForm(BetterModelForm):
     """ Massive form for creating a new instance of a program. """
 
-    term = forms.SlugField(label=mark_safe('Term or year, in URL form (e.g. <tt>2007_Fall</tt>)'), widget=forms.TextInput(attrs={'size': '40'}))
+    term = forms.SlugField(label=mark_safe('Term or year, in URL form (e.g. <tt>2007_Fall</tt>)'), widget=forms.TextInput(attrs={'size': '40'}),
+                           error_messages={'invalid': 'Enter the term in URL form: only letters, numbers, underscores, and hyphens, with no spaces (e.g., 2007_Fall).'})
     term_friendly = forms.CharField(label=mark_safe('Term, in English (e.g. <tt>Fall 2007</tt>)'), widget=forms.TextInput(attrs={'size': '40'}))
 
     teacher_reg_start = forms.DateTimeField(widget = DateTimeWidget())
@@ -211,6 +214,18 @@ class ProgramCreationForm(BetterModelForm):
         #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
         pass
 
+    #   program_type and term_friendly are concatenated into Program.name, which
+    #   isn't a field on this form, so its model validator never runs here.
+    def clean_program_type(self):
+        program_type = self.cleaned_data['program_type']
+        program_name_validator(program_type)
+        return program_type
+
+    def clean_term_friendly(self):
+        term_friendly = self.cleaned_data['term_friendly']
+        program_name_validator(term_friendly)
+        return term_friendly
+
     def clean_program_modules(self):
         mods = list(self.cleaned_data['program_modules'])[:] # take a copy of the list to be safe
         # Add "include by default" modules (choosable property = 1)
@@ -223,7 +238,8 @@ class ProgramCreationForm(BetterModelForm):
         fields, and constructs the url and name fields on the Program instance.
         '''
         super().clean()
-        if 'term' in self.cleaned_data and 'term_friendly' in self.cleaned_data:
+        if all(field in self.cleaned_data
+               for field in ('program_type', 'term', 'term_friendly')):
             #   Filter out unwanted characters from program type to form URL
             ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
             new_url = '%(type)s/%(term)s' \
@@ -236,6 +252,19 @@ class ProgramCreationForm(BetterModelForm):
                   }
             self.cleaned_data['new_url'] = new_url
             self.cleaned_data['new_name'] = new_name
+            # url and name aren't fields on this form, so neither their validators
+            # nor their max_length run against the assembled values.
+            try:
+                program_url_validator(new_url)
+            except forms.ValidationError as e:
+                self.add_error('program_type', e.messages)
+            for value, label, model_field, form_field in ((new_url, 'URL', 'url', 'term'),
+                                                          (new_name, 'name', 'name', 'term_friendly')):
+                max_length = Program._meta.get_field(model_field).max_length
+                if len(value) > max_length:
+                    self.add_error(form_field, 'The program %s would be %d characters long, but the '
+                                               'limit is %d. Please shorten the program type or term.'
+                                               % (label, len(value), max_length))
             # Check that there isn't another program with this URL or name
             if Program.objects.filter(url=new_url).exclude(id=self.instance.id).exists():
                 self.add_error('term', "A %s program already exists with this URL. Please choose a new URL or change the URL of the old program." % self.cleaned_data['program_type'])
@@ -622,48 +651,42 @@ class TagSettingsForm(BetterForm):
         for key in all_global_tags:
             # generate field for each tag
             tag_info = all_global_tags[key]
-            if tag_info.get('is_setting', False):
+            if tag_info.get('is_setting', False) and is_visible(tag_info, key):
                 self.categories.add(tag_info.get('category'))
                 field = tag_info.get('field')
-                # Some field widgets need to be setup manually because we can't do it during compilation
-                if key == 'teacher_profile_hide_fields':
-                    from esp.users.forms.user_profile import TeacherProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in TeacherProfileForm.declared_fields.items() if not field[1].required])
-                elif key == 'student_profile_hide_fields':
-                    from esp.users.forms.user_profile import StudentProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in StudentProfileForm.declared_fields.items() if not field[1].required])
-                elif key == 'volunteer_profile_hide_fields':
-                    from esp.users.forms.user_profile import VolunteerProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in VolunteerProfileForm.declared_fields.items() if not field[1].required])
-                elif key == 'educator_profile_hide_fields':
-                    from esp.users.forms.user_profile import EducatorProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in EducatorProfileForm.declared_fields.items() if not field[1].required])
-                elif key == 'guardian_profile_hide_fields':
-                    from esp.users.forms.user_profile import GuardianProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in GuardianProfileForm.declared_fields.items() if not field[1].required])
+                if callable(field):
+                    # A field whose choices aren't known at import time
+                    field = field(key, None)
                 elif field is not None:
-                    self.fields[key] = field
+                    # Copy it, since the form mutates the field (and the tag
+                    # dict's instance is shared by every request's form)
+                    field = copy.deepcopy(field)
                 elif tag_info.get('is_boolean', False):
-                    self.fields[key] = forms.BooleanField()
+                    field = forms.BooleanField()
                 else:
-                    self.fields[key] = forms.CharField()
-                self.fields[key].help_text = tag_info.get('help_text', '')
-                self.fields[key].initial = self.fields[key].default = tag_info.get('default')
-                self.fields[key].required = False
+                    field = forms.CharField()
+                self.fields[key] = field
+                field.help_text = tag_info.get('help_text', '')
+                field.initial = field.default = tag_info.get('default')
+                field.required = False
                 set_val = Tag.getBooleanTag(key) if tag_info.get('is_boolean', False) else Tag.getTag(key)
-                if set_val is not None and set_val != self.fields[key].initial:
-                    if isinstance(self.fields[key], forms.MultipleChoiceField):
-                        set_val = set_val.split(",")
-                    self.fields[key].initial = set_val
+                if set_val is not None and set_val != field.initial:
+                    if isinstance(field, forms.MultipleChoiceField):
+                        set_val = initial_choices(set_val, tag_info.get('json_list', False))
+                    preserve_current_choice(field, set_val)
+                    field.initial = set_val
 
     def save(self):
         for key in all_global_tags:
             # Update tags if necessary
             tag_info = all_global_tags[key]
             if tag_info.get('is_setting', False):
+                if key not in self.fields:
+                    # Not shown, so not submitted; leave the tag as it is
+                    continue
                 set_val = self.cleaned_data[key]
                 if isinstance(set_val, list):
-                    set_val = ",".join(set_val)
+                    set_val = join_choices(set_val, tag_info.get('json_list', False))
                 if not set_val in ("", "None", None, tag_info.get('default')):
                     # Set a [new] tag if a value was provided and the value is not the default
                     Tag.setTag(key, value=set_val)

@@ -461,3 +461,37 @@ class TeacherPreviewModuleTest(ProgramFrameworkTest):
         self.assertIsInstance(response.context['scheditems'], list)
         self.assertIsInstance(response.context['teachers'], bool)
         self.assertIsInstance(response.context['moderators'], bool)
+
+    def test_prepare_default_context_independent_across_calls(self):
+        """Separate calls to prepare() without context must receive independent dictionaries."""
+        from unittest.mock import patch
+        with patch('esp.program.modules.handlers.teacherpreviewmodule.get_current_request') as mock_req:
+            mock_req.return_value.user = self.teacher
+            res1 = self.moduleobj.prepare()
+            res2 = self.moduleobj.prepare()
+            self.assertIsNot(res1, res2)
+            res1['injected_leak'] = 'leaked_data'
+            res3 = self.moduleobj.prepare()
+            self.assertNotIn('injected_leak', res3)
+            self.assertEqual(res3['prog'], self.program)
+
+    def test_prepare_explicit_context_preserved(self):
+        """Explicit context dictionary must be preserved and mutated."""
+        from unittest.mock import patch
+        with patch('esp.program.modules.handlers.teacherpreviewmodule.get_current_request') as mock_req:
+            mock_req.return_value.user = self.teacher
+            explicit_ctx = {'initial_key': 'initial_val'}
+            res = self.moduleobj.prepare(explicit_ctx)
+            self.assertIs(res, explicit_ctx)
+            self.assertEqual(res['initial_key'], 'initial_val')
+            self.assertEqual(res['prog'], self.program)
+
+    def test_prepare_explicit_empty_dict_preserved(self):
+        """An explicit empty dictionary {} must not be replaced by a new dictionary."""
+        from unittest.mock import patch
+        with patch('esp.program.modules.handlers.teacherpreviewmodule.get_current_request') as mock_req:
+            mock_req.return_value.user = self.teacher
+            empty_ctx = {}
+            res = self.moduleobj.prepare(empty_ctx)
+            self.assertIs(res, empty_ctx)
+            self.assertEqual(res['prog'], self.program)

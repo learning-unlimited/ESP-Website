@@ -58,6 +58,7 @@ from esp.users.models import ESPUser, UserAvailability, StudentInfo, Record
 from esp.utils.decorators import cached_module_view, json_response
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import Transfer
+from esp.utils.ids import get_by_id_or_404, parse_id
 
 from decimal import Decimal
 
@@ -276,7 +277,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @no_auth
     @cached_module_view
     def timeslots(prog):
-        timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy MM/DD HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'short_description', 'label', 'start', 'end'))
+        timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy MM/DD HH:MI AM -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'short_description', 'label', 'start', 'end'))
         for i in range(len(timeslots)):
             timeslot_start = Event.objects.get(pk=timeslots[i]['id']).start
             timeslots_before = Event.objects.filter(start__lt=timeslot_start)
@@ -649,14 +650,20 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             return_key = request.GET['return_key']
         if 'section_id' in request.GET:
             if return_key is None: return_key = 'sections'
-            section_id = int(request.GET['section_id'])
+            section_id = parse_id(request.GET['section_id'])
+            if section_id is None:
+                raise Http404
             if return_key == 'sections':
-                section = ClassSection.objects.get(pk=section_id)
+                section = get_by_id_or_404(ClassSection, section_id)
             else:
                 matching_classes = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
             if return_key is None: return_key = 'classes'
-            class_id = int(request.GET['class_id'])
+            if return_key == 'sections':
+                raise Http404
+            class_id = parse_id(request.GET['class_id'])
+            if class_id is None:
+                raise Http404
             matching_classes = ClassSubject.objects.filter(id=class_id)
         else:
             raise ESPError('Need a section or subject ID to fetch catalog info', log=False)
@@ -668,6 +675,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         if return_key == 'sections':
             cls = section.parent_class
         else:
+            if not matching_classes:
+                raise Http404
             cls = matching_classes[0]
 
         section_info = []
@@ -713,14 +722,20 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         if 'section_id' in request.GET:
             if return_key is None: return_key = 'sections'
-            section_id = int(request.GET['section_id'])
+            section_id = parse_id(request.GET['section_id'])
+            if section_id is None:
+                raise Http404
             if return_key == 'sections':
-                section = ClassSection.objects.get(pk=section_id)
+                section = get_by_id_or_404(ClassSection, section_id)
             else:
                 target_qs = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
             if return_key is None: return_key = 'classes'
-            class_id = int(request.GET['class_id'])
+            if return_key == 'sections':
+                raise Http404
+            class_id = parse_id(request.GET['class_id'])
+            if class_id is None:
+                raise Http404
             target_qs = ClassSubject.objects.filter(id=class_id)
         else:
             raise ESPError('Need a section or subject ID to fetch catalog info', log=False)
@@ -733,6 +748,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             cls = section.parent_class
         else:
             matching_classes = ClassSubject.objects.catalog_cached(prog, initial_queryset=target_qs)
+            if not matching_classes:
+                raise Http404
             assert(len(matching_classes) == 1)
             cls = matching_classes[0]
 
@@ -762,14 +779,20 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         if 'section_id' in request.GET:
             if return_key is None: return_key = 'sections'
-            section_id = int(request.GET['section_id'])
+            section_id = parse_id(request.GET['section_id'])
+            if section_id is None   :
+                raise Http404
             if return_key == 'sections':
-                section = ClassSection.objects.get(pk=section_id)
+                section = get_by_id_or_404(ClassSection, section_id)
             else:
                 matching_classes = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
             if return_key is None: return_key = 'classes'
-            class_id = int(request.GET['class_id'])
+            if return_key == 'sections':
+                raise Http404
+            class_id = parse_id(request.GET['class_id'])
+            if class_id is None:
+                raise Http404
             matching_classes = ClassSubject.objects.filter(id=class_id)
         else:
             raise ESPError('Need a section or subject ID to fetch catalog info', log=False)
@@ -781,6 +804,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         if return_key == 'sections':
             cls = section.parent_class
         else:
+            if not matching_classes:
+                raise Http404
             assert(len(matching_classes) == 1)
             cls = matching_classes[0]
 
@@ -850,10 +875,12 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @cache_function
     def class_nums(prog):
+        drafts = prog.classes(include_drafts=True).filter(status=ClassStatus.DRAFT)
         classes = prog.classes().select_related()
         sections = prog.sections().select_related()
         class_num_list = []
         class_num_list.append(("Total # of Classes", classes.distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #888;'>Draft (unsubmitted)</span>", drafts.distinct().count()))
         class_num_list.append(("Total # of Classes Scheduled", classes.filter(sections__meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Class Sections", sections.distinct().count()))
         class_num_list.append(("Total # of Class Sections Scheduled", sections.filter(meeting_times__isnull=False).distinct().count()))

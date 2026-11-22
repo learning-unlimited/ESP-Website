@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 
 from unittest.mock import MagicMock
 
-from esp.program.modules.handlers.commmodule import _make_image_urls_absolute
+from esp.program.modules.handlers.commmodule import CommModule, _make_image_urls_absolute
 from esp.program.tests import ProgramFrameworkTest
 from esp.dbmail.models import ActionHandler, MessageRequest
 from esp.dbmail.cronmail import process_messages, send_email_requests
@@ -74,6 +74,14 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         # Get and remember the instance of this module
         m = ProgramModule.objects.get(handler='CommModule', module_type='manage')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
+
+    def test_missing_filter_id_returns_warning(self):
+        warnings = CommModule.get_mailer_warnings(10, 999999, '')
+        self.assertTrue(any('no longer valid' in warning for warning in warnings))
+
+    def test_non_integer_filter_id_returns_warning(self):
+        warnings = CommModule.get_mailer_warnings(10, 'not-an-id', '')
+        self.assertTrue(any('no longer valid' in warning for warning in warnings))
 
     def test_basic_comm_flow(self):
         #   Log in an administrator
@@ -141,6 +149,20 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         m = MessageRequest.objects.filter(recipients__id=filterid, subject='Test Subject 123')
         self.assertTrue(m.count() == 1)
         self.assertTrue(m[0].processed)
+
+    def test_missing_required_fields(self):
+        """ commprev, commfinal and maincomm2 should list every missing POST field in an ESPError. """
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+
+        expected_missing = {
+            'commprev': 'listcount, subject, body',
+            'commfinal': 'from, replyto, subject, body',
+            'maincomm2': 'listcount, from, replyto, subject, body',
+        }
+        for view, missing in expected_missing.items():
+            with self.subTest(view=view):
+                response = self.client.post(f'/manage/{self.program.getUrlBase()}/{view}', {'filterid': '1'})
+                self.assertContains(response, f'Missing required POST fields: {missing}.', status_code=500)
 
     def test_program_date_variables_in_comms(self):
         """Test that {{ program.date }}, {{ program.date_range }}, {{ program.teacher_reg_deadline }} work in email templates."""
@@ -228,3 +250,4 @@ class MakeImageUrlsAbsoluteTest(SimpleTestCase):
 
     def test_empty_body(self):
         self.assertEqual(_make_image_urls_absolute('', self._make_image_urls_absolute_request()), '')
+
