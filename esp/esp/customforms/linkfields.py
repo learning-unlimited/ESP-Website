@@ -3,7 +3,11 @@ from django.forms.models import fields_for_model
 from django.apps import apps
 from localflavor.us.forms import USStateField, USStateSelect
 from phonenumber_field.formfields import PhoneNumberField
-from phonenumber_field.widgets import PhoneNumberInternationalFallbackWidget
+try:
+    from phonenumber_field.widgets import PhoneNumberInternationalFallbackWidget
+except ImportError:
+    from phonenumber_field.widgets import PhoneNumberPrefixWidget as PhoneNumberInternationalFallbackWidget
+
 from esp.customforms.forms import NameField, AddressField, CustomFileWidget
 from esp.utils.forms import DummyField
 
