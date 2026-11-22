@@ -1,5 +1,6 @@
 from copy import deepcopy
 import json
+import logging
 import os
 
 from django.conf import settings
@@ -23,6 +24,8 @@ from django.contrib.auth.decorators import user_passes_test, login_required
 from esp.users.models import ESPUser
 from esp.middleware import ESPError, Http403
 from esp.utils.web import render_to_response, zip_download, error404
+
+logger = logging.getLogger(__name__)
 
 def test_func(user):
     return user.is_authenticated and (user.is_morphed() or user.isTeacher() or user.isAdministrator())
@@ -50,8 +53,24 @@ def formBuilder(request):
     if not (request.user.isAdministrator() or request.user.is_morphed()):
         form_list = form_list.filter(created_by=request.user)
     context = {'prog_list': prog_list, 'form_list': form_list, 'only_fkey_models': list(cf_cache.only_fkey_models.keys())}
+    builder_config = {
+        'programs': [{'id': prog.id, 'name': prog.niceName()} for prog in prog_list.order_by('-id')],
+        'forms': [{'id': form.id, 'title': form.title} for form in form_list],
+        'edit': None,
+        'edit_error': '',
+    }
     if 'edit' in request.GET and request.GET.get('edit'):
         context['edit'] = request.GET.get('edit')
+        try:
+            edit_id = int(context['edit'])
+        except ValueError:
+            edit_id = None
+        #   The builder only offers forms from the user's own list
+        if edit_id is not None and form_list.filter(id=edit_id).exists():
+            builder_config['edit'] = edit_id
+        else:
+            builder_config['edit_error'] = f'Form {context["edit"]} was not found, or you do not have permission to edit it.'
+    context['builder_config'] = builder_config
     return render_to_response('customforms/index.html', request, context)
 
 @user_passes_test(test_func)
@@ -218,7 +237,8 @@ def onModify(request):
             try:
                 metadata = json.loads(request.body)
                 try:
-                    form = Form.objects.get(id=int(metadata['form_id']))
+                    #   Locked until this save commits, so a metadata read for the same form waits for it
+                    form = Form.objects.select_for_update().get(id=int(metadata['form_id']))
 
                 except (Form.DoesNotExist, ValueError):
                     raise ESPError(f'Form {metadata["form_id"]} not found', log=False)
@@ -482,14 +502,23 @@ def getRebuildData(request):
         if request.method == 'GET':
             try:
                 form_id = int(request.GET['form_id'])
-            except ValueError:
+            except (KeyError, ValueError):
                 return HttpResponse(status=400)
-            form = Form.objects.get(pk=form_id)
-            fh = FormHandler(form=form, request=request)
-            try:
-                return HttpResponse(json.dumps(fh.rebuildData()))
-            except Exception as err:
-                return HttpResponse(json.dumps({'message': str(err)}), status=400)
+            #   Waits for any save of this form still in progress and holds the lock while reading,
+            #   so the builder never reads it half-done or stale
+            with transaction.atomic():
+                try:
+                    form = Form.objects.select_for_update().get(pk=form_id)
+                except Form.DoesNotExist:
+                    return JsonResponse({'message': f'Form {form_id} not found.'}, status=404)
+                if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+                    return JsonResponse({'message': 'You do not have permission to edit or copy this form.'}, status=403)
+                fh = FormHandler(form=form, request=request)
+                try:
+                    return JsonResponse(fh.rebuildData())
+                except Exception:
+                    logger.exception('Could not rebuild metadata for form %s', form_id)
+                    return JsonResponse({'message': 'The form’s data could not be read.'}, status=400)
     return HttpResponse(status=400)
 
 @user_passes_test(test_func)

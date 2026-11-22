@@ -4,4 +4,5 @@ Useful guides:
 
 * `<program_modules.rst>`_ for module setup and operations.
 * `<module_schedule.rst>`_ for module scheduling, role permissions, date inheritance, and permission date synchronization.
+* `<custom_forms.rst>`_ for building custom forms and quizzes.
 

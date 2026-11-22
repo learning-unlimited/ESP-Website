@@ -69,6 +69,13 @@ the teacher class registration form (``teacher_profile_hide_fields``,
 hidden from the form. The settings themselves are unchanged, so any values you
 have set already carry over and keep working.
 
+Custom Form Builder
+===================
+
+The custom form builder at /customforms/ has been rebuilt. Question types are listed on the left and can be clicked or dragged onto the form, the form is shown as respondents will see it, and the settings for the selected question, section or form are on the right. It adds undo and redo, a preview that checks the main answer rules (required questions, lengths, ranges and correct answers), a list of problems that would stop the form from saving, and a warning before leaving with unsaved changes. Linking a form to a program and adding it to student or teacher registration (including the teacher logistics quiz) are now settings of the form. See ``docs/admin/custom_forms.rst``.
+
+Existing forms and their responses are unchanged: the builder saves forms in the same format as before. It also stops changes that used to break forms or lose answers. Choices can't contain ``|``, which used to split one choice into two. Character and number limits must be whole numbers in a valid range, and short answers can't exceed the 30 or 60 characters their answers are stored in. Saved questions can only change to types that keep their existing answers. Program group limits must name a group. Save errors, including an expired session, are now shown instead of leaving the Save button disabled.
+
 Profile Page Sections
 =====================
 
@@ -85,6 +92,7 @@ field has its own label, and fields with errors are highlighted.
 Bug Fixes
 =========
 
+- Editing a custom form no longer clears its thank-you message and redirect address.
 - The teacher custom form, teacher quiz and student custom form module pages now check required fields and field formats in the browser before submitting, as standalone custom forms do. The date check on all custom forms now also accepts the format the site re-displays saved dates in (such as "2026-11-14"). Phone numbers are no longer checked in the browser, which rejected international numbers the site accepts; the server still checks them.
 - The "First Step" and "Prev Step" buttons on custom forms no longer require the current page to be filled in correctly, so users can go back without completing it first.
 - Custom form questions linked to contact info (name, email, phone, address or text message request) now show and save the user's own contact info.
