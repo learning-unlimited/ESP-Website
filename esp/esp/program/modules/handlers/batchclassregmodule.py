@@ -104,12 +104,14 @@ class BatchClassRegModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def batchclassregfinal(self, request, tl, one, two, module, extra, prog):
-        if request.method != 'POST' or 'filterid' not in request.GET:
-            raise ESPError()('Filter and/or section has not been properly set')
+        if request.method != 'POST':
+            return self.redirect_to_main_view()
+        if 'filterid' not in request.GET:
+            raise ESPError('Filter and/or section has not been properly set', log=False)
 
         section_id = request.POST.get('section_id', '')
         if not section_id:
-            raise ESPError()('No class section was selected')
+            raise ESPError('No class section was selected', log=False)
 
         try:
             section = ClassSection.objects.get(
@@ -117,12 +119,12 @@ class BatchClassRegModule(ProgramModuleObj):
                 parent_class__parent_program=prog
             )
         except (ClassSection.DoesNotExist, ValueError):
-            raise ESPError()('Invalid class section selected')
+            raise ESPError('Invalid class section selected', log=False)
 
         try:
             filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
         except (PersistentQueryFilter.DoesNotExist, ValueError):
-            raise ESPError()('The specified filter no longer exists or is invalid. Please restart the batch class registration process.')
+            raise ESPError('The specified filter no longer exists or is invalid. Please restart the batch class registration process.', log=False)
         override_full = 'override_full' in request.POST
 
         result = self.batch_register(filterObj, section, override_full)

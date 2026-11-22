@@ -73,20 +73,22 @@ class DeactivationModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def deactivatefinal(self, request, tl, one, two, module, extra, prog):
-        if request.method != 'POST' or 'filterid' not in request.GET:
-            raise ESPError()('Filter has not been properly set')
+        if request.method != 'POST':
+            return self.redirect_to_main_view()
+        if 'filterid' not in request.GET:
+            raise ESPError('Filter has not been properly set', log=False)
         elif request.POST.get('confirm', '') == '':
-            raise ESPError()('You must confirm that you want to deactivate these users.')
+            raise ESPError('You must confirm that you want to deactivate these users.', log=False)
 
         # Get the filter to use from the request; this is set earlier in the mass deactivation flow.
         try:
             filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
         except (PersistentQueryFilter.DoesNotExist, ValueError):
-            raise ESPError()('The selected filter no longer exists or is invalid. Please restart the deactivation process.')
+            raise ESPError('The selected filter no longer exists or is invalid. Please restart the deactivation process.', log=False)
         users = filterObj.getList(ESPUser)
 
         if not users:
-            raise ESPError()("Your query did not match any users")
+            raise ESPError("Your query did not match any users", log=False)
 
         logger = logging.getLogger(__name__)
         logger.info("Mass deactivated users: %s", ", ".join([str(user.id) for user in users]))

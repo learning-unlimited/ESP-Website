@@ -72,14 +72,16 @@ class UserGroupModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def usergroupfinal(self, request, tl, one, two, module, extra, prog):
-        if request.method != 'POST' or 'filterid' not in request.GET or (request.POST.get('group_name_new', '') and request.POST.get('group_name_old', '')):
-            raise ESPError()('Filter and/or group has not been properly set')
+        if request.method != 'POST':
+            return self.redirect_to_main_view()
+        if 'filterid' not in request.GET or (request.POST.get('group_name_new', '') and request.POST.get('group_name_old', '')):
+            raise ESPError('Filter and/or group has not been properly set', log=False)
 
         # get the filter to use and text message to send from the request; this is set in grouptextpanel form
         try:
             filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
         except (PersistentQueryFilter.DoesNotExist, ValueError):
-            raise ESPError()('The specified filter no longer exists or is invalid. Please restart the user group management process.')
+            raise ESPError('The specified filter no longer exists or is invalid. Please restart the user group management process.', log=False)
         if request.POST.get('group_name_new', ''):
             group = request.POST['group_name_new']
         else:
