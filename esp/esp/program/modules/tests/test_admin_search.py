@@ -147,7 +147,7 @@ class FeaturedModuleSearchEntryTest(ProgramFrameworkTest):
         avoid broken search links (e.g. /manage/<prog>/grouptextfinal).
         """
         aux_views = [
-            'create_autorule', 'batchclassregfinal', 'grouptextfinal',
+            'bulk_add_flag', 'batchclassregfinal', 'grouptextfinal',
             'deactivatefinal', 'usergroupfinal', 'userrecordsfinal',
             'start_testing', 'reset_testing', 'survey_manage',
         ]
