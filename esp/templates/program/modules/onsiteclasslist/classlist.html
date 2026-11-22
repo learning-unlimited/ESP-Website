@@ -25,7 +25,8 @@ function update_full_status()
     //   Skip this tick if the last poll hasn't returned, so responses can't arrive out of order
     if (full_status_pending) return;
     full_status_pending = true;
-    $j.getJSON(full_status_url, function(data) {
+    //   Timeout so a hung request can't block polling until the next reload
+    $j.ajax({url: full_status_url, dataType: "json", timeout: 60000}).done(function(data) {
         var full = {};
         $j.each(data, function(i, pair) { full[pair[0]] = pair[1]; });
         $j("tr[data-section-id]").each(function() {
