@@ -116,6 +116,8 @@ class AdminClass(ProgramModuleObj):
         return context
 
     def getClassFromId(self, request, clsid):
+        if clsid is None:
+            raise ESPError('No class was specified.', log=False)
         try:
             clsid = int(clsid)
         except ValueError:
