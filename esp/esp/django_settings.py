@@ -392,9 +392,16 @@ STRIPE_CONFIG = {
 
 # Settings for Cybersource credit card payments. Unlike Stripe, does not support
 # overrides.
+# 'secret_key' is the shared secret for the Secure Acceptance profile used to
+# sign outgoing requests and verify incoming postbacks (see esp.accounting.
+# cybersource). It must be set for the credit card module to be enabled;
+# without it, payments cannot be securely authenticated.
 CYBERSOURCE_CONFIG = {
     'post_url': '',
     'merchant_id': '',
+    'access_key': '',
+    'profile_id': '',
+    'secret_key': '',
 }
 
 FILEBROWSER_CUSTOM_ADMIN = 'esp.admin.admin_site'
