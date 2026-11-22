@@ -350,6 +350,61 @@ class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
             'Must not create Priority/1 registration for unapproved class',
         )
 
+    def _add_section_in_same_timeblock(self, cls, sec, status=None):
+        """Add a second section of ``cls`` meeting at the same times as ``sec``."""
+        extra = cls.add_section(status=status)
+        extra.assign_meeting_times(list(sec.meeting_times.all()))
+        return extra
+
+    def _priority_sections(self, student, cls):
+        return list(StudentRegistration.valid_objects().filter(
+            user=student,
+            relationship__name='Priority/1',
+            section__parent_class=cls,
+        ).values_list('section_id', flat=True))
+
+    def test_save_priorities_class_with_two_sections_in_timeblock(self):
+        """A class with 2+ sections in the timeblock still gets its priority saved."""
+        timeslot, cls, sec = self._first_timeslot_with_scheduled_section()
+        extra = self._add_section_in_same_timeblock(cls, sec)
+        student = self.students[0]
+
+        response = self._save_priorities_post(student, timeslot, cls.id)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self._priority_sections(student, cls), [min(sec.id, extra.id)])
+
+    def test_save_priorities_prefers_approved_section(self):
+        """If the lowest-id section isn't approved, the approved one is used."""
+        timeslot, cls, sec = self._first_timeslot_with_scheduled_section()
+        extra = self._add_section_in_same_timeblock(cls, sec)
+        ClassSection.objects.filter(id=sec.id).update(status=ClassStatus.UNREVIEWED)
+        student = self.students[0]
+
+        self._save_priorities_post(student, timeslot, cls.id)
+        self.assertEqual(self._priority_sections(student, cls), [extra.id])
+
+    def test_save_priorities_two_sections_resave_keeps_single_registration(self):
+        """Saving the same choice again doesn't duplicate or move the registration."""
+        timeslot, cls, sec = self._first_timeslot_with_scheduled_section()
+        self._add_section_in_same_timeblock(cls, sec)
+        student = self.students[0]
+
+        self._save_priorities_post(student, timeslot, cls.id)
+        first = self._priority_sections(student, cls)
+        self._save_priorities_post(student, timeslot, cls.id)
+        self.assertEqual(self._priority_sections(student, cls), first)
+        self.assertEqual(len(first), 1)
+
+    def test_save_priorities_class_not_in_timeblock_is_skipped(self):
+        """A class with no section starting in the timeblock is still skipped and logged."""
+        timeslot, cls, sec = self._first_timeslot_with_scheduled_section()
+        other_slot = next(t for t in self.timeslots if t.start != timeslot.start)
+        student = self.students[0]
+
+        with self.assertLogs(self.LOGGER_NAME, level='WARNING'):
+            self._save_priorities_post(student, other_slot, cls.id)
+        self.assertEqual(self._priority_sections(student, cls), [])
+
     # Tests: Minimum class requirement (twophase_min_classes tag)
     # ---------------------------------------------------------------
     def test_min_classes_rejects(self):
