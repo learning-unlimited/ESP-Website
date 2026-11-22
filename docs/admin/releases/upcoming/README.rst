@@ -95,6 +95,7 @@ Bug Fixes
 - Teachers can now edit their class website pages inline. Inline editing controls and the "Edit this page" button were previously only shown to administrators, even though teachers of a class have permission to edit its pages. Logged-in non-admins now see the editing controls for any page or inline text block they have permission to edit, and nothing else.
 - Creating a survey question type in the admin panel now fails with a validation error if there is no matching question template, instead of creating a question type that crashes any survey that uses it.
 - Charts (such as on the big board, onsite attendance, statistics, accounting and map pages) now load Highcharts' accessibility module, which adds keyboard navigation and screen reader descriptions and removes a Highcharts warning from the browser console.
+- The comm panel now warns you when embedded (pasted) images are removed from an email.
 
 Developer Notes
 ===============

@@ -1076,6 +1076,18 @@ class StripBase64ImagesTest(DjangoTestCase):
         self.assertEqual(result, html)
         self.assertEqual(count, 0)
 
+    def test_uppercase_data_scheme_stripped(self):
+        html = '<p>Hi</p><img src="DATA:image/png;base64,AAA">'
+        result, count = self.strip(html)
+        self.assertEqual(count, 1)
+        self.assertEqual(result, '<p>Hi</p>')
+
+    def test_uppercase_css_data_uri_stripped(self):
+        html = '<div style="background: URL(Data:Image/png;base64,AAA)">text</div>'
+        result, count = self.strip(html)
+        self.assertEqual(count, 1)
+        self.assertNotIn('base64', result)
+
 class RunInstallTestCase(unittest.TestCase):
     """Regression tests for the run_install post_migrate signal handler."""
 

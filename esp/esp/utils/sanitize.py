@@ -91,7 +91,7 @@ def strip_base64_images(html):
         Tuple of ``(sanitized_html, count_removed)`` where *count_removed*
         is the total number of base64 occurrences that were stripped.
     """
-    if not html or 'data:' not in html:
+    if not html or 'data:' not in html.lower():
         return html, 0
 
     result, img_count = _strip_base64_img_tags(html)
