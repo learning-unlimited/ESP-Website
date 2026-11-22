@@ -16,17 +16,23 @@ var page_load_time = Date.now();
 var refresh_interval_ms = {{ refresh }} * 1000;
 
 var full_status_url = "/onsite/{{ one }}/{{ two }}/full_status?ignore_changes=true";
+var full_status_pending = false;
 
 //   Mark listed classes that have filled up (or been cancelled) since the page loaded,
 //   without changing row heights so the scroll never jumps.
 function update_full_status()
 {
+    //   Skip this tick if the last poll hasn't returned, so responses can't arrive out of order
+    if (full_status_pending) return;
+    full_status_pending = true;
     $j.getJSON(full_status_url, function(data) {
         var full = {};
         $j.each(data, function(i, pair) { full[pair[0]] = pair[1]; });
         $j("tr[data-section-id]").each(function() {
             $j(this).toggleClass("now_full", full[$j(this).attr("data-section-id")] !== false);
         });
+    }).always(function() {
+        full_status_pending = false;
     });
 }
 
