@@ -56,12 +56,12 @@ Every delivery appends a ``Delivered-To`` header naming the address it was deliv
 Delivery failures
 ~~~~~~~~~~~~~~~~~
 
-A recipient that the mail server refuses, or whose address is malformed, is skipped and logged; the remaining recipients still receive the message.  A transient failure (an SMTP error, or a network or DNS problem) makes the mailgate exit with status 75, so Exim keeps the message queued and retries it.  If that happens partway through a list, recipients who already received the message may get a second copy.
+Recipient entries containing several comma-separated addresses (as a ``PlainRedirect`` destination may) are split into individual addresses.  A malformed address, or a recipient that the mail server permanently refuses (a 5xx reply), is skipped and logged; the remaining recipients still receive the message.  A transient failure (a temporary 4xx refusal, another SMTP error, or a network or DNS problem) makes the mailgate exit with status 75, so Exim keeps the message queued and retries it.  If that happens partway through a list, recipients who already received the message may get a second copy.
 
 Bounces
 ~~~~~~~
 
-When no handler delivers a message, or every recipient is refused, an "undeliverable" notice goes back to the sender, provided they have an account on the site.  Notices are limited to one per sender per ``MAILGATE_BOUNCE_INTERVAL`` seconds (default 24 hours; set to ``0`` to disable), which prevents a forged ``From`` being used to aim a run of them at one user.
+When no handler delivers a message, or every recipient is refused, an "undeliverable" notice goes to the email address on the sender's account (not the possibly rewritten ``From``).  Notices are limited to one per sender per ``MAILGATE_BOUNCE_INTERVAL`` seconds (default 24 hours; set to ``0`` to disable), which prevents a forged ``From`` being used to aim a run of them at one user.
 
 Configuration
 ~~~~~~~~~~~~~

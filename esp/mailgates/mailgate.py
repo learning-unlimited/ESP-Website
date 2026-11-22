@@ -58,8 +58,10 @@ import django
 django.setup()
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.core.mail import get_connection
 from django.core.mail.message import EmailMessage
+from django.core.validators import validate_email
 from esp.dbmail.base import sender_account
 from esp.dbmail.models import EmailList, send_mail as dbmail_send_mail
 from esp.users.models import ESPUser
@@ -189,8 +191,8 @@ def _rewrite_headers(message, handler_row, instance, list_address, sender):
     # Point replies back at the list rather than at whoever wrote in
     reply_to = [list_address]
     # Also include the sender in the Reply-To if they are not already on the list.
-    member_addresses = {email.utils.parseaddr(recipient)[1].lower()
-                        for recipient in instance.recipients}
+    member_addresses = {address.lower() for _name, address
+                        in email.utils.getaddresses(instance.recipients)}
     if (sender.email or '').lower() not in member_addresses:
         reply_to.append('%s@%s' % (sender.username, SITE_DOMAIN))
     del message['Reply-To']
@@ -216,6 +218,29 @@ def _rewrite_headers(message, handler_row, instance, list_address, sender):
     message['Message-ID'] = email.utils.make_msgid(domain=host)
 
 
+def _split_recipients(recipients):
+    """Split comma-separated entries into single addresses, dropping malformed ones.
+
+    A PlainRedirect destination may list several addresses in one entry. Django's
+    SMTP backend rejects a whole message if any one address fails to parse, so a
+    single bad entry would otherwise block every recipient of a cc_all list.
+    """
+    valid = []
+    for name, address in email.utils.getaddresses(recipients):
+        try:
+            validate_email(address)
+        except ValidationError:
+            logger.warning("Skipping malformed recipient address %r", address)
+            continue
+        valid.append(email.utils.formataddr((name, address)))
+    return valid
+
+
+def _is_permanent_refusal(exc):
+    """True if every recipient in an SMTPRecipientsRefused was refused with a 5xx."""
+    return all(code >= 500 for code, _response in exc.recipients.values())
+
+
 def deliver(message, recipients, cc_all, sender):
     """Send `message` to `recipients` using this site's configured mail backend.
 
@@ -223,12 +248,17 @@ def deliver(message, recipients, cc_all, sender):
     message's own To/Cc/Bcc headers, so this cannot be used to relay mail to an
     arbitrary address.
 
-    Returns the recipients the message was handed off for. A recipient the server
-    refuses, or whose address is malformed, is skipped so the rest still receive
-    the message. Transient errors propagate so the MTA retries the whole message.
+    Returns the recipients the message was handed off for. A malformed address,
+    or a recipient the server permanently (5xx) refuses, is skipped so the rest
+    still receive the message. Temporary (4xx) refusals and other transient errors
+    propagate so the MTA retries the whole message.
     """
     # Rewrite From: to the sender's site alias so the message passes DMARC
     _alias_sender(message, sender)
+
+    recipients = _split_recipients(recipients)
+    if not recipients:
+        return []
 
     # cc_all lists go out as a single message naming everyone; otherwise each
     # recipient gets their own copy addressed to them alone.
@@ -244,7 +274,14 @@ def deliver(message, recipients, cc_all, sender):
             try:
                 connection.send_messages(
                     [_ForwardedMessage(message, BOUNCES, batch, connection)])
-            except (smtplib.SMTPRecipientsRefused, ValueError):
+            except smtplib.SMTPRecipientsRefused as exc:
+                if not _is_permanent_refusal(exc):
+                    raise
+                logger.warning("Recipient(s) %s permanently refused; skipping",
+                               batch, exc_info=True)
+                continue
+            except ValueError:
+                # Django could not parse an address that passed validate_email
                 logger.warning("Could not forward message to %s; skipping",
                                batch, exc_info=True)
                 continue
@@ -318,12 +355,14 @@ def _bounce_allowed(sender_email):
     return bool(cache.add(key, True, interval))
 
 
-def bounce(delivery_address, message):
+def bounce(delivery_address, sender_email):
     """Tell a registered sender that their message could not be delivered.
+
+    `sender_email` is the sender's account address, not the message's From, which
+    may by now have been rewritten to the sender's site alias.
 
     For security reasons, only senders who have an account on the site are notified.
     """
-    _sender_name, sender_email = email.utils.parseaddr(message.get('From', ''))
     if not sender_email:
         return
     # Anti-loop: never bounce to our own system address
@@ -390,7 +429,7 @@ def main():
 
     if not dispatch(local_part, message, sender):
         logger.info("Nothing delivered for `%s`", delivery_address)
-        bounce(delivery_address, message)
+        bounce(delivery_address, sender.email)
 
 
 if __name__ == "__main__":

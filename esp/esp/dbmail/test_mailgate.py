@@ -3,22 +3,26 @@
 The mailgate lives outside the `esp` package (Exim invokes it directly), so it is
 loaded here by path rather than imported. Delivery is exercised through
 MAILGATE_EMAIL_BACKEND pointed at Django's locmem backend, which captures whole
-messages in `mail.outbox`.
+messages in `mail.outbox`, or through Django's real SMTP backend talking to a
+fake server where address validation and SMTP refusals matter.
 """
 from __future__ import absolute_import
 
+import contextlib
 import email
 import importlib.util
+import io
 import os
 import smtplib
 from unittest.mock import patch
 
 from django.core import mail
 from django.core.cache import cache
-from django.core.mail.backends.locmem import EmailBackend as LocmemBackend
+from django.core.mail import get_connection
 from django.test import override_settings
 
 from esp.dbmail.base import sender_account
+from esp.dbmail.models import EmailList, PlainRedirect
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.models import ESPUser
 
@@ -47,16 +51,41 @@ def _message(frm='teacher@example.com', to='list@dev.learningu.org',
     return email.message_from_bytes(raw, _class=mailgate._RawMIMEMessage)
 
 
-class _RefusingBackend(LocmemBackend):
-    """Locmem backend that refuses `@refused.invalid`, as an SMTP server would."""
+def _fake_sendmail(from_addr, to_addrs, msg, *args, **kwargs):
+    """Answer as smtplib does: 550 for `@refused.invalid`, 450 for `@busy.invalid`."""
+    refused = {}
+    for addr in to_addrs:
+        if addr.endswith('@refused.invalid'):
+            refused[addr] = (550, b'No such user')
+        elif addr.endswith('@busy.invalid'):
+            refused[addr] = (450, b'Try again later')
+    if refused and len(refused) == len(to_addrs):
+        raise smtplib.SMTPRecipientsRefused(refused)
+    return refused
 
-    def send_messages(self, messages):
-        for message in messages:
-            refused = [r for r in message.recipients() if r.endswith('@refused.invalid')]
-            if refused:
-                raise smtplib.SMTPRecipientsRefused(
-                    {r: (550, b'No such user') for r in refused})
-        return super().send_messages(messages)
+
+@contextlib.contextmanager
+def _smtp_server():
+    """Route deliver() through Django's real SMTP backend to a fake server.
+
+    Unlike locmem, the SMTP backend parses every address, as in production.
+    Yields the fake server's sendmail mock.
+    """
+    def connection():
+        return get_connection('django.core.mail.backends.smtp.EmailBackend',
+                              host='localhost', port=25, username='', password='',
+                              use_tls=False, use_ssl=False)
+
+    with patch('smtplib.SMTP') as smtp_class, \
+            patch.object(mailgate, '_mail_connection', side_effect=connection):
+        sendmail = smtp_class.return_value.sendmail
+        sendmail.side_effect = _fake_sendmail
+        yield sendmail
+
+
+def _envelopes(sendmail):
+    """The envelope recipients of each message the fake server was handed."""
+    return [call.args[1] for call in sendmail.call_args_list]
 
 
 class MailgateHelperTest(TestCase):
@@ -166,24 +195,50 @@ class MailgateDeliveryTest(TestCase):
         self.assertIn(b'attachment stand-in',
                       mail.outbox[0].message().as_bytes(linesep='\r\n'))
 
-    def test_refused_recipient_does_not_block_the_rest(self):
+
+class MailgateSMTPTest(TestCase):
+    """deliver() through Django's SMTP backend: addresses and refusals."""
+
+    def setUp(self):
+        super().setUp()
+        user_role_setup()
+        self.teacher = ESPUser.objects.create_user(
+            username='mg_smtp', email='smtp@example.com', password='pw')
+        self.teacher.makeRole('Teacher')
+
+    def _deliver(self, recipients, cc_all=False):
+        with _smtp_server() as sendmail:
+            delivered = mailgate.deliver(_message(), recipients, cc_all, self.teacher)
+        return delivered, _envelopes(sendmail)
+
+    def test_comma_separated_destination_is_split(self):
+        """A PlainRedirect may list several destinations in one entry."""
+        delivered, envelopes = self._deliver(['a@x.com, b@y.com'])
+        self.assertEqual(delivered, ['a@x.com', 'b@y.com'])
+        self.assertEqual(envelopes, [['a@x.com'], ['b@y.com']])
+
+    def test_malformed_address_does_not_block_cc_all(self):
+        delivered, envelopes = self._deliver(
+            ['valid@example.com', 'also@example.com, not-an-address'], cc_all=True)
+        self.assertEqual(delivered, ['valid@example.com', 'also@example.com'])
+        self.assertEqual(envelopes, [['valid@example.com', 'also@example.com']])
+
+    def test_permanently_refused_recipient_is_skipped(self):
         """Raising would make the MTA retry, duplicating earlier copies and
         never reaching later recipients."""
-        with patch.object(mailgate, '_mail_connection', return_value=_RefusingBackend()):
-            delivered = mailgate.deliver(
-                _message(), ['a@x.com', 'gone@refused.invalid', 'b@y.com'],
-                False, self.teacher)
-
+        delivered, envelopes = self._deliver(
+            ['a@x.com', 'gone@refused.invalid', 'b@y.com'])
         self.assertEqual(delivered, ['a@x.com', 'b@y.com'])
-        self.assertEqual([m.to for m in mail.outbox], [['a@x.com'], ['b@y.com']])
+        self.assertEqual(len(envelopes), 3)
 
     def test_all_recipients_refused_delivers_nothing(self):
-        with patch.object(mailgate, '_mail_connection', return_value=_RefusingBackend()):
-            delivered = mailgate.deliver(
-                _message(), ['gone@refused.invalid'], False, self.teacher)
-
+        delivered, _envelopes = self._deliver(['gone@refused.invalid'])
         self.assertEqual(delivered, [])
-        self.assertEqual(mail.outbox, [])
+
+    def test_temporary_refusal_is_retried(self):
+        """A 4xx refusal must reach the MTA's retry path, not be skipped."""
+        with self.assertRaises(smtplib.SMTPRecipientsRefused):
+            self._deliver(['a@x.com', 'full@busy.invalid'])
 
 
 @override_settings(MAILGATE_EMAIL_BACKEND=LOCMEM)
@@ -240,8 +295,8 @@ class MailgateBounceTest(TestCase):
         mail.outbox = []
         self.address = mailgate._delivery_address('nosuchaddress')
 
-    def _bounce(self, frm):
-        mailgate.bounce(self.address, _message(frm=frm))
+    def _bounce(self, sender_email):
+        mailgate.bounce(self.address, sender_email)
 
     def test_registered_sender_is_notified(self):
         self._bounce('known@example.com')
@@ -255,8 +310,8 @@ class MailgateBounceTest(TestCase):
         self._bounce('stranger@evil.com')
         self.assertEqual(mail.outbox, [])
 
-    def test_empty_from_is_ignored(self):
-        mailgate.bounce(self.address, _message(frm=''))
+    def test_empty_sender_is_ignored(self):
+        self._bounce('')
         self.assertEqual(mail.outbox, [])
 
     def test_support_address_is_never_bounced_to(self):
@@ -275,3 +330,59 @@ class MailgateBounceTest(TestCase):
         self._bounce('known@example.com')
         self._bounce('known@example.com')
         self.assertEqual(len(mail.outbox), 2)
+
+
+@override_settings(EMAIL_BACKEND=LOCMEM)
+class MailgateMainTest(TestCase):
+    """main() end to end: routing, sender checks and bounces."""
+
+    def setUp(self):
+        super().setUp()
+        user_role_setup()
+        self.teacher = ESPUser.objects.create_user(
+            username='mg_main', email='main@example.com', password='pw')
+        self.teacher.makeRole('Teacher')
+        # The default routes, as created by the dbmail migrations
+        for seq, handler in ((30, 'PlainList'), (40, 'UserEmail')):
+            if not EmailList.objects.filter(handler=handler).exists():
+                EmailList.objects.create(regex=r'^(.*)$', seq=seq, handler=handler)
+        PlainRedirect.objects.create(original='directors',
+                                     destination='a@x.com, b@y.com')
+        PlainRedirect.objects.create(original='gone',
+                                     destination='gone@refused.invalid')
+        cache.clear()
+        mail.outbox = []
+
+    def _run(self, local_part, frm='main@example.com'):
+        raw = _message(frm=frm).as_bytes()
+        with patch.dict(os.environ, {'LOCAL_PART': local_part}), \
+                patch.object(mailgate.sys, 'stdin', io.TextIOWrapper(io.BytesIO(raw))), \
+                _smtp_server() as sendmail:
+            mailgate.main()
+        return _envelopes(sendmail)
+
+    def test_redirect_reaches_every_destination(self):
+        self.assertEqual(self._run('Directors'), [['a@x.com'], ['b@y.com']])
+        self.assertEqual(mail.outbox, [])
+
+    def test_unregistered_sender_is_not_forwarded(self):
+        self.assertEqual(self._run('directors', frm='stranger@evil.com'), [])
+        self.assertEqual(mail.outbox, [])
+
+    def test_empty_from_is_not_forwarded(self):
+        self.assertEqual(self._run('directors', frm=''), [])
+        self.assertEqual(mail.outbox, [])
+
+    def test_malformed_from_is_not_forwarded(self):
+        self.assertEqual(self._run('directors', frm='not an address'), [])
+        self.assertEqual(mail.outbox, [])
+
+    def test_unknown_address_bounces_to_sender(self):
+        self.assertEqual(self._run('nosuchaddress'), [])
+        self.assertEqual([m.to for m in mail.outbox], [['main@example.com']])
+
+    def test_refused_delivery_bounces_to_account_address(self):
+        """By the time the bounce is sent, From has been rewritten to the
+        sender's site alias, which matches no stored email."""
+        self._run('gone')
+        self.assertEqual([m.to for m in mail.outbox], [['main@example.com']])
