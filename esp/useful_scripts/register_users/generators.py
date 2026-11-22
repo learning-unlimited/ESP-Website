@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 import csv
 import random
@@ -6,7 +7,7 @@ import collections
 from io import open
 
 
-base_dir = os.path.dirname(__file__)
+base_dir = Path(__file__).resolve().parent
 
 RandomPerson = collections.namedtuple('RandomPerson', (
         'first', 'last', 'middle', 'full', 'comma_full', 'email', 'username',
@@ -27,7 +28,7 @@ def random_userType():
 
 def random_people(userType=random_userType):
     " Generate random names. "
-    random_name_db = csv.reader(open(os.path.join(base_dir, 'random_names.csv')))
+    random_name_db = csv.reader(open(base_dir / 'random_names.csv'))
     next(random_name_db)
     random_names = list(random_name_db)
     random.shuffle(random_names)

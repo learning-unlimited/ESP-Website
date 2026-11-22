@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from pathlib import Path
 #
 # Import classrooms from a CSV file. Columns should be:
 #   Date: 11/22/2014
@@ -27,7 +28,7 @@ REFPROG = Program.objects.get(name=input("Reference program: "))
 RESOURCE_TYPES = ResourceType.objects.filter(program=PROGRAM)
 RTYPE_CLASS_SPACE = RESOURCE_TYPES.get(name__iexact='Classroom space')
 
-filename = os.path.expanduser(input("Full path to CSV file: "))
+filename = str(Path(input("Full path to CSV file: ")).expanduser())
 csvfile = open(filename, "r")
 reader = csv.reader(csvfile)
 
