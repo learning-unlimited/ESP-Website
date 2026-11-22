@@ -7,7 +7,7 @@
   <script type="application/json" class="print-panel-data">{{ data_json|safe }}</script>
   <div class="control-group"><label for="{{ panel_id }}-location">Print to</label>
     <select id="{{ panel_id }}-location" name="location" class="input-xlarge print-panel-location">
-      {% for l in locations %}<option value="{{ l.id }}">{{ l.name }}{% if l.is_default %} (default){% endif %}{% if not l.connected %} &mdash; not connected{% elif l.trouble %} &mdash; not printing{% endif %}</option>{% endfor %}
+      {% for l in locations %}<option value="{{ l.id }}">{{ l.name }}{% if l.is_default %} (default){% endif %}{% if not l.connected %} &mdash; not connected{% elif l.trouble %} &mdash; potential error{% endif %}</option>{% endfor %}
     </select>
     <div class="print-panel-status"><small></small></div>
   </div>
@@ -31,5 +31,6 @@
   <p><button type="{% if submit %}submit{% else %}button{% endif %}" name="action" value="print" class="btn btn-primary print-panel-button"><span class="glyphicon glyphicon-print" aria-hidden="true"></span> {{ button }}</button>
     <span class="print-panel-message"></span></p>
   {% endif %}
+  <div class="print-panel-jobs" aria-live="polite"></div>
 </div>
 <script type="text/javascript" src="/media/scripts/onsite/print_panel.js"></script>

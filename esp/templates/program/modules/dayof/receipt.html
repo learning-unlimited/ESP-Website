@@ -72,6 +72,7 @@
         }).then(function (r) {
             msg.className = 'print-panel-message ' + (r.ok ? 'text-success' : 'text-error');
             msg.textContent = r.ok ? r.body.message : (r.body.error || 'Could not queue it. Try again.');
+            if (r.ok) { window.espPrintPanel.watch(panel, r.body.jobs); }
         }).catch(function () {
             msg.className = 'print-panel-message text-error';
             msg.textContent = 'Could not queue it. Try again.';

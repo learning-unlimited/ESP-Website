@@ -1497,9 +1497,11 @@ def print_pdf(request):
                 warning = printing.trouble_warning(jobs[0])
                 if warning:
                     messages.warning(request, warning)
-                return HttpResponseRedirect(request.path)
+                #   (the print panel then shows how they're getting on)
+                return HttpResponseRedirect('%s?jobs=%s' % (request.path, ','.join(str(j.id) for j in jobs)))
     return render_to_response('program/print_pdf.html', request, {
         'max_mb': PRINT_PDF_MAX_BYTES // (1024 * 1024),
+        'watch_jobs': printing.job_ids_param(request.GET.get('jobs')),
     })
 
 
@@ -1551,10 +1553,12 @@ def qr_code(request):
                 warning = printing.trouble_warning(job)
                 if warning:
                     messages.warning(request, warning)
-                #   So reloading the page doesn't print it again
-                return HttpResponseRedirect('%s?%s' % (request.path, urlencode(fields)))
+                #   So reloading the page doesn't print it again (and the print
+                #   panel then shows how it's getting on)
+                return HttpResponseRedirect('%s?%s' % (request.path, urlencode(dict(fields, jobs=job.id))))
         for e in errors:
             messages.error(request, e)
     return render_to_response('program/qr_code.html', request, {
+        'watch_jobs': printing.job_ids_param(request.GET.get('jobs')),
         'fields': fields, 'max_link': qr_sign.MAX_LINK, 'max_title': qr_sign.MAX_TITLE,
         'max_caption': qr_sign.MAX_CAPTION})

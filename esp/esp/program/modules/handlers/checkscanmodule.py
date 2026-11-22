@@ -260,7 +260,8 @@ class CheckScanModule(ProgramModuleObj):
         cs.audit(request.user, 'deposit slip printed', slip=slip.uid, location=location.name, job=job.id)
         warning = printing.trouble_warning(job)
         return _json({'message': 'Sent %s to %s (job #%d).%s' % (job.describe(), location.name, job.id,
-                                                                  ' ' + warning if warning else '')})
+                                                                  ' ' + warning if warning else ''),
+                      'jobs': [job.id]})
 
     class Meta:
         proxy = True

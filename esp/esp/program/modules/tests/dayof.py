@@ -897,9 +897,13 @@ class PrintingTest(DayOfTestBase):
         self.assertContains(upload(name='x.pdf', data=b'hello'), "x.pdf isn&#39;t a PDF")
         self.assertFalse(PrintRequest.objects.exists())
         self.assertContains(upload(copies='1000'), 'Copies must be from 1 to 999')
-        self.assertContains(upload(), 'Sent 1 file (2 copies each) to Help desk')
+        response = upload()
+        self.assertContains(response, 'Sent 1 file (2 copies each) to Help desk')
         job = PrintRequest.objects.get(kind='pdf')
         self.assertEqual(job.copies, 2)
+        #   The page comes back with the jobs, so its print panel shows how they're getting on
+        self.assertEqual(response.redirect_chain[-1][0], '%s?jobs=%d' % (url, job.id))
+        self.assertContains(response, '"watch": [%d]' % job.id)
         #   Kept outside the public media directory, and deleted once printed
         from django.conf import settings
         self.assertTrue(job.file.path.startswith(settings.PRINT_UPLOAD_DIR))
@@ -912,6 +916,52 @@ class PrintingTest(DayOfTestBase):
         self.client.logout()
         self.assertTrue(self.client.login(username=self.student.username, password='password'))
         self.assertNotEqual(self.client.get(url).status_code, 200)
+
+    def test_live_job_status(self):
+        """ The print panel shows how the jobs it sent are getting on
+        (printing.job_progress, through printers_job_status). """
+        import json as json_module
+        from esp.utils.models import Printer
+        printing.connect_network(self.desk, 'printer.example', {'model': 'X'}, 'esppjl://printer.example:9100',
+                                 self.admin)
+        self.desk.refresh_from_db()
+        job = printing.queue('qr', None, self.desk, document={'title': 'Sign', 'link': 'https://example.com',
+                                                               'caption': ''}, title='QR code: Sign')
+
+        def progress():
+            job.refresh_from_db()
+            p = printing.job_progress(job)
+            return (p['text'], p['level'], p['done'])
+        self.assertEqual(progress(), ('QR code: Sign: waiting to print on Help desk.', 'muted', False))
+        #   The printer's trouble (e.g. the print server's PJL backend holding it: out of paper)
+        Printer.objects.filter(id=self.desk.id).update(trouble='Printer: LOAD TRAY 2 PLAIN LETTER')
+        self.assertEqual(progress(), ('QR code: Sign: not printed yet. Help desk: Printer: LOAD TRAY 2 PLAIN LETTER',
+                                      'error', False))
+        Printer.objects.filter(id=self.desk.id).update(trouble='')
+        PrintRequest = job.__class__
+        PrintRequest.objects.filter(id=job.id).update(status='sent',
+                                                     server_job=print_server.queue_name(self.desk) + '-5')
+        self.assertEqual(progress(), ('QR code: Sign: printing on Help desk...', 'muted', False))
+        PrintRequest.objects.filter(id=job.id).update(status='printed')
+        self.assertEqual(progress(), ('QR code: Sign: printed.', 'success', True))
+        PrintRequest.objects.filter(id=job.id).update(status='failed', error='The printer refused it')
+        self.assertEqual(progress(), ('QR code: Sign: failed (The printer refused it).', 'error', True))
+        #   Nothing printing for it (nor Default): says so
+        PrintRequest.objects.filter(id=job.id).update(status='queued', server_job='')
+        printing.disconnect(self.desk, self.admin)
+        self.assertEqual(progress(), ('QR code: Sign: waiting; no printer is connected for Default.', 'error', False))
+        #   Through the page's poll: staff only, and only well-formed ids
+        url = '/manage/printers/printers_job_status'
+        self.assertEqual(self.client.get(url, {'jobs': str(job.id)}).status_code, 403)
+        self.assertTrue(self.client.login(username=self.student.username, password='password'))
+        self.assertEqual(self.client.get(url, {'jobs': str(job.id)}).status_code, 403)
+        self.client.logout()
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+        self.assertEqual(self.client.get(url, {'jobs': '%d,x' % job.id}).status_code, 400)
+        response = self.client.get(url, {'jobs': '%d,%d' % (job.id, job.id + 1000)})
+        self.assertEqual(json_module.loads(response.content.decode('utf-8')),
+                         {'jobs': [printing.job_progress(job)]})
+        self.assertEqual(printing.job_ids_param('4, 5,x,'), '4,5')
 
     def test_print_pdf_settings(self):
         """ Printer settings for one upload: over the location's own, only

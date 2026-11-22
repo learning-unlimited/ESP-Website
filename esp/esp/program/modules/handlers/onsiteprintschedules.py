@@ -168,7 +168,8 @@ class OnsitePrintSchedules(ProgramModuleObj):
         where = job.printer.name if job.printer else 'Default'
         warning = printing.trouble_warning(job)
         return _json({'message': 'Sent %s to %s (job #%d).%s' % (job.describe(), where, job.id,
-                                                                  ' ' + warning if warning else '')})
+                                                                  ' ' + warning if warning else ''),
+                      'jobs': [job.id]})
 
     class Meta:
         proxy = True

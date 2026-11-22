@@ -16,7 +16,7 @@
 <form method="post" enctype="multipart/form-data" class="dayof-form well" id="print-pdf-form">{% csrf_token %}
   <div class="control-group"><label for="pdf-files">PDF files (up to {{ max_mb }} MB altogether)</label>
     <input type="file" id="pdf-files" name="files" accept="application/pdf,.pdf" multiple required /></div>
-  {% print_panel legend="Printer settings for these files" %}
+  {% print_panel legend="Printer settings for these files" watch=watch_jobs %}
 </form>
 
 <script type="text/javascript">

@@ -423,6 +423,50 @@ def trouble_warning(job):
     return ''
 
 
+def _printing_location(job):
+    """ The location printing (or about to print) the job: for one at the
+    print server, the location whose queue has it; else its own location if
+    something prints there, or Default. """
+    if job.status == 'sent' and job.server_job.startswith('esp-'):
+        queue_id = job.server_job[len('esp-'):].rsplit('-', 1)[0]
+        location = Printer.objects.filter(queue_id=queue_id).first()
+        if location is not None:
+            return location
+    location = Printer.objects.get(id=job.printer_id) if job.printer_id else None
+    return location if location is not None and is_connected(location) else default_location()
+
+
+def job_ids_param(value):
+    """ Job ids from a page's ?jobs=4,5 (for {% print_panel watch=... %}),
+    as that string again with anything else dropped. """
+    return ','.join(i.strip() for i in (value or '').split(',') if i.strip().isdigit())
+
+
+def job_progress(job):
+    """ How the job is getting on, for whoever sent it (the print panel's
+    live status): {'id', 'text', 'level' ('muted', 'error' or 'success'),
+    'done'}. """
+    what = job.describe()
+    if job.status in ('printed', 'failed', 'cancelled'):
+        (text, level) = {
+            'printed': ('%s: printed.' % what, 'success'),
+            'failed': ('%s: failed (%s).' % (what, job.error or 'no reason given'), 'error'),
+            'cancelled': ('%s: cancelled.' % what, 'muted'),
+        }[job.status]
+        return {'id': job.id, 'text': text, 'level': level, 'done': True}
+    location = _printing_location(job)
+    trouble = location.trouble if location.mode == 'network' else ''
+    if not is_connected(location):
+        (text, level) = ('%s: waiting; no printer is connected for %s.' % (what, location.name), 'error')
+    elif trouble:
+        (text, level) = ('%s: not printed yet. %s: %s' % (what, location.name, trouble), 'error')
+    elif job.status == 'sent':
+        (text, level) = ('%s: printing on %s...' % (what, location.name), 'muted')
+    else:
+        (text, level) = ('%s: waiting to print on %s.' % (what, location.name), 'muted')
+    return {'id': job.id, 'text': text, 'level': level, 'done': False}
+
+
 #   The print panel (program/modules/dayof/print_panel.html): where to print,
 #   that printer's settings, and (for some documents) copies
 

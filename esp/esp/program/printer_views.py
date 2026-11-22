@@ -294,10 +294,30 @@ def printers_release(request):
     return _json({'ok': True})
 
 
+#   Most jobs one status request may ask about
+MAX_STATUS_JOBS = 50
+
+
+def printers_job_status(request):
+    """ How the jobs in ?jobs=1,2,... are getting on (the print panel's live
+    status, after it sends them). JSON {"jobs": [printing.job_progress]}.
+    Polled, so unlike printers_access it never switches a morphed user back:
+    the account behind the request (dayof.real_user) must be able to use
+    the printers. """
+    if not request.user.is_authenticated or not can_use_printers(dayof.real_user(request)):
+        return _json({'error': 'You can\'t see print jobs.'}, 403)
+    try:
+        ids = [int(i) for i in request.GET.get('jobs', '').split(',') if i.strip()][:MAX_STATUS_JOBS]
+    except ValueError:
+        return _json({'error': 'Bad job ids.'}, 400)
+    jobs = PrintRequest.objects.filter(id__in=ids).order_by('id')
+    return _json({'jobs': [printing.job_progress(job) for job in jobs]})
+
+
 #   /manage/printers/<view>
 VIEWS = {view.__name__: view for view in (printers_probe, printers_action, printers_laptop, printers_laptop_run,
                                          printers_test_pdf, printers_claim, printers_poll, printers_job_pdf,
-                                         printers_done, printers_release)}
+                                         printers_done, printers_release, printers_job_status)}
 
 
 def dispatch(request, view):

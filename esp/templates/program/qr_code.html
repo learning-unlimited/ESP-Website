@@ -38,7 +38,7 @@ day-of print location (set up on the <a href="/manage/printers/">Printer Setup</
     <div><small class="muted">Blank: the link without https://, for people who type it in.</small></div></div>
   <p><button type="submit" name="action" value="download" class="btn"><span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span> Download PDF</button></p>
   <hr />
-  {% print_panel legend="Printer settings for this sign" %}
+  {% print_panel legend="Printer settings for this sign" watch=watch_jobs %}
 </form>
 
 <script type="text/javascript">

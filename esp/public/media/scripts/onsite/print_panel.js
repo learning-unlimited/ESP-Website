@@ -1,8 +1,15 @@
 // The print panel (program/modules/dayof/print_panel.html). The location chosen is remembered in this browser (''
 // for the Default location, as the old receipt print control stored it), so pages and tabs opened afterwards start
 // on it; tabs already open keep what they show.
+//
+// After it sends jobs, a page hands their ids to espPrintPanel.watch(panel, ids) (or, after a form posts and comes
+// back, the panel is given them: {% print_panel watch=... %}), and the panel shows how each is getting on (waiting,
+// the printer's trouble, printed, failed) until all are done.
 (function () {
     var KEY = 'esp_print_location';
+    var POLL_MS = 3000;
+    var WATCH_FOR_MS = 20 * 60 * 1000;      // then stop asking (the Printer Setup page still shows the job)
+    var SHOW_JOBS = 5;                      // the latest (e.g. the help desk sends one schedule after another)
 
     function stored() {
         try { return window.localStorage.getItem(KEY); } catch (e) { return null; }
@@ -71,6 +78,8 @@
             });
         }
 
+        if (data.watch && data.watch.length) { watch(panel, data.watch); }
+
         select.addEventListener('change', function () {
             var l = byId[select.value];
             store(l && l.is_default ? '' : select.value);
@@ -80,6 +89,56 @@
         show();
     }
 
+    // Shows the jobs' progress in the panel, asking the server every POLL_MS until each is done
+    function watch(panel, ids) {
+        var state = panel.espPrintWatch;
+        if (!state) {
+            var data = JSON.parse(panel.querySelector('.print-panel-data').textContent);
+            state = panel.espPrintWatch = {url: data.status_url, jobs: {}, order: [], timer: null, until: 0};
+        }
+        (ids || []).forEach(function (id) {
+            id = String(id);
+            if (!(id in state.jobs)) {
+                state.jobs[id] = {text: 'Job #' + id + ': sent.', level: 'muted', done: false};
+                state.order.push(id);
+            }
+        });
+        state.until = Date.now() + WATCH_FOR_MS;
+        render(panel, state);
+        if (!state.timer) { poll(panel, state); }
+    }
+
+    function render(panel, state) {
+        var box = panel.querySelector('.print-panel-jobs');
+        if (!box) { return; }
+        box.innerHTML = '';
+        state.order.slice(-SHOW_JOBS).forEach(function (id) {
+            var job = state.jobs[id], line = document.createElement('div'), text = document.createElement('small');
+            line.className = {error: 'text-error', success: 'text-success'}[job.level] || 'muted';
+            text.textContent = job.text;
+            line.appendChild(text);
+            box.appendChild(line);
+        });
+    }
+
+    function poll(panel, state) {
+        var waiting = state.order.slice(-SHOW_JOBS).filter(function (id) { return !state.jobs[id].done; });
+        if (!waiting.length || Date.now() > state.until) { state.timer = null; return; }
+        state.timer = window.setTimeout(function () {
+            fetch(state.url + '?jobs=' + waiting.join(','), {credentials: 'same-origin'}).then(function (r) {
+                if (!r.ok) { throw new Error('HTTP ' + r.status); }
+                return r.json();
+            }).then(function (body) {
+                (body.jobs || []).forEach(function (job) {
+                    if (String(job.id) in state.jobs) { state.jobs[String(job.id)] = job; }
+                });
+                render(panel, state);
+            }).catch(function () {
+                // (logged out, or the server is restarting: try again next time)
+            }).then(function () { poll(panel, state); });
+        }, POLL_MS);
+    }
+
     function initAll() {
         document.querySelectorAll('.print-panel').forEach(init);
     }
@@ -87,6 +146,7 @@
     if (!window.espPrintPanel) {
         window.espPrintPanel = {
             init: initAll,
+            watch: watch,
             // The panel's fields as an object (for a script that posts them itself)
             values: function (panel) {
                 var out = {};

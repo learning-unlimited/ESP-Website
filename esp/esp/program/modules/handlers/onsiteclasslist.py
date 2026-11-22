@@ -398,6 +398,7 @@ class OnSiteClassList(ProgramModuleObj):
         warning = printing.trouble_warning(req)
         result['message'] = "Submitted %s's schedule for printing (print request #%s).%s%s" % (
             user_obj.name(), req.id, checkin_note, ' ' + warning if warning else '')
+        result['jobs'] = [req.id]
 
         json.dump(result, resp)
         return resp

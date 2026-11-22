@@ -66,7 +66,9 @@ function printPanel(d) {
     msg.className = 'print-panel-message hint';
     msg.textContent = 'Sending…';
     try {
-      msg.textContent = (await api(apiUrl('deposits', d.id, 'op=print'), { method: 'POST', json: window.espPrintPanel.values(panel) })).message;
+      const sent = await api(apiUrl('deposits', d.id, 'op=print'), { method: 'POST', json: window.espPrintPanel.values(panel) });
+      msg.textContent = sent.message;
+      window.espPrintPanel.watch(panel, sent.jobs);
     } catch (e) {
       msg.className = 'print-panel-message text-error';
       msg.textContent = e.message;

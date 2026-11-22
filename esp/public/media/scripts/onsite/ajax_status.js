@@ -291,6 +291,8 @@ function print_schedule(check_in)
         dataType: 'json',
         success: function (data, text_status, jqxhr) {
             add_message(data.message);
+            if (panel && data.jobs)
+                window.espPrintPanel.watch(panel, data.jobs);
             if (check_in === true && data.checked_in === true && student_id in window.data.students)
             {
                 window.data.students[student_id].checked_in = true;
