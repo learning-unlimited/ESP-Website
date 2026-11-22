@@ -11,6 +11,8 @@ JavaScript errors, failed asset requests and a screenshot, then compares the
 outcome with the roles the inventory expects. It writes results.json,
 results.csv and report.html to --out. With --compare it also lists what
 changed since an earlier run (e.g. the previous release on the same data).
+Each visit is also saved to progress.jsonl as it finishes, so an interrupted
+crawl can carry on with --resume.
 
 The crawl only sends GET requests: it blocks any other request a page makes
 unless --allow-post is given. Even so, only point it at a disposable copy of
@@ -206,7 +208,7 @@ async def session_alive(context, base_url):
         await page.close()
 
 
-async def crawl(rows, sessions, args):
+async def crawl(rows, sessions, args, done_keys, progress):
     # Imported here so the rest of this file works without Playwright installed
     from playwright.async_api import async_playwright
     base_url = args.base_url.rstrip('/')
@@ -228,7 +230,7 @@ async def crawl(rows, sessions, args):
                 warnings.append(f'{role}: session is not logged in before the crawl; '
                                 'recreate sessions.json')
 
-        jobs = [(row, role) for row in rows for role in args.roles]
+        jobs = [(row, role) for row in rows for role in args.roles if (row['url'], role) not in done_keys]
         semaphore = asyncio.Semaphore(args.concurrency)
         done = 0
 
@@ -236,6 +238,8 @@ async def crawl(rows, sessions, args):
             nonlocal done
             async with semaphore:
                 result = await visit(contexts[role], base_url, row, role, args)
+            progress.write(json.dumps(result) + '\n')
+            progress.flush()
             done += 1
             if done % 50 == 0 or done == len(jobs):
                 print(f'{done}/{len(jobs)} pages', flush=True)
@@ -248,6 +252,19 @@ async def crawl(rows, sessions, args):
                                 'its later results may show spurious login redirects')
         await browser.close()
     return list(results), warnings
+
+
+def load_progress(path):
+    """Results saved by an earlier, interrupted run; a half-written last line is ignored."""
+    results = []
+    if os.path.exists(path):
+        with open(path, encoding='utf-8') as f:
+            for line in f:
+                try:
+                    results.append(json.loads(line))
+                except json.JSONDecodeError:
+                    pass
+    return results
 
 
 def load_results(path):
@@ -358,6 +375,8 @@ def parse_args(argv=None):
     parser.add_argument('--settle-ms', type=int, default=300,
                         help='wait after load to catch late JavaScript errors (default 300)')
     parser.add_argument('--screenshots', choices=['none', 'viewport', 'full'], default='viewport')
+    parser.add_argument('--resume', action='store_true',
+                        help="skip visits already saved in --out's progress.jsonl by an interrupted run")
     parser.add_argument('--compare', metavar='RESULTS_JSON', help='results.json from an earlier crawl to diff against')
     parser.add_argument('--allow-post', action='store_true',
                         help='let pages send non-GET requests (blocked by default)')
@@ -399,8 +418,15 @@ def main(argv=None):
 
     for role in args.roles:
         os.makedirs(os.path.join(args.out, 'screenshots', role), exist_ok=True)
-    print(f'Crawling {len(rows)} URLs as {", ".join(args.roles)}', flush=True)
-    results, warnings = asyncio.run(crawl(rows, sessions, args))
+    wanted = {(r['url'], role) for r in rows for role in args.roles}
+    progress_path = os.path.join(args.out, 'progress.jsonl')
+    earlier = [r for r in load_progress(progress_path) if (r['url'], r['role']) in wanted] if args.resume else []
+    done_keys = {(r['url'], r['role']) for r in earlier}
+    print(f'Crawling {len(rows)} URLs as {", ".join(args.roles)}'
+          + (f' ({len(done_keys)} visits already done)' if done_keys else ''), flush=True)
+    with open(progress_path, 'a' if args.resume else 'w', encoding='utf-8') as progress:
+        results, warnings = asyncio.run(crawl(rows, sessions, args, done_keys, progress))
+    results = earlier + results
     changes = compare(results, load_results(args.compare)) if args.compare else []
 
     with open(os.path.join(args.out, 'results.json'), 'w', encoding='utf-8') as f:

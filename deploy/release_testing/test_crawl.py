@@ -5,7 +5,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from crawl import classify, compare, main, slug, verdict  # noqa: E402
+from crawl import classify, compare, load_progress, main, slug, verdict  # noqa: E402
 
 PAGE = {'expected_roles': 'teacher, admin', 'kind': 'page'}
 
@@ -47,6 +47,13 @@ def test_compare():
     changes = {(c['url'], c['change']) for c in compare(new, old)}
     assert changes == {('/a', 'outcome'), ('/a', 'status'), ('/a', 'verdict'),
                        ('/b', 'new page'), ('/gone', 'page gone')}
+
+
+def test_load_progress_skips_a_half_written_line(tmp_path):
+    path = tmp_path / 'progress.jsonl'
+    path.write_text('{"url": "/a", "role": "admin"}\n{"url": "/b", "ro')
+    assert load_progress(str(path)) == [{'url': '/a', 'role': 'admin'}]
+    assert load_progress(str(tmp_path / 'missing.jsonl')) == []
 
 
 def test_slug_is_unique_per_url():

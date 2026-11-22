@@ -99,6 +99,10 @@ Running a crawl
    ``--area learn --area teach`` or ``--url-regex`` narrow the crawl, and
    ``--limit 20`` makes a quick trial run. ``--help`` lists the rest.
 
+   Each visit is saved to ``progress.jsonl`` in the output directory as it
+   finishes. If the crawl is interrupted, run the same command with
+   ``--resume`` to skip the visits already done.
+
 6. Open ``/tmp/crawl/results/report.html``. Then revoke the sessions::
 
      ./manage.py crawl_sessions --revoke /tmp/crawl/sessions.json
