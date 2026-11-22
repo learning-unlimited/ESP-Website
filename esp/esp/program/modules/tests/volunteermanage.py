@@ -229,3 +229,39 @@ class VolunteerManageTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
                 request, 'manage', 'one', 'two', None, None, self.program
             )
         self.assertIn('import_error', context)
+
+    def test_import_from_program_with_no_requests_sets_import_error(self):
+        past = Program.objects.create(
+            url='PastProgramNoShifts/1901_Spring',
+            name='PastProgram Spring 1901 No Shifts',
+            grade_min=7,
+            grade_max=12,
+        )
+        self.login_as('admin')
+        response = self.client.post(self._url(), {
+            'import': '1',
+            'program': str(past.id),
+            'start_date': '07/08/2222',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('import_error', response.context)
+        self.assertEqual(
+            response.context['import_error'],
+            "The selected program has no volunteer shifts to import."
+        )
+
+    def test_import_from_program_with_deleted_requests_sets_import_error(self):
+        past, past_vr = self._past_program_with_request()
+        past_vr.delete()
+        self.login_as('admin')
+        response = self.client.post(self._url(), {
+            'import': '1',
+            'program': str(past.id),
+            'start_date': '07/08/2222',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('import_error', response.context)
+        self.assertEqual(
+            response.context['import_error'],
+            "The selected program has no volunteer shifts to import."
+        )

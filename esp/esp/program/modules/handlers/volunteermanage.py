@@ -155,6 +155,9 @@ class VolunteerManage(ProgramModuleObj):
                 prev_requests = past_program.getVolunteerRequests()
                 for prev_request in prev_requests:
                     prev_timeslots.append(prev_request.timeslot)
+                if not prev_timeslots:
+                    context['import_error'] = "The selected program has no volunteer shifts to import."
+                    return (None, context)
                 time_delta = start_date - prev_timeslots[0].start.date()
                 for i, orig_timeslot in enumerate(prev_timeslots):
                     new_timeslot = Event(
