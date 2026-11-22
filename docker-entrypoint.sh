@@ -61,6 +61,12 @@ if [ -f "$BAKED_HASH_FILE" ]; then
     fi
 fi
 
+# Compile the site stylesheet if missing (stock Bootstrap until a theme is loaded).
+if [ ! -f /app/esp/public/media/styles/theme_compiled.css ]; then
+    echo ">>> Compiling site stylesheet..."
+    python /app/esp/manage.py recompile_theme
+fi
+
 # Change to the esp directory before starting the server
 # This ensures manage.py resolves Django settings correctly
 cd /app/esp

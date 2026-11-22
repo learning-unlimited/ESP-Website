@@ -75,6 +75,11 @@ into a single CSS file (by default, public/media/styles/theme_compiled.css).
 Any template overrides conflicting with the desired theme are removed.  The
 media files provided by the theme are copied into the working directory.
 
+When no theme is loaded (a new site, or after clear_theme()), the same file
+holds stock Bootstrap 5 plus the shared ``theme_editor/scss`` sources, built by
+compile_default_css(), so pages are always styled.  ``manage.py
+recompile_theme`` (and therefore ``manage.py update``) regenerates it.
+
 Bootstrap 5 is used to provide a baseline collection of styles that makes it
 easier to create a decent looking theme.  Optional Bootswatch skins can be
 selected from the theme editor.
