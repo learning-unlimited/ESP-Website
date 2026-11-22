@@ -30,7 +30,7 @@ input.addbutton {
 <h3>Pick a class for {{ timeslot.short_description }}</h3>
 
 {% if timeslot.priority %}
-<center><div class="info">{{ timeslot.description }}</div><br /></center>
+<center><div class="alert alert-info">{{ timeslot.description }}</div><br /></center>
 {% endif %}
 
 {% if request.user.onsite_local %}

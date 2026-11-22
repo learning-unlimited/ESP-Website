@@ -53,9 +53,9 @@
 {% if not request.user.onsite_local %}
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 {% if program.isFull %}{% if program.program_allow_waitlist %}
-<div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
+<div class="alert alert-danger" role="alert">This program is now full!  Click below to add yourself to the waitlist.</div>
 {% else %}{% if not canRegToFullProgram %}
-<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+<div class="alert alert-danger" role="alert">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
 {% endif %}
 {% endif %}
 {% endif %}
@@ -122,9 +122,9 @@
 <center>
 
 {% if program.isFull %}{% if program.program_allow_waitlist %}
-<div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
+<div class="alert alert-danger" role="alert">This program is now full!  Click below to add yourself to the waitlist.</div>
 {% else %}{% if not canRegToFullProgram %}
-<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+<div class="alert alert-danger" role="alert">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
 {% endif %}
 {% endif %}
 {% endif %}
