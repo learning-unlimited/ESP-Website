@@ -131,18 +131,19 @@
                 <option value="Teacher">Teachers</option>
                 <option value="Student">Students</option>
             </select></p>
-            <p><input type="checkbox" id="id_prog_belong" /><label for="id_prog_belong"> Belonging to program</label></p>
-            <p><label for="id_perm_program">Program:</label></p>
-            <select id="id_perm_program">
-                <option value="-1">None</option>
-                {% for prog in prog_list %}
-                    <option value="{{ prog.id }}">{{ prog.niceName }}</option>
-                {% endfor %}
-            </select>
-            <br/>
+            <p><input type="checkbox" id="id_prog_belong" /><label for="id_prog_belong"> Belonging to a program</label></p>
+            <p>
+                <label for="id_perm_program">Program:</label>
+                <select id="id_perm_program">
+                    <option value="-1">None</option>
+                    {% for prog in prog_list %}
+                        <option value="{{ prog.id }}">{{ prog.niceName }}</option>
+                    {% endfor %}
+                </select>
+            </p>
             <div>
-                <p><label for="id_sub_perm">Filter</label></p>
-                <select id="id_sub_perm">
+                <label for="id_sub_perm">Filter:</label>
+                <select id="id_sub_perm" style="max-width: 200px;">
                 </select>
             </div>
         </div>

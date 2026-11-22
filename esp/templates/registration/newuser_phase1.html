@@ -65,7 +65,7 @@ set forth by Learning Unlimited, the umbrella organization of which we are a mem
 {% endif %}
 
 <div id="program_form">
-<form action="{{ request.path }}" method="post" name="newuser_form">
+<form action="{{ request.path }}" method="post" name="newuser_form" novalidate>
 {% if accounts or awaitings %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 <table align="center">
 <thead>
@@ -95,6 +95,12 @@ are errors{% endif %} in the below form. Please fix and resubmit.
     <input type="submit" value="Proceed to Account Creation" name="submit_btn" class="btn btn-secondary" />
   </th>
 </tr>
+<tr>
+  <td colspan="2">
+    <div id="email-live-feedback" class="help-block" aria-live="polite"></div>
+    <div id="confirm-email-live-feedback" class="help-block" aria-live="polite"></div>
+  </td>
+</tr>
 </tbody>
 </table>
 </form>
@@ -102,7 +108,123 @@ are errors{% endif %} in the below form. Please fix and resubmit.
 
 <script type="text/javascript">
 <!--
-  document.getElementById('id_email').focus();
+  (function() {
+    var emailInput = document.getElementById('id_email');
+    var confirmEmailInput = document.getElementById('id_confirm_email');
+    var roleInput = document.getElementById('id_initial_role');
+    var feedback = document.getElementById('email-live-feedback');
+    var confirmFeedback = document.getElementById('confirm-email-live-feedback');
+    var checkTimer = null;
+    var requestCounter = 0;
+
+    function setFeedback(target, text, cssClass, symbol) {
+      if (!target) {
+        return;
+      }
+
+      target.className = 'help-block ' + cssClass;
+      target.textContent = (symbol ? symbol + ' ' : '') + (text || '');
+    }
+
+    function clearFeedback(target) {
+      if (!target) {
+        return;
+      }
+
+      target.className = 'help-block';
+      target.textContent = '';
+    }
+
+    function runConfirmEmailCheck() {
+      if (!confirmEmailInput || !confirmFeedback) {
+        return;
+      }
+
+      var email = emailInput ? emailInput.value.trim() : '';
+      var confirmEmail = confirmEmailInput.value.trim();
+
+      if (!email || !confirmEmail) {
+        clearFeedback(confirmFeedback);
+        return;
+      }
+
+      if (email === confirmEmail) {
+        clearFeedback(confirmFeedback);
+      } else {
+        setFeedback(confirmFeedback, 'Ensure that you have correctly typed your email both times.', 'text-danger', '✗');
+      }
+    }
+
+    function runEmailCheck() {
+      var email = emailInput.value;
+      var role = roleInput ? roleInput.value : '';
+
+      if (!email) {
+        clearFeedback(feedback);
+        return;
+      }
+
+      if (roleInput && !role) {
+        clearFeedback(feedback);
+        return;
+      }
+
+      var currentRequest = ++requestCounter;
+      var url = '/myesp/register/check-email/?email=' + encodeURIComponent(email) + '&initial_role=' + encodeURIComponent(role);
+
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4 || currentRequest !== requestCounter) {
+          return;
+        }
+
+        if (xhr.status !== 200) {
+          setFeedback(feedback, 'Could not validate email right now.', 'text-warning', '⚠');
+          return;
+        }
+
+        try {
+          var result = JSON.parse(xhr.responseText);
+          if (!result.valid) {
+            setFeedback(feedback, result.message, 'text-danger', '✗');
+          } else if (result.available === false) {
+            setFeedback(feedback, result.message, 'text-danger', '✗');
+          } else if (result.available === true) {
+            clearFeedback(feedback);
+          } else {
+            clearFeedback(feedback);
+          }
+        } catch (e) {
+          setFeedback(feedback, 'Could not validate email right now.', 'text-warning', '⚠');
+        }
+      };
+      xhr.send();
+    }
+
+    function scheduleCheck() {
+      if (checkTimer) {
+        window.clearTimeout(checkTimer);
+      }
+      checkTimer = window.setTimeout(function() {
+        runEmailCheck();
+        runConfirmEmailCheck();
+      }, 350);
+    }
+
+    if (emailInput) {
+      emailInput.addEventListener('input', scheduleCheck);
+      emailInput.addEventListener('blur', scheduleCheck);
+      emailInput.focus();
+    }
+    if (confirmEmailInput) {
+      confirmEmailInput.addEventListener('input', scheduleCheck);
+      confirmEmailInput.addEventListener('blur', runConfirmEmailCheck);
+    }
+    if (roleInput) {
+      roleInput.addEventListener('change', scheduleCheck);
+    }
+  })();
 //-->
 </script>
 

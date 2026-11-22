@@ -46,25 +46,25 @@ from django.db.models.query import Q
 
 @login_required
 def myesp_passwd(request):
-        """ Change password """
-        if request.user.username == 'onsite':
-                raise ESPError("Sorry, you're not allowed to change the password of this user. It's special.", log=False)
+    """ Change password """
+    if request.user.username == 'onsite':
+        raise ESPError("Sorry, you're not allowed to change the password of this user. It's special.", log=False)
 
-        if request.method == "POST":
-                form = UserPasswdForm(user=request.user, data=request.POST)
-                if form.is_valid():
-                        new_data = form.cleaned_data
-                        user = authenticate(username=request.user.username,
-                                            password=new_data['password'])
+    if request.method == "POST":
+        form = UserPasswdForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            new_data = form.cleaned_data
+            user = authenticate(username=request.user.username,
+                                password=new_data['password'])
 
-                        user.set_password(new_data['newpasswd'])
-                        user.save()
-                        login(request, user)
-                        return render_to_response('users/passwd.html', request, {'Success': True})
-        else:
-                form = UserPasswdForm(user=request.user)
+            user.set_password(new_data['newpasswd'])
+            user.save()
+            login(request, user)
+            return render_to_response('users/passwd.html', request, {'Success': True})
+    else:
+        form = UserPasswdForm(user=request.user)
 
-        return render_to_response('users/passwd.html', request, {'Problem': False,
+    return render_to_response('users/passwd.html', request, {'Problem': False,
                                                     'form': form,
                                                     'Success': False})
 
@@ -214,7 +214,8 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
             if role == 'student':
                 regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
-                regProf.contact_guardian = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_guardian, 'guard_')
+                if Tag.getBooleanTag('student_profile_show_guardian_info'):
+                    regProf.contact_guardian = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_guardian, 'guard_')
                 regProf.contact_emergency = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_emergency, 'emerg_')
             elif role == 'teacher':
                 regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)

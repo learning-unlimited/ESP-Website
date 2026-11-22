@@ -34,7 +34,9 @@ Learning Unlimited, Inc.
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.tests.support import ProgramManagerTestHelper
-from esp.program.modules.module_ext import AJAXChangeLog
+from esp.program.modules.program_settings import AJAXChangeLog
+from esp.cal.models import Event, EventType
+from datetime import timedelta
 import json
 import time
 
@@ -147,6 +149,25 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.assertTrue(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Existing meeting times clobbered.")
         self.assertTrue(set(s2.get_meeting_times()) == set(), "Failed to prevent teacher conflict.")
 
+    def testTeacherConflictsUseActualTimes(self):
+        """Teacher conflicts compare start/end times, not timeslot IDs."""
+        self.emptySchedule()
+
+        teacher = self.teachers[0]
+        s1, s2 = teacher.getTaughtSections(self.program)[:2]
+        timeslot = self.timeslots.order_by('start')[0]
+        s1.assign_meeting_times([timeslot])
+
+        def open_block(start):
+            return Event.objects.create(
+                program=self.program, event_type=EventType.get_from_desc('Open Class Time Block'),
+                start=start, end=start + timedelta(hours=1), short_description='Walk-in block', description='Walk-in block')
+
+        overlapping = open_block(timeslot.start + timedelta(minutes=30))
+        self.assertEqual(s2.conflicts(teacher, [overlapping]), (s1, timeslot), "Failed to detect overlapping open class time block.")
+        consecutive = open_block(timeslot.end)
+        self.assertIsNone(s2.conflicts(teacher, [consecutive]), "Back-to-back blocks should not conflict.")
+
 
     #############################################################
     #
@@ -216,3 +237,31 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': 1 })
         changelog = json.loads(changelog_response.content)["changelog"]
         self.assertTrue(len(changelog) == 0, "Change log shows unsuccessfully scheduled class: " + str(changelog))
+
+    def test_prepare_default_context_independent_across_calls(self):
+        """Separate calls to prepare() without context must receive independent dictionaries."""
+        moduleobj = self.program.getModule('AJAXSchedulingModule')
+        res1 = moduleobj.prepare()
+        res2 = moduleobj.prepare()
+        self.assertIsNot(res1, res2)
+        res1['injected_leak'] = 'leaked_data'
+        res3 = moduleobj.prepare()
+        self.assertNotIn('injected_leak', res3)
+        self.assertEqual(res3['schedulingmodule'], moduleobj)
+
+    def test_prepare_explicit_context_preserved(self):
+        """Explicit context dictionary must be preserved and mutated."""
+        moduleobj = self.program.getModule('AJAXSchedulingModule')
+        explicit_ctx = {'initial_key': 'initial_val'}
+        res = moduleobj.prepare(explicit_ctx)
+        self.assertIs(res, explicit_ctx)
+        self.assertEqual(res['initial_key'], 'initial_val')
+        self.assertEqual(res['schedulingmodule'], moduleobj)
+
+    def test_prepare_explicit_empty_dict_preserved(self):
+        """An explicit empty dictionary {} must not be replaced by a new dictionary."""
+        moduleobj = self.program.getModule('AJAXSchedulingModule')
+        empty_ctx = {}
+        res = moduleobj.prepare(empty_ctx)
+        self.assertIs(res, empty_ctx)
+        self.assertEqual(res['schedulingmodule'], moduleobj)

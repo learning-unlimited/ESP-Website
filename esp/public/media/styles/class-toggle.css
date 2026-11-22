@@ -1,0 +1,42 @@
+/* The +/- toggle used to expand a collapsed class, section, or class category.
+   Shared by the teacher class list and the class preview module. */
+
+.class-toggle {
+    align-items: center;
+    background: none;
+    border: 0;
+    color: inherit;
+    display: flex;
+    gap: 10px;
+    padding: 4px 6px;
+    text-align: left;
+    width: 100%;
+}
+
+.class-toggle:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.class-toggle-title {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.class-toggle-icon {
+    flex: 0 0 auto;
+}
+
+/* The copy-a-class page keeps other controls in the same cell. */
+.class-toggle-inline {
+    display: inline-flex;
+    width: auto;
+}
+
+.class-toggle .bi-dash-lg,
+.class-toggle[aria-expanded="true"] .bi-plus-lg {
+    display: none;
+}
+
+.class-toggle[aria-expanded="true"] .bi-dash-lg {
+    display: inline-block;
+}

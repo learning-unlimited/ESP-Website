@@ -101,10 +101,10 @@ class StudentRegPhaseZeroTestCase(ProgramFrameworkTest):
         Tag.setTag('student_lottery_run', target=self.program, value='False')
         self._login_student()
 
-        # Ensure the student does not already have broad student permissions (e.g. Student/All)
+        # Ensure the student does not already have broad student permissions (e.g. Student/All) or Student/PhaseZero
         Permission.objects.filter(
             role__name='Student',
-            permission_type='Student/All',
+            permission_type__in=['Student/All', 'Student/PhaseZero'],
             program=self.program,
         ).delete()
 

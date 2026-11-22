@@ -41,10 +41,12 @@ from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.qsd.models import QuasiStaticData
 from esp.resources.models import Resource, ResourceRequest, ResourceType
+from esp.survey.models import Question, QuestionType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
-
+from django.core import mail
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import Group
 
 from django.db.models import ProtectedError
@@ -68,7 +70,6 @@ from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from datetime import datetime, timedelta
 from decimal import Decimal
 from random import sample
-import hashlib
 import numpy
 import random
 import re
@@ -335,9 +336,6 @@ class ViewUserInfoTest(TestCase):
         self.fake_admin.delete()
 
 class ProfileTest(TestCase):
-
-    def setUp(self):
-        self.salt = hashlib.sha1(str(random.random()).encode("UTF-8")).hexdigest()[:5]
 
     def testAcctCreate(self):
         self.u=ESPUser.objects.create_user(
@@ -934,6 +932,21 @@ class ProgramCapTest(ProgramFrameworkTest):
             # Assert that everyone can join the program.
             self.assertTrue(self.program.user_can_join(user))
 
+    def test_cap_without_classreg_module(self):
+        # Without StudentClassRegModule there is no 'classreg' key, which the
+        # cap checks used to index unconditionally and 500 the reg page.
+        classreg_modules = list(self.program.program_modules.filter(handler='StudentClassRegModule'))
+        self.assertTrue(classreg_modules)
+        self.program.program_modules.remove(*classreg_modules)
+        self.program.save()
+
+        self.assertNotIn('classreg', self.program.students())
+        self.assertEqual(self.program._students_in_program(), 0)
+        self.assertEqual(self.program._students_in_program_in_grades([10]), 0)
+        self.assertFalse(self.program._student_is_in_program(self.students[0]))
+        for user in self.students:
+            self.assertTrue(self.program.user_can_join(user))
+
     def test_simple_cap(self):
         enrolled, _ = RegistrationType.objects.get_or_create(
             name='Enrolled', category='student')
@@ -1462,6 +1475,12 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         #   - Some basic stats
         self.assertEqual(stats['num_enrolled_students'], len([x for x in self.students if len(x.getEnrolledClasses(self.program)) > 0]))
         self.assertEqual(stats['num_registrations'], len(StudentRegistration.valid_objects().filter(user__in=self.students, relationship__name='Enrolled')))
+        scheduled_sections = list(self.program.sections().filter(status__gt=0, parent_class__status__gt=0, registration_status=0, meeting_times__isnull=False).distinct())
+        self.assertEqual(stats['num_sections'], len(scheduled_sections))
+        self.assertEqual(stats['num_empty_classes'], len([s for s in scheduled_sections if s.num_students() == 0]))
+        self.assertEqual(stats['num_enrolled_classes'], len([s for s in scheduled_sections if s.num_students() > 0]))
+        self.assertEqual(stats['num_full_classes'], len([s for s in scheduled_sections if s.isFull()]))
+        self.assertEqual(stats['num_empty_classes'] + stats['num_enrolled_classes'], stats['num_sections'])
         #   - 'Screwed students' list
         for student in self.students:
             stats_entry = list([x for x in stats['students_by_screwedness'] if x[1] == student.id])
@@ -1544,6 +1563,172 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
         self.assertTrue(len(lunch_secs) == 0, "Lunch constraint for no timeblocks generated Lunch section")
+
+    def testRemoveLunchWithEnrolledStudent(self):
+        # Removing a lunch block whose section has an enrolled student should
+        # leave the section in place and report it, not fail silently
+        kept_ts, removed_ts = self.timeslots[0], self.timeslots[1]
+        LunchConstraintGenerator(self.program, [kept_ts, removed_ts]).generate_all_constraints()
+        removed_sec = ClassSection.objects.get(parent_class__parent_program=self.program, parent_class__category__is_lunch=True, meeting_times=removed_ts)
+        removed_sec.preregister_student(self.students[0], overridefull=True)
+
+        lcg = LunchConstraintGenerator(self.program, [kept_ts])
+        lcg.generate_all_constraints()
+
+        self.assertEqual(lcg.undeleted_sections, [removed_sec])
+        self.assertTrue(ClassSection.objects.filter(id=removed_sec.id).exists())
+
+    #   Helpers for the lunch assignment tests below
+
+    def make_lunches(self, timeslots, clear_classes=False):
+        """ Turn the given timeslots into lunch periods and return their lunch sections.
+
+            If clear_classes is set, any other section meeting during one of those
+            timeslots is unscheduled first, so that every student is free for lunch.
+        """
+
+        if clear_classes:
+            for sec in self.program.sections():
+                if set(sec.get_meeting_times()) & set(timeslots):
+                    #   Drop the registrations too: the lottery refuses to run when a
+                    #   student has a preference for a section that isn't scheduled.
+                    StudentRegistration.objects.filter(section=sec).delete()
+                    sec.clear_meeting_times()
+
+        lcg = LunchConstraintGenerator(self.program, timeslots)
+        lcg.generate_all_constraints()
+        lunch_secs = list(ClassSection.objects.filter(parent_class__category=lcg.get_lunch_category()))
+        self.assertEqual(len(lunch_secs), len(timeslots),
+                         "Expected one lunch section per lunch timeslot")
+        return lunch_secs
+
+    def enrolled_sections(self, student):
+        """ The sections a student was enrolled in by the lottery. """
+
+        return {sr.section for sr in StudentRegistration.valid_objects().filter(
+            user=student, relationship=self.enrolled_rt,
+            section__parent_class__parent_program=self.program)}
+
+    def testLunchAssignmentSingleLunchPeriod(self):
+        """ Every student who got a class should be put in the day's only lunch. """
+
+        lunch_secs = self.make_lunches([random.choice(self.timeslots)])
+        lunch_sec = lunch_secs[0]
+
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+        attending = 0
+        for student in self.students:
+            sections = self.enrolled_sections(student)
+            classes = sections - set(lunch_secs)
+            lunches = sections & set(lunch_secs)
+            if classes:
+                attending += 1
+                self.assertEqual(lunches, {lunch_sec},
+                                 "Student with classes was not assigned to lunch")
+            else:
+                self.assertEqual(lunches, set(),
+                                 "Student with no classes was assigned to lunch")
+
+        self.assertGreater(attending, 0, "No student got any class, so the test proves nothing")
+
+    def testLunchAssignmentWithClassDuringLunch(self):
+        """ A student taking a class during one lunch period gets the other one.
+
+            The lottery deliberately allows a class to run during a lunch period as
+            long as another lunch period stays free, so filling that other period with
+            lunch has to be accepted by check_assignments().
+        """
+
+        lunch_timeslots = random.sample(list(self.timeslots), 2)
+        lunch_secs = self.make_lunches(lunch_timeslots)
+        (busy_lunch, free_lunch) = lunch_secs
+        busy_timeslot = busy_lunch.meeting_times.all()[0]
+
+        #   Give one student a single class, running during one of the lunch periods,
+        #   and make sure nobody else is competing for it, so they are certain to get it.
+        during_lunch = [sec for sec in self.program.sections()
+                        if busy_timeslot in sec.get_meeting_times() and sec not in lunch_secs]
+        self.assertTrue(during_lunch, "No class is scheduled during the lunch period")
+        section = during_lunch[0]
+        student = self.students[0]
+        StudentRegistration.objects.filter(section=section).delete()
+        StudentRegistration.objects.filter(
+            user=student, section__parent_class__parent_program=self.program).delete()
+        StudentRegistration.objects.create(
+            user=student, section=section, relationship=self.priority_rt)
+
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+        sections = self.enrolled_sections(student)
+        self.assertIn(section, sections, "Student did not get their only priority class")
+        self.assertEqual(sections & set(lunch_secs), {free_lunch},
+                         "Student was not given the lunch period they had free")
+
+    def testLunchAssignmentBalance(self):
+        """ Students who are free for either lunch period are split evenly. """
+
+        lunch_timeslots = random.sample(list(self.timeslots), 2)
+        #   Unschedule the classes during lunch, so every student can take either lunch
+        lunch_secs = self.make_lunches(lunch_timeslots, clear_classes=True)
+
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+        counts = []
+        assigned = 0
+        for lunch_sec in lunch_secs:
+            count = StudentRegistration.valid_objects().filter(
+                section=lunch_sec, relationship=self.enrolled_rt).count()
+            counts.append(count)
+            assigned += count
+
+        attending = [student for student in self.students
+                     if self.enrolled_sections(student) - set(lunch_secs)]
+        self.assertGreater(len(attending), 1, "Not enough students got classes to test balance")
+        self.assertEqual(assigned, len(attending),
+                         "Every attending student should have exactly one lunch")
+        self.assertLessEqual(max(counts) - min(counts), 1,
+                             "Lunch periods were not evenly balanced: %s" % counts)
+
+    def testLunchAssignmentRespectsCapacity(self):
+        """ Lunch sections are never filled past capacity, even if that leaves students out. """
+
+        lunch_secs = self.make_lunches(random.sample(list(self.timeslots), 2))
+        for lunch_sec in lunch_secs:
+            lunch_sec.max_class_capacity = 1
+            lunch_sec.save()
+
+        #   check_assignments() asserts that no section is overfilled, so this would
+        #   raise rather than fail quietly if capacity were ignored.
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+        for lunch_sec in lunch_secs:
+            self.assertLessEqual(
+                StudentRegistration.valid_objects().filter(
+                    section=lunch_sec, relationship=self.enrolled_rt).count(),
+                1, "Lunch section was filled past its capacity")
+
+    def testLunchAssignmentCanBeDisabled(self):
+        """ The assign_lunches option turns the new behavior off. """
+
+        lunch_secs = self.make_lunches(random.sample(list(self.timeslots), 2))
+
+        lotteryController = LotteryAssignmentController(self.program, assign_lunches=False)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+        self.assertFalse(
+            StudentRegistration.valid_objects().filter(
+                section__in=lunch_secs, relationship=self.enrolled_rt).exists(),
+            "Lunches were assigned even though assign_lunches was off")
 
     def testLotteryMultiplePriorities(self):
         """Creates some more priorities, then runs testLottery again."""
@@ -1751,10 +1936,12 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
 class SeedDummyDataTest(TestCase):
     """Tests for the seed_dummy_data management command."""
 
-    def test_seed_dummy_data_creates_programs_and_users(self):
-        """Running seed_dummy_data creates expected programs and users."""
+    @classmethod
+    def setUpTestData(cls):
         call_command('seed_dummy_data', verbosity=0)
 
+    def test_seed_dummy_data_creates_programs_and_users(self):
+        """Running seed_dummy_data creates expected programs and users."""
         # Programs
         for url in ['SplashDev/2026', 'SparkDev/2026']:
             self.assertTrue(
@@ -1776,7 +1963,6 @@ class SeedDummyDataTest(TestCase):
 
     def test_seed_dummy_data_idempotent(self):
         """Running seed_dummy_data twice does not duplicate data."""
-        call_command('seed_dummy_data', verbosity=0)
         count_before = Program.objects.filter(url__in=['SplashDev/2026', 'SparkDev/2026']).count()
 
         call_command('seed_dummy_data', verbosity=0)
@@ -1786,7 +1972,6 @@ class SeedDummyDataTest(TestCase):
 
     def test_seed_dummy_data_flush_recreates_data(self):
         """Running with --flush clears and re-seeds; programs exist afterward."""
-        call_command('seed_dummy_data', verbosity=0)
         self.assertTrue(Program.objects.filter(url='SplashDev/2026').exists())
 
         call_command('seed_dummy_data', '--flush', verbosity=0)
@@ -1794,6 +1979,25 @@ class SeedDummyDataTest(TestCase):
             Program.objects.filter(url='SplashDev/2026').exists(),
             'Programs should exist after flush (command re-seeds)',
         )
+
+    def test_seed_dummy_data_survey_questions_render(self):
+        """Seeded survey questions use real QuestionTypes and render without errors."""
+        questions = Question.objects.filter(survey__program__url__in=['SplashDev/2026', 'SparkDev/2026'])
+        self.assertGreater(questions.count(), 0)
+        for question in questions:
+            with self.subTest(question=str(question)):
+                question.question_type.full_clean()
+                self.assertIn(question.name, question.render())
+
+    def test_seed_dummy_data_repairs_legacy_question_types(self):
+        """Re-seeding moves questions off the legacy template-less types and removes them."""
+        legacy = QuestionType.objects.create(name='rating')
+        Question.objects.filter(name='Overall rating').update(question_type=legacy)
+
+        call_command('seed_dummy_data', verbosity=0)
+        self.assertFalse(QuestionType.objects.filter(name='rating').exists())
+        self.assertFalse(Question.objects.filter(name='Overall rating').exclude(
+            question_type__name='Numeric Rating').exists())
 
 class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     """Tests for making class flags visible to teachers."""
@@ -1859,7 +2063,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     def test_notification_email_sent(self):
         """Creating a flag with notify_teacher_by_email=True sends personalized email to each teacher."""
         from esp.program.models import ClassFlag
-        from django.core import mail
         flag = ClassFlag.objects.create(
             subject=self.subject, flag_type=self.teacher_notify_type,
             comment='Please fix ASAP', created_by=self.admin_user, modified_by=self.admin_user,
@@ -1879,7 +2082,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     def test_no_notification_when_disabled(self):
         """Creating a flag with notify_teacher_by_email=False sends no email."""
         from esp.program.models import ClassFlag
-        from django.core import mail
         flag = ClassFlag.objects.create(
             subject=self.subject, flag_type=self.teacher_visible_type,
             comment='FYI', created_by=self.admin_user, modified_by=self.admin_user,
@@ -1971,25 +2173,22 @@ and repeat sending logic.
 """
 from unittest.mock import patch, MagicMock
 
-from django.contrib.auth.models import Group
-from django.core import mail
+
 
 from esp.cal.models import install as install_cal
 from esp.program.controllers.confirmation import ConfirmationEmailController
-from esp.program.models import Program
+
 from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import ESPUser, Record, RecordType
+from esp.users.models import Record, RecordType
 
 
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
+
 
 
 class ConfirmationEmailControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         install_cal()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.user = ESPUser.objects.create_user(
@@ -2282,6 +2481,43 @@ class HeardAboutNormalizationTest(TestCase):
         self.assertEqual(self._normalize("...!!!"), "")
 
 
+class ClassSubjectCacheTest(ProgramFrameworkTest):
+    def test_get_teachers_cache_invalidation(self):
+        """
+        Regression test for Issue #3836:
+        Verify get_teachers() cache invalidates properly when a teacher's row is updated.
+        """
+        # Assign a teacher to a class
+        teacher = self.teachers[0]
+        test_class = self.program.classes()[0]
+        test_class.makeTeacher(teacher)
+
+        # 1. Call get_teachers() to populate the cache
+        teachers_before = test_class.get_teachers()
+        self.assertIn(teacher, teachers_before)
+
+        # Store original email
+        original_email = teacher.email
+
+        # 2. Update the teacher's email and save the user
+        new_email = "updated_email_xyz123@example.com"
+        teacher.email = new_email
+        teacher.save()
+
+        # 3. Verify subsequent get_teachers() call returns the updated email
+        #    without requiring a manual cache flush.
+        updated_teachers = test_class.get_teachers()
+
+        # Find the updated teacher object among the returned teachers
+        updated_teacher = None
+        for t in updated_teachers:
+            if t.id == teacher.id:
+                updated_teacher = t
+                break
+
+        self.assertIsNotNone(updated_teacher)
+        self.assertNotEqual(updated_teacher.email, original_email)
+        self.assertEqual(updated_teacher.email, new_email)
 class ProgramCreationFormHandlerLookupTest(TestCase):
     """
     Verify that ProgramCreationForm.program_module_question_ids is built using
@@ -2428,3 +2664,198 @@ class SubmitTransactionRequiresPostTest(TestCase):
     def test_get_returns_405(self):
         response = self.client.get(reverse('manage_submit_transaction'))
         self.assertEqual(response.status_code, 405)
+
+
+class NewProgramModulePermissionsTest(TestCase):
+    """Tests that prepare_program sets initial start/end dates for permissions of enabled modules."""
+
+    def test_new_program_sets_module_permissions_and_dates(self):
+        from esp.program.models import Program, ProgramModule
+        from esp.program.setup import prepare_program, commit_program
+        from datetime import datetime
+
+        user_role_setup()
+
+        student_start = datetime(2026, 9, 1, 0, 0)
+        student_end = datetime(2026, 11, 1, 0, 0)
+        teacher_start = datetime(2026, 8, 1, 0, 0)
+        teacher_end = datetime(2026, 10, 1, 0, 0)
+
+        all_modules = list(ProgramModule.objects.all())
+
+        data = {
+            'student_reg_start': student_start,
+            'student_reg_end': student_end,
+            'teacher_reg_start': teacher_start,
+            'teacher_reg_end': teacher_end,
+            'program_modules': all_modules,
+        }
+
+        program = Program.objects.create(
+            name='Test Perm Program',
+            url='TestPerm/2026',
+            grade_min=7,
+            grade_max=12,
+        )
+        program.program_modules.set(all_modules)
+
+        perms, modules = prepare_program(program, data)
+        commit_program(program, perms)
+
+        # Verify Student/Classes permission exists and matches student dates
+        student_cls_perm = Permission.objects.filter(program=program, permission_type='Student/Classes').first()
+        self.assertIsNotNone(student_cls_perm)
+        self.assertEqual(student_cls_perm.start_date, student_start)
+        self.assertEqual(student_cls_perm.end_date, student_end)
+
+        # Verify Teacher/Classes/All permission exists and matches teacher dates
+        teacher_cls_perm = Permission.objects.filter(program=program, permission_type='Teacher/Classes/All').first()
+        self.assertIsNotNone(teacher_cls_perm)
+        self.assertEqual(teacher_cls_perm.start_date, teacher_start)
+        self.assertEqual(teacher_cls_perm.end_date, teacher_end)
+
+        # Verify Volunteer/Signup permission exists and has start_date set
+        volunteer_perm = Permission.objects.filter(program=program, permission_type='Volunteer/Signup').first()
+        self.assertIsNotNone(volunteer_perm)
+        self.assertIsNotNone(volunteer_perm.start_date)
+
+        # Verify ProgramModuleObj instances created for program inherit dates
+        program.getModules()
+        student_cls_pm = ProgramModule.objects.get(handler='StudentClassRegModule')
+        from esp.program.modules.base import ProgramModuleObj
+        pmo = ProgramModuleObj.objects.get(program=program, module=student_cls_pm)
+        self.assertEqual(pmo.start_date, student_start)
+        self.assertEqual(pmo.end_date, student_end)
+
+
+
+class ProgramModuleObjCreationTest(TestCase):
+    """Tests that getFromProgModule() creates at most one row per (program, module)."""
+
+    def setUp(self):
+        self.module = ProgramModule.objects.get(handler='StudentClassRegModule')
+        self.program = Program.objects.create(
+            name='PMO Race Program',
+            url='PMORace/2026',
+            grade_min=7,
+            grade_max=12,
+        )
+
+    def test_competing_insert_is_reused(self):
+        """A row inserted between the existence check and our own insert is reused.
+
+        getFromProgModule() looks for an existing row and then inserts one if it
+        found none.  Two concurrent requests can both reach the insert, which the
+        unique_together constraint on (program, module) rejects; the loser has to
+        take the winner's row rather than raise IntegrityError.  _initial_defaults()
+        is only called on the insert path, so patching it is a stand-in for the
+        request that wins the race.
+        """
+        real_defaults = ProgramModuleObj._initial_defaults
+
+        def _defaults_then_competing_insert(prog, mod, old_prog=None):
+            defaults = real_defaults(prog, mod, old_prog)
+            ProgramModuleObj.objects.create(program=prog, module=mod, seq=99, required=False)
+            return defaults
+
+        with patch.object(ProgramModuleObj, '_initial_defaults',
+                          staticmethod(_defaults_then_competing_insert)):
+            moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.module)
+
+        self.assertEqual(ProgramModuleObj.objects.filter(program=self.program,
+                                                         module=self.module).count(), 1)
+        #   The winner's row comes back, rather than a second row of our own.
+        self.assertEqual(moduleobj.seq, 99)
+
+    def test_repeated_calls_reuse_one_row(self):
+        first = ProgramModuleObj.getFromProgModule(self.program, self.module)
+        second = ProgramModuleObj.getFromProgModule(self.program, self.module)
+        self.assertEqual(first.id, second.id)
+        self.assertEqual(ProgramModuleObj.objects.filter(program=self.program,
+                                                         module=self.module).count(), 1)
+
+    def test_new_row_copies_values_from_old_program(self):
+        old_program = Program.objects.create(
+            name='PMO Old Program',
+            url='PMOOld/2025',
+            grade_min=7,
+            grade_max=12,
+        )
+        start = datetime(2026, 3, 1, 0, 0)
+        end = datetime(2026, 4, 1, 0, 0)
+        ProgramModuleObj.objects.create(program=old_program, module=self.module, seq=42,
+                                        required=True, required_label='Sign up',
+                                        start_date=start, end_date=end)
+
+        moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.module,
+                                                       old_prog=old_program)
+
+        self.assertEqual(moduleobj.seq, 42)
+        self.assertTrue(moduleobj.required)
+        self.assertEqual(moduleobj.required_label, 'Sign up')
+        self.assertEqual(moduleobj.start_date, start)
+        self.assertEqual(moduleobj.end_date, end)
+
+
+class ProgramValidatorsTest(TestCase):
+    """Tests for Program name/url validation."""
+
+    def test_valid_program_name_and_url(self):
+        field = Program._meta.get_field('name')
+        for name in ["Splash 2026", "Splash! 2013", "Delve 2005 (Winter)"]:
+            field.clean(name, None)
+        field = Program._meta.get_field('url')
+        for url in ["Splash/2026_Spring", "TestProgram/2222_Summer", "Splash/2007_Fall_1"]:
+            field.clean(url, None)
+
+    def test_program_name_rejects_markup(self):
+        field = Program._meta.get_field('name')
+        for name in ["Harda <script>alert('BCA Power')</script>", "Splash>2026", "Splash\n2026"]:
+            with self.assertRaises(ValidationError):
+                field.clean(name, None)
+
+    def test_program_url_rejects_markup_and_bad_shape(self):
+        field = Program._meta.get_field('url')
+        # Missing or extra path segments, and characters that can't be routed.
+        for url in ["splash-2026", "Splash/2026/Spring", "test-url-<script>", "Splash/"]:
+            with self.assertRaises(ValidationError):
+                field.clean(url, None)
+
+
+class ProgramCreationFormValidationTest(TestCase):
+    """The url and name fields aren't on ProgramCreationForm, so the form has to
+    validate the values it builds them from."""
+
+    def form_errors(self, **overrides):
+        data = {'program_type': 'Splash', 'term': '2026_Spring', 'term_friendly': 'Spring 2026'}
+        data.update(overrides)
+        form = ProgramCreationForm(data)
+        form.is_valid()
+        return form.errors
+
+    def test_markup_in_term_friendly_is_rejected(self):
+        errors = self.form_errors(term_friendly="<script>alert('XSS')</script>")
+        self.assertIn('term_friendly', errors)
+
+    def test_markup_in_program_type_is_rejected(self):
+        errors = self.form_errors(program_type="Splash<script>")
+        self.assertIn('program_type', errors)
+
+    def test_each_title_field_is_validated_independently(self):
+        errors = self.form_errors(term='Splash! 2013', term_friendly='Splash<script>')
+        self.assertIn('term', errors)
+        self.assertIn('term_friendly', errors)
+
+    def test_missing_program_type_does_not_raise(self):
+        errors = self.form_errors(program_type='')
+        self.assertIn('program_type', errors)
+
+    def test_overlong_assembled_name_and_url_are_rejected(self):
+        errors = self.form_errors(program_type='S' * 60, term='2' * 40, term_friendly='F' * 40)
+        self.assertIn('term', errors)
+        self.assertIn('term_friendly', errors)
+
+    def test_valid_title_fields_produce_no_title_errors(self):
+        errors = self.form_errors()
+        for field_name in ('program_type', 'term', 'term_friendly'):
+            self.assertNotIn(field_name, errors)

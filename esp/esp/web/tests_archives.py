@@ -27,6 +27,7 @@ from esp.web.views.archives import (
     archive_teachers,
     archive_programs,
 )
+from esp.web.views.main import archives
 from esp.program.models import ArchiveClass
 
 
@@ -295,6 +296,13 @@ class ArchiveTeachersViewTest(TestCase):
         response = archive_teachers(request, None, None)
         self.assertEqual(response.status_code, 200)
 
+    def test_dispatcher_passes_sortparams(self):
+        """archives() always forwards sortparams; handlers must accept it."""
+        request = self.factory.get('/archives/teachers/')
+        request.user = AnonymousUser()
+        response = archives(request, 'teachers')
+        self.assertEqual(response.status_code, 200)
+
     def test_with_category_options(self):
         request = self.factory.get('/archives/teachers/year/2023/')
         request.user = AnonymousUser()
@@ -315,6 +323,13 @@ class ArchiveProgramsViewTest(TestCase):
         request = self.factory.get('/archives/programs/')
         request.user = AnonymousUser()
         response = archive_programs(request, None, None)
+        self.assertEqual(response.status_code, 200)
+
+    def test_dispatcher_passes_sortparams(self):
+        """archives() always forwards sortparams; handlers must accept it."""
+        request = self.factory.get('/archives/programs/')
+        request.user = AnonymousUser()
+        response = archives(request, 'programs')
         self.assertEqual(response.status_code, 200)
 
     def test_with_category_options(self):

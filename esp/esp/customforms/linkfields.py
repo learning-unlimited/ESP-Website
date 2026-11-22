@@ -7,14 +7,6 @@ from phonenumber_field.widgets import PhoneNumberInternationalFallbackWidget
 from esp.customforms.forms import NameField, AddressField, CustomFileWidget
 from esp.utils.forms import DummyField
 
-
-def coerce_null_boolean(value):
-    if value in (True, 'True', 'true', '2'):
-        return True
-    if value in (False, 'False', 'false', '3'):
-        return False
-    return None
-
 generic_fields = {
     'textField': {'typeMap': forms.CharField, 'attrs': {'widget': forms.TextInput,}, 'widget_attrs': {'size': '30', 'class': ''}},
     'longTextField': {'typeMap': forms.CharField, 'attrs': {'widget': forms.TextInput,}, 'widget_attrs': {'size': '60', 'class': ''}},
@@ -28,14 +20,14 @@ generic_fields = {
     'date': {'typeMap': forms.DateField, 'attrs': {'widget': forms.DateInput,}, 'widget_attrs': {'class': 'ddate ', 'format': '%m-%d-%Y'},},
     'time': {'typeMap': forms.TimeField, 'attrs': {'widget': forms.TimeInput,}, 'widget_attrs': {'class': 'time '},},
     'file': {'typeMap': forms.FileField, 'attrs': {'widget': CustomFileWidget,}, 'widget_attrs': {'class': 'file'},},
-    'phone': {'typeMap': PhoneNumberField, 'attrs': {'widget': PhoneNumberInternationalFallbackWidget,}, 'widget_attrs': {'class': 'USPhone '}},
+    'phone': {'typeMap': PhoneNumberField, 'attrs': {'widget': PhoneNumberInternationalFallbackWidget,}, 'widget_attrs': {'class': ''}},
     'email': {'typeMap': forms.EmailField, 'attrs': {'max_length': 30, 'widget': forms.TextInput,}, 'widget_attrs': {'class': 'email '}},
     'state': {'typeMap': USStateField, 'attrs': {'widget': USStateSelect}, 'widget_attrs': {'class': ''}},
     'gender': {'typeMap': forms.ChoiceField, 'attrs': {'widget': forms.RadioSelect, 'choices': [('F', 'Female'), ('M', 'Male'), ('O', 'Other')]}, 'widget_attrs': {'class': 'gender '}},
     'pronoun': {'typeMap': forms.CharField, 'attrs': {'widget': forms.TextInput,}, 'widget_attrs': {'size': '50', 'class': 'pronoun '}},
     'radio_yesno': {'typeMap': forms.ChoiceField, 'attrs': {'widget': forms.RadioSelect, 'choices': (('T', 'Yes'), ('F', 'No'))}, 'widget_attrs': {'class': ''}},
     'boolean': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs': {'class': ''}},
-    'null_boolean': {'typeMap': forms.TypedChoiceField, 'attrs': {'widget': forms.NullBooleanSelect, 'choices': (('1', 'Unknown'), ('2', 'Yes'), ('3', 'No')), 'coerce': coerce_null_boolean, 'empty_value': None}, 'widget_attrs': {'class': ''}},
+    'null_boolean': {'typeMap': forms.NullBooleanField, 'attrs': {'widget': forms.NullBooleanSelect}, 'widget_attrs': {'class': ''}},
     'instructions': {'typeMap': DummyField, 'attrs': {'widget': None}, 'widget_attrs': {'class': ''}},
 }
 

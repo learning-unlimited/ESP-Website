@@ -6,7 +6,9 @@ from django.http import HttpResponse
 from django.test import SimpleTestCase, RequestFactory
 
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
-from esp.program.models import Program, RegistrationType, StudentRegistration
+from esp.program.models import (BooleanExpression, BooleanToken, ClassCategories, ClassSection, ClassSubject,
+                                Program, RegistrationType, ScheduleConstraint,
+                                ScheduleTestCategory, ScheduleTestOccupied, StudentRegistration)
 from esp.program.tests import ProgramFrameworkTest
 from esp.tests.util import CacheFlushTestCase, user_role_setup
 from esp.users.models import ESPUser
@@ -42,6 +44,128 @@ class UpdateScheduleJsonTests(SimpleTestCase):
         with patch.object(ESPUser.objects, "get", side_effect=ESPUser.DoesNotExist):
             resp = self._call({"user": "9999"})
         self._assert_user_not_found(resp)
+
+    def _assert_invalid_sections(self, resp):
+        self.assertEqual(resp.status_code, 400)
+        payload = json.loads(resp.content.decode())
+        self.assertTrue(any('sections must be a JSON list' in msg for msg in payload.get('messages', [])))
+
+    def test_sections_object_returns_400(self):
+        user = SimpleNamespace(id=1)
+        with patch.object(ESPUser.objects, "get", return_value=user):
+            resp = self._call({"user": "1", "sections": "{}"})
+        self._assert_invalid_sections(resp)
+
+    def test_sections_scalar_returns_400(self):
+        user = SimpleNamespace(id=1)
+        with patch.object(ESPUser.objects, "get", return_value=user):
+            resp = self._call({"user": "1", "sections": "5"})
+        self._assert_invalid_sections(resp)
+
+    def test_malformed_sections_json_returns_400(self):
+        user = SimpleNamespace(id=1)
+        with patch.object(ESPUser.objects, "get", return_value=user):
+            resp = self._call({"user": "1", "sections": "not-json{{{"})
+        self.assertEqual(resp.status_code, 400)
+        payload = json.loads(resp.content.decode())
+        self.assertTrue(any('could not parse' in msg for msg in payload.get('messages', [])))
+
+
+class UpdateScheduleJsonSanitizationTests(ProgramFrameworkTest):
+    """update_schedule_json must cast section IDs to ints, drop invalid
+    entries, dedupe, and reject oversized lists (#4268)."""
+
+    def setUp(self):
+        super().setUp(
+            num_timeslots=1,
+            num_teachers=1,
+            classes_per_teacher=1,
+            sections_per_class=1,
+            num_rooms=1,
+            num_students=1,
+        )
+        self.schedule_randomly()
+        self.add_user_profiles()
+        self.student = self.students[0]
+        self.section = self.program.sections()[0]
+        self.factory = RequestFactory()
+        self.admin = self.admins[0]
+
+    def _call(self, sections_param):
+        request = self.factory.get('/onsite/update_schedule_json', {
+            'user': str(self.student.id),
+            'sections': sections_param,
+        })
+        request.user = self.admin
+        fn = getattr(OnSiteClassList.update_schedule_json, 'method', OnSiteClassList.update_schedule_json)
+        module = SimpleNamespace(program=self.program)
+        return fn(module, request, None, None, None, None, None, self.program)
+
+    def test_invalid_and_duplicate_entries_are_sanitized(self):
+        resp = self._call(json.dumps(['junk', self.section.id, self.section.id]))
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content.decode())
+        self.assertTrue(any('ignored invalid section ID' in msg for msg in data['messages']))
+        #   The duplicate entry must have been collapsed to a single attempt.
+        add_messages = [m for m in data['messages'] if m.startswith('Added') or m.startswith('Failed to add')]
+        self.assertEqual(len(add_messages), 1)
+
+    def test_all_invalid_entries_rejected_without_wiping_schedule(self):
+        self.section.preregister_student(self.student)
+        resp = self._call(json.dumps(['junk']))
+        self.assertEqual(resp.status_code, 400)
+        self.assertTrue(
+            StudentRegistration.valid_objects().filter(user=self.student, section=self.section).exists()
+        )
+
+    def test_oversized_list_returns_400(self):
+        resp = self._call(json.dumps(list(range(300))))
+        self.assertEqual(resp.status_code, 400)
+        data = json.loads(resp.content.decode())
+        self.assertTrue(any('too many sections' in msg for msg in data['messages']))
+
+    def test_float_and_bool_entries_are_rejected(self):
+        #   int(1.0) == 1 and int(True) == 1, so strict validation must
+        #   reject floats (even 1.0) and bools instead of coercing them.
+        resp = self._call(json.dumps([1.0, True, False, self.section.id]))
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content.decode())
+        self.assertEqual(sum('ignored invalid section ID' in msg for msg in data['messages']), 3)
+        add_messages = [m for m in data['messages'] if m.startswith('Added') or m.startswith('Failed to add')]
+        self.assertEqual(len(add_messages), 1)
+
+    def test_mixed_list_with_non_integer_sanitized(self):
+        #   Regression for Copilot review: list containing non-integers
+        #   like ["abc", 12] must sanitize, not 500 or wipe.
+        resp = self._call(json.dumps(['abc', self.section.id]))
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content.decode())
+        self.assertTrue(any('ignored invalid section ID' in msg for msg in data['messages']))
+
+    def test_all_floats_rejected_without_wiping_schedule(self):
+        self.section.preregister_student(self.student)
+        resp = self._call(json.dumps([1.0, 2.5]))
+        self.assertEqual(resp.status_code, 400)
+        self.assertTrue(
+            StudentRegistration.valid_objects().filter(user=self.student, section=self.section).exists()
+        )
+
+    def test_malformed_json_returns_400_without_wiping_schedule(self):
+        self.section.preregister_student(self.student)
+        request = self.factory.get('/onsite/update_schedule_json', {
+            'user': str(self.student.id),
+            'sections': 'not-json{{{',
+        })
+        request.user = self.admin
+        fn = getattr(OnSiteClassList.update_schedule_json, 'method', OnSiteClassList.update_schedule_json)
+        module = SimpleNamespace(program=self.program)
+        resp = fn(module, request, None, None, None, None, None, self.program)
+        self.assertEqual(resp.status_code, 400)
+        data = json.loads(resp.content.decode())
+        self.assertTrue(any('could not parse' in msg for msg in data['messages']))
+        self.assertTrue(
+            StudentRegistration.valid_objects().filter(user=self.student, section=self.section).exists()
+        )
 
 
 class PrintScheduleStatusTests(SimpleTestCase):
@@ -572,6 +696,111 @@ class StudentsStatusTests(ProgramFrameworkTest):
         self.assertTrue(entry[3])
 
 
+class ClassListReloadTests(ProgramFrameworkTest):
+    """The scrolling onsite class list should reload once it reaches the end
+    of a scroll cycle, rather than on a fixed timer that can interrupt the
+    list mid-scroll.
+    """
+
+    def setUp(self):
+        super().setUp(
+            num_timeslots=2,
+            num_teachers=2,
+            classes_per_teacher=1,
+            sections_per_class=1,
+            num_rooms=2,
+            num_students=0,
+        )
+        self.factory = RequestFactory()
+        self.admin = self.admins[0]
+
+    def _render(self, options):
+        request = self.factory.get('/onsite/classlist', options)
+        request.user = self.admin
+        module = SimpleNamespace(
+            program=self.program,
+            baseDir=lambda: 'program/modules/onsiteclasslist/'
+        )
+        resp = OnSiteClassList.classList_base(
+            module,
+            request,
+            'onsite',
+            None,
+            None,
+            None,
+            None,
+            self.program,
+            options=options,
+            template_name='classlist.html',
+        )
+        resp.render()
+        return resp.content.decode()
+
+    def test_no_meta_refresh_tag(self):
+        """The page must not use a blind <meta http-equiv="refresh"> reload."""
+        content = self._render({'refresh': '30', 'scrollspeed': '1'})
+        self.assertNotIn('http-equiv="refresh"', content)
+
+    def test_refresh_interval_reflects_option(self):
+        """Refresh option should be passed to JS as milliseconds."""
+        content = self._render({'refresh': '30', 'scrollspeed': '1'})
+        self.assertIn('refresh_interval_ms = 30 * 1000', content)
+
+    def test_refresh_option_respects_server_minimum(self):
+        """Refresh values below the configured minimum should be clamped."""
+        content = self._render({'refresh': '1', 'scrollspeed': '1'})
+        self.assertNotIn('refresh_interval_ms = 1 * 1000', content)
+
+    def test_scroll_checks_elapsed_time_before_reloading(self):
+        """Reload should happen only after checking elapsed time when the
+        scroll wraps around."""
+        content = self._render({'refresh': '30', 'scrollspeed': '1'})
+
+        wrap_index = content.index('elt1.offsetHeight + scroll_offset < 0')
+        check_index = content.index(
+            'Date.now() - page_load_time >= refresh_interval_ms'
+        )
+        reload_index = content.index('location.reload()')
+
+        self.assertLess(wrap_index, check_index)
+        self.assertLess(check_index, reload_index)
+
+    def test_refresh_non_numeric_fallback(self):
+        """Non-numeric refresh should fall back to 120."""
+        content = self._render({'refresh': '2 minutes', 'scrollspeed': '1'})
+        self.assertIn('refresh_interval_ms = 120 * 1000', content)
+
+    def test_refresh_empty_fallback(self):
+        """Empty refresh should fall back to 120."""
+        content = self._render({'refresh': '', 'scrollspeed': '1'})
+        self.assertIn('refresh_interval_ms = 120 * 1000', content)
+
+    def test_scrollspeed_non_numeric_fallback(self):
+        """Non-numeric scrollspeed should fall back to 1.0."""
+        content = self._render({'refresh': '120', 'scrollspeed': '2 fast'})
+        self.assertIn('scroll_offset -= 1.0;', content)
+
+    def test_scrollspeed_fractional_scale_factor(self):
+        """Fractional scrollspeed should be preserved (float parsing, not int)."""
+        content = self._render({'refresh': '120', 'scrollspeed': '0.5'})
+        self.assertIn('scroll_offset -= 0.5;', content)
+
+    def test_scrollspeed_nan_fallback(self):
+        """scrollspeed='nan' is a valid float() input but non-finite; must fall back to 1.0."""
+        content = self._render({'refresh': '120', 'scrollspeed': 'nan'})
+        self.assertIn('scroll_offset -= 1.0;', content)
+
+    def test_scrollspeed_inf_fallback(self):
+        """scrollspeed='inf' is a valid float() input but non-finite; must fall back to 1.0."""
+        content = self._render({'refresh': '120', 'scrollspeed': 'inf'})
+        self.assertIn('scroll_offset -= 1.0;', content)
+
+    def test_scrollspeed_overflow_fallback(self):
+        """scrollspeed='1e309' overflows to inf (non-finite); must fall back to 1.0."""
+        content = self._render({'refresh': '120', 'scrollspeed': '1e309'})
+        self.assertIn('scroll_offset -= 1.0;', content)
+
+
 class OnsiteAuthorizationTests(CacheFlushTestCase):
     """Integration-level tests for the needs_onsite access guard on catalog_status.
     Uses CacheFlushTestCase directly to allow control over users and permissions.
@@ -686,3 +915,174 @@ class SchedulePdfTests(SimpleTestCase):
 
         self.assertIs(resp, response)
         mocked_get.assert_called_once_with(self.last_request, [user], program, onsite=False)
+
+
+class ScheduleConstraintMessageTests(ProgramFrameworkTest):
+    """The grid reports unmet schedule constraints instead of enforcing or ignoring them."""
+
+    def setUp(self):
+        super().setUp(
+            num_timeslots=2,
+            num_teachers=2,
+            classes_per_teacher=1,
+            sections_per_class=1,
+            num_rooms=2,
+            num_students=1,
+        )
+        self.schedule_randomly()
+        self.add_user_profiles()
+        self.factory = RequestFactory()
+        self.admin = self.admins[0]
+        self.student = self.students[0]
+        #   Pin the schedule rather than relying on schedule_randomly(), so that
+        #   "a class during this block" is unambiguous.
+        timeslots = list(self.program.getTimeSlots())
+        self.timeslot, self.other_timeslot = timeslots[0], timeslots[1]
+        self.section = self.program.sections()[0]
+        self.section.meeting_times.set([self.timeslot])
+        self.section.preregister_student(self.student)
+
+        #   Unconditionally require a class during the section's timeslot, so
+        #   dropping it leaves the requirement unmet.
+        condition = BooleanExpression.objects.create(label='always')
+        BooleanToken.objects.create(exp=condition, text='True', seq=0)
+        self.requirement = BooleanExpression.objects.create(label='have a class during the first block')
+        ScheduleTestOccupied.objects.create(exp=self.requirement, timeblock=self.timeslot, seq=0)
+        self.constraint = ScheduleConstraint.objects.create(program=self.program, condition=condition,
+                                                           requirement=self.requirement)
+
+    def enforce_constraint(self):
+        self.constraint.enforce = True
+        self.constraint.save()
+
+    def _call(self, view_name, params):
+        request = self.factory.get('/onsite/' + view_name, params)
+        request.user = self.admin
+        view = getattr(OnSiteClassList, view_name)
+        fn = getattr(view, 'method', view)
+        return json.loads(fn(SimpleNamespace(), request, None, None, None, None, None, self.program).content)
+
+    def test_get_schedule_json_reports_nothing_while_satisfied(self):
+        data = self._call('get_schedule_json', {'user': self.student.id})
+        self.assertEqual(data['messages'], [])
+
+    def test_update_schedule_json_removes_section_and_warns(self):
+        data = self._call('update_schedule_json', {'user': self.student.id, 'sections': '[]'})
+
+        self.assertEqual(data['sections'], [], 'Section should have been removed')
+        self.assertTrue(any(self.requirement.label in message for message in data['messages']),
+                        'Expected a warning about the unmet requirement in %r' % data['messages'])
+
+    def test_get_schedule_json_warns_once_schedule_is_empty(self):
+        self.section.unpreregister_student(self.student)
+        data = self._call('get_schedule_json', {'user': self.student.id})
+        self.assertTrue(any(self.requirement.label in message for message in data['messages']),
+                        'Expected a warning about the unmet requirement in %r' % data['messages'])
+
+    def test_enforced_constraint_makes_no_changes_without_override(self):
+        self.enforce_constraint()
+        data = self._call('update_schedule_json', {'user': self.student.id, 'sections': '[]'})
+
+        self.assertEqual(data['sections'], [self.section.id],
+                         'Enforced constraint should have prevented the removal')
+        self.assertTrue(any('Made no changes' in message for message in data['messages']),
+                        'Expected a refusal message in %r' % data['messages'])
+        self.assertTrue(any(self.requirement.label in message for message in data['messages']))
+
+    def test_override_applies_the_change_anyway(self):
+        self.enforce_constraint()
+        data = self._call('update_schedule_json',
+                          {'user': self.student.id, 'sections': '[]', 'override': 'true'})
+
+        self.assertEqual(data['sections'], [], 'Override should have applied the removal')
+        self.assertFalse(any('Made no changes' in message for message in data['messages']),
+                         'Override should not report a refusal: %r' % data['messages'])
+        #   The admin is still told what the resulting schedule fails.
+        self.assertTrue(any(self.requirement.label in message for message in data['messages']))
+
+    def test_enforced_constraint_does_not_trap_a_schedule_already_in_violation(self):
+        self.enforce_constraint()
+        self.section.unpreregister_student(self.student)
+
+        #   Enroll in a class in the *other* block, so the requirement stays unmet
+        #   and dropping this class cannot be what breaks it.
+        other = self.program.sections().exclude(id=self.section.id).first()
+        if other is None:
+            self.skipTest('Program has only one section')
+        other.meeting_times.set([self.other_timeslot])
+        other.preregister_student(self.student)
+
+        data = self._call('update_schedule_json', {'user': self.student.id, 'sections': '[]'})
+        self.assertEqual(data['sections'], [],
+                         'An already-violating schedule should still be changeable')
+
+    def test_override_constraints_flag_applies_a_removal(self):
+        """Removals send override_constraints, not the confirm-gated size override."""
+        self.enforce_constraint()
+        data = self._call('update_schedule_json',
+                          {'user': self.student.id, 'sections': '[]',
+                           'override_constraints': 'true'})
+
+        self.assertEqual(data['sections'], [], 'Override should have applied the removal')
+        self.assertFalse(any('Made no changes' in message for message in data['messages']),
+                         'Override should not report a refusal: %r' % data['messages'])
+
+    def reserved_option(self):
+        """An accepted section that would satisfy a category requirement."""
+        from esp.program.class_status import ClassStatus
+        category = ClassCategories.objects.create(category='Reserved', symbol='R')
+        subject = ClassSubject.objects.create(
+            title='Reserved', category=category, parent_program=self.program,
+            grade_min=7, grade_max=12, class_size_max=100, duration='1.0',
+            status=ClassStatus.ACCEPTED)
+        section = ClassSection.objects.create(
+            parent_class=subject, duration='1.0', max_class_capacity=100,
+            status=ClassStatus.ACCEPTED)
+        section.meeting_times.add(self.other_timeslot)
+        return category, section
+
+    def require_category_in_other_block(self, category):
+        ScheduleConstraint.objects.filter(program=self.program).delete()
+        condition = BooleanExpression.objects.create(label='always')
+        BooleanToken.objects.create(exp=condition, text='True', seq=0)
+        requirement = BooleanExpression.objects.create(label='keep the second block free for Reserved')
+        ScheduleTestCategory.objects.create(exp=requirement, timeblock=self.other_timeslot,
+                                            category=category, seq=0)
+        return ScheduleConstraint.objects.create(program=self.program, condition=condition,
+                                                 requirement=requirement, enforce=True)
+
+    def test_grid_refuses_an_add_that_uses_up_the_last_option(self):
+        """The grid judges class adds the way the student interface does."""
+        category, _option = self.reserved_option()
+        constraint = self.require_category_in_other_block(category)
+
+        intruder = self.program.sections().exclude(id=self.section.id).first()
+        if intruder is None:
+            self.skipTest('Program has only one non-lunch section')
+        intruder.meeting_times.set([self.other_timeslot])
+
+        data = self._call('update_schedule_json',
+                          {'user': self.student.id,
+                           'sections': '[%d, %d]' % (self.section.id, intruder.id)})
+
+        self.assertNotIn(intruder.id, data['sections'],
+                         'Grid should refuse an add that uses up the last way to comply')
+        self.assertTrue(any(constraint.requirement.label in message for message in data['messages']),
+                        'Expected a refusal naming the requirement in %r' % data['messages'])
+
+    def test_grid_allows_an_add_that_leaves_a_way_to_comply(self):
+        category, _option = self.reserved_option()
+        self.require_category_in_other_block(category)
+
+        #   Scheduled opposite the reserved block, so the option survives.
+        intruder = self.program.sections().exclude(id=self.section.id).first()
+        if intruder is None:
+            self.skipTest('Program has only one non-lunch section')
+        intruder.meeting_times.set([self.timeslot])
+
+        data = self._call('update_schedule_json',
+                          {'user': self.student.id,
+                           'sections': '[%d, %d]' % (self.section.id, intruder.id)})
+
+        self.assertIn(intruder.id, data['sections'],
+                      'Grid should allow an add that leaves the requirement satisfiable')

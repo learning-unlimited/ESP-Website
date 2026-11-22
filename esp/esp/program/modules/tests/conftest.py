@@ -35,5 +35,6 @@ def pytest_collect_file(parent, file_path):
         and file_path.name not in _SKIP
         and not file_path.name.startswith(".")
         and not file_path.name.startswith("test_")
+        and not parent.session.isinitpath(file_path)
     ):
         return pytest.Module.from_parent(parent, path=file_path)

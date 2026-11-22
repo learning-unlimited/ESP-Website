@@ -31,6 +31,7 @@ You will also see references to other data structures that store configuration s
 
 * [Teacher] module control (ClassRegModuleInfo): http://[hostname]/admin/modules/classregmoduleinfo/
 * Student module control (StudentClassRegModuleInfo): http://[hostname]/admin/modules/studentclassregmoduleinfo/
+* Module Schedule & Dates: See `Program Module Schedule & Permission Dates <module_schedule.rst>`_ for details on setting initial permissions, start/end dates, date inheritance, and permission synchronization.
 * Tags: http://[hostname]/admin/tagdict/tag/ - Very powerful, but more advanced; see `Customizing with Tags <tags.rst>`_ for more information.
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.
@@ -113,7 +114,7 @@ Relevant settings include:
 * Tag 'allow_change_grade_level': By default, a student's graduation year is fixed after the first time they fill out their profile; this is intended to prevent students from lying about their age in order to get into certain classes. If this Tag is set, students may change their grade level at any time.
 * Tag 'student_grade_options': A JSON-encoded list of grade choices can be used to override the defaults (7 through 12 inclusive).
 * Tag 'student_medical_needs': If tag exists, students will see a text box where they can enter 'special medical needs'.
-* Tag 'show_studentrep_application': If tag exists, the student-rep application is shown as a part of the student profile. If it exists but is set to "no_expl", don't show the explanation textbox in the form.
+* Tag 'show_studentrep_application': Whether the student-rep application is shown as a part of the student profile, and if so, whether it includes the explanation textbox.
 * Tag 'show_student_tshirt_size_options': If tag exists, ask students about their choice of T-shirt size as part of the student profile
 * Tag 'show_student_vegetarianism_options': If tag exists, ask students about their dietary restrictions as part of the student profile
 * Tag 'show_student_graduation_years_not_grades': If tag exists, in the student profile, list graduation years rather than grade numbers
@@ -201,7 +202,7 @@ This is a module to allow students to fill out a global application for the prog
 Student Lunch Selection (StudentLunchSelection)
 -----------------------------------------------
 
-If you are using lunch constraints, some students may be confused by the requirement that they select a lunch period if they have both "morning" and "afternoon" classes.  To reduce confusion, this module forces students to choose a lunch period for each day before they proceed to the rest of student registration.  If they end up having a schedule that is not subject to the constraints, they will be allowed to manually remove the lunch period then.
+If you are using lunch constraints, some students may be confused by being told that they should select a lunch period if they have both "morning" and "afternoon" classes.  To reduce confusion, this module forces students to choose a lunch period for each day before they proceed to the rest of student registration.  They can remove the lunch period again later; if their schedule still calls for one, they will keep seeing the warning on their schedule, or be blocked from removing it if you have enabled "enforce" on the Lunch Constraints page.
 
 Add "Confirm Registration" link (StudentRegConfirm)
 ---------------------------------------------------
@@ -276,7 +277,7 @@ Views provided
 Student Surveys (SurveyModule)
 ------------------------------
 
-Include this module if you would like to use online surveys.  This module will cause your student survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" student deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only students that registered for a class ('classreg') are allowed to fill out the survey. This can be modified with the 'survey_student_filter' tag, which is a comma-separated list of groups of students as specified in the prog.students() dictionary (this will be more user-friendly in the future).
+Include this module if you would like to use online surveys.  This module will cause your student survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" student deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only students that registered for a class ('classreg') are allowed to fill out the survey. This can be modified with the 'survey_student_filter' tag, which lists the groups of students defined by the program's modules.
 
 Formstack Application Module
 ----------------------------
@@ -341,7 +342,7 @@ This module will prompt teachers to fill out their profile information before pr
 
 If you would like to remove a question, you can do so using the following tag:
 
-* teacherreg_hide_fields - A comma separated list of what fields (i.e. purchase_requests) you want to hide from teachers during teacher registration.
+* teacherreg_hide_fields - The fields (e.g. purchase_requests) you want to hide from teachers during teacher registration, selected from the fields that may be hidden.
 
 The questions shown on the teacher profile are configurable via the following tags:
 
@@ -356,7 +357,7 @@ The questions shown on the teacher profile are configurable via the following ta
 Teacher Surveys (SurveyModule)
 ------------------------------
 
-This module will cause your teacher survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" teacher deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only teachers that submitted a class ('class_submitted') are allowed to fill out the survey. This can be modified with the 'survey_teacher_filter' tag, which is a comma-separated list of groups of students as specified in the prog.students() dictionary (this will be more user-friendly in the future)
+This module will cause your teacher survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" teacher deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only teachers that submitted a class ('class_submitted') are allowed to fill out the survey. This can be modified with the 'survey_teacher_filter' tag, which lists the groups of teachers defined by the program's modules
 
 Teacher Acknowledgement (TeacherAcknowledgementModule)
 ------------------------------------------------------
@@ -672,13 +673,7 @@ During and after scheduling a program, you should periodically visit this page
 to see if you made any mistakes.  It may take a few minutes to run, but you
 will see a summary of common issues such as teachers that have to travel
 between adjacent timeslots and classes that aren't assigned the resources they
-need.
-
-For larger chapters the page may take a long time to load.  More improvements
-are in the works, but for now, the page
-<site>.learningu.org/manage/<program>/<instance>/scheduling_check_list
-will display a list of links to display the checks individually; most will load
-much more quickly than the entire page.
+need. Note that for larger chapters the page may take a long time to load.
 
 Survey Management (SurveyManagement)
 ------------------------------------

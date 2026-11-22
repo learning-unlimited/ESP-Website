@@ -146,3 +146,136 @@ class GroupTextModuleSendMessagesTest(ProgramFrameworkTest):
         self.assertIn('Could not find contact info for', log)
         self.assertIn('Found contact info for', log)
         mock_client_cls.return_value.messages.create.assert_called_once()
+
+
+class GroupTextModuleConfiguredTest(ProgramFrameworkTest):
+    """Tests for GroupTextModule.is_configured and panel access."""
+
+    def setUp(self, *args, **kwargs):
+        kwargs.update({'num_students': 1, 'num_teachers': 1, 'num_admins': 1})
+        super().setUp(*args, **kwargs)
+
+    def test_is_configured_true_with_settings(self):
+        with override_settings(**TWILIO_SETTINGS):
+            self.assertTrue(GroupTextModule.is_configured())
+
+    def test_is_configured_false_without_sid(self):
+        with override_settings(
+            TWILIO_ACCOUNT_SID=None,
+            TWILIO_AUTH_TOKEN='tok',
+            TWILIO_ACCOUNT_NUMBERS=['+15005550006'],
+        ):
+            self.assertFalse(GroupTextModule.is_configured())
+
+    def test_is_configured_false_without_numbers(self):
+        with override_settings(
+            TWILIO_ACCOUNT_SID='sid',
+            TWILIO_AUTH_TOKEN='tok',
+            TWILIO_ACCOUNT_NUMBERS=None,
+        ):
+            self.assertFalse(GroupTextModule.is_configured())
+
+    def test_is_configured_false_with_empty_list_numbers(self):
+        """Verify that is_configured returns False when TWILIO_ACCOUNT_NUMBERS is an empty list."""
+        with override_settings(
+            TWILIO_ACCOUNT_SID='sid',
+            TWILIO_AUTH_TOKEN='tok',
+            TWILIO_ACCOUNT_NUMBERS=[],
+        ):
+            self.assertFalse(GroupTextModule.is_configured())
+
+    def test_is_configured_false_with_empty_tuple_numbers(self):
+        """Verify that is_configured returns False when TWILIO_ACCOUNT_NUMBERS is an empty tuple."""
+        with override_settings(
+            TWILIO_ACCOUNT_SID='sid',
+            TWILIO_AUTH_TOKEN='tok',
+            TWILIO_ACCOUNT_NUMBERS=(),
+        ):
+            self.assertFalse(GroupTextModule.is_configured())
+
+    def test_is_configured_true_with_tuple_numbers(self):
+        """Verify that is_configured returns True when TWILIO_ACCOUNT_NUMBERS is a valid non-empty tuple."""
+        with override_settings(
+            TWILIO_ACCOUNT_SID='sid',
+            TWILIO_AUTH_TOKEN='tok',
+            TWILIO_ACCOUNT_NUMBERS=('+15005550006',),
+        ):
+            self.assertTrue(GroupTextModule.is_configured())
+
+    @override_settings(**TWILIO_SETTINGS)
+    def test_panel_renders_when_configured(self):
+        self.assertTrue(
+            self.client.login(username=self.admins[0].username, password='password')
+        )
+        response = self.client.get('/manage/%s/grouptextpanel' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'program/modules/grouptextmodule/search.html')
+
+    def test_panel_not_configured_template(self):
+        with override_settings(TWILIO_ACCOUNT_SID=None):
+            self.assertTrue(
+                self.client.login(username=self.admins[0].username, password='password')
+            )
+            response = self.client.get('/manage/%s/grouptextpanel' % self.program.url)
+            self.assertEqual(response.status_code, 200)
+            self.assertTemplateUsed(
+                response, 'program/modules/grouptextmodule/not_configured.html'
+            )
+
+    def test_panel_not_configured_with_empty_numbers(self):
+        """Verify that grouptextpanel renders not_configured.html on GET and POST when numbers are empty."""
+        with override_settings(
+            TWILIO_ACCOUNT_SID='sid',
+            TWILIO_AUTH_TOKEN='tok',
+            TWILIO_ACCOUNT_NUMBERS=[],
+        ):
+            self.assertTrue(
+                self.client.login(username=self.admins[0].username, password='password')
+            )
+            get_response = self.client.get('/manage/%s/grouptextpanel' % self.program.url)
+            self.assertEqual(get_response.status_code, 200)
+            self.assertTemplateUsed(
+                get_response, 'program/modules/grouptextmodule/not_configured.html'
+            )
+
+            post_response = self.client.post('/manage/%s/grouptextpanel' % self.program.url)
+            self.assertEqual(post_response.status_code, 200)
+            self.assertTemplateUsed(
+                post_response, 'program/modules/grouptextmodule/not_configured.html'
+            )
+
+    def test_student_cannot_access_panel(self):
+        with override_settings(**TWILIO_SETTINGS):
+            self.assertTrue(
+                self.client.login(username=self.students[0].username, password='password')
+            )
+            response = self.client.get('/manage/%s/grouptextpanel' % self.program.url)
+            self.assertEqual(response.status_code, 200)
+            self.assertTemplateUsed(response, 'errors/program/notanadmin.html')
+
+    @override_settings(**TWILIO_SETTINGS)
+    @patch('esp.program.modules.handlers.grouptextmodule.Client')
+    def test_send_messages_handles_twilio_error(self, mock_client_cls):
+        from twilio.base.exceptions import TwilioRestException
+
+        user = self.students[0]
+        self.add_user_profiles()
+        ContactInfo.objects.filter(user=user).delete()
+        ci = ContactInfo.objects.create(
+            user=user,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            e_mail=user.email,
+            phone_cell='+12015551234',
+            receive_txt_message=True,
+        )
+        RegistrationProfile(
+            user=user, program=self.program, contact_user=ci, most_recent_profile=True
+        ).save()
+
+        mock_client_cls.return_value.messages.create.side_effect = TwilioRestException(
+            status=400, uri='/Messages', msg='Twilio boom'
+        )
+        filter_obj = _make_filter([user])
+        log = GroupTextModule.sendMessages(filter_obj, 'hello')
+        self.assertIn('Twilio boom', log)

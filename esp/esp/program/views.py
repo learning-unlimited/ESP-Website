@@ -67,7 +67,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
 
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.program.modules.program_settings import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType, StudentSubjectInterest
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RecordTypeForm, RedirectForm, PlainRedirectForm
 from esp.program.setup import prepare_program, commit_program
@@ -75,7 +75,7 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.commmodule import CommModule
-from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, RecordType
+from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, RecordType, PendingActivation
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
@@ -254,40 +254,6 @@ def _latest_release():
     return label, _rst_to_html("\n".join(preview_lines))
 
 # ---------------------------------------------------------------------------
-
-@login_required
-def lottery_student_reg(request, program = None):
-    """
-    Serve the student reg page.
-
-    This is just a static page;
-    it gets all of its content from AJAX callbacks.
-    """
-
-    # First check whether the user is actually a student.
-    if not request.user.isStudent():
-        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
-
-    context = {}
-
-    return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, {})
-
-@login_required
-def lottery_student_reg_simple(request, program = None):
-    """
-    Serve the student reg page.
-
-    This is just a static page;
-    it gets all of its content from AJAX callbacks.
-    """
-
-    # First check whether the user is actually a student.
-    if not request.user.isStudent():
-        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
-
-    context = {}
-
-    return render_to_response('program/modules/lotterystudentregmodule/student_reg_simple.html', request, {})
 
 @transaction.atomic
 @login_required
@@ -547,14 +513,40 @@ def usersearch(request):
 
 @admin_required
 def userview(request):
-    """ Render a template displaying all the information about the specified user """
-    username = request.GET.get('username')
+    """ Render a template displaying all the information about the specified user. """
+    params = request.POST if request.method == 'POST' else request.GET
+    username = params.get('username')
     if not username:
         raise ESPError("You must specify a username to view.", log=False)
     try:
         user = ESPUser.objects.get(username=username)
     except ESPUser.DoesNotExist:
         raise ESPError("Sorry, can't find anyone with that username.", log=False)
+
+    # Grade changes and grade change request approvals/rejections must be
+    # submitted via POST
+    if request.method == 'POST':
+        if 'approve_request' in request.POST:
+            gcr = GradeChangeRequest.objects.filter(id=request.POST['approve_request'], requesting_student=user).first()
+            if gcr:
+                gcr.approved = True
+                gcr.acknowledged_by = request.user
+                gcr.save()
+        if 'reject_request' in request.POST:
+            gcr = GradeChangeRequest.objects.filter(id=request.POST['reject_request'], requesting_student=user).first()
+            if gcr:
+                gcr.approved = False
+                gcr.acknowledged_by = request.user
+                gcr.save()
+
+        if 'graduation_year' in request.POST:
+            user.set_student_grad_year(request.POST['graduation_year'])
+
+        from urllib.parse import urlencode
+        query = {'username': user.username}
+        if request.POST.get('program'):
+            query['program'] = request.POST['program']
+        return HttpResponseRedirect('/manage/userview?%s' % urlencode(query))
 
     if 'program' in request.GET:
         try:
@@ -588,24 +580,6 @@ def userview(request):
         teacherbio.picture = 'images/not-available.jpg'
 
     from esp.users.forms.user_profile import StudentInfoForm
-
-    if 'approve_request' in request.GET:
-        gcrs = GradeChangeRequest.objects.filter(id=request.GET['approve_request'])
-        if gcrs.count() == 1:
-            gcr = gcrs[0]
-            gcr.approved = True
-            gcr.acknowledged_by = request.user
-            gcr.save()
-    if 'reject_request' in request.GET:
-        gcrs = GradeChangeRequest.objects.filter(id=request.GET['reject_request'])
-        if gcrs.count() == 1:
-            gcr = gcrs[0]
-            gcr.approved = False
-            gcr.acknowledged_by = request.user
-            gcr.save()
-
-    if 'graduation_year' in request.GET:
-        user.set_student_grad_year(request.GET['graduation_year'])
 
     change_grade_form = StudentInfoForm(user=user)
     if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:
@@ -713,11 +687,10 @@ def activate_user(request):
 def unenroll_student(request):
     if request.method != 'POST' or 'user_id' not in request.POST or 'program' not in request.POST:
         return HttpResponseBadRequest('')
-    users = ESPUser.objects.filter(id=request.POST['user_id'])
-    if users.count() != 1:
+    user = ESPUser.objects.filter(id=request.POST['user_id']).first()
+    if user is None:
         return HttpResponseBadRequest('')
     else:
-        user = users[0]
         sections = user.getSections(program = request.POST['program'])
         verbs = RTC.getVisibleRegistrationTypeNames(request.POST['program'])
         for sec in sections:
@@ -730,13 +703,14 @@ def activate_or_deactivate_user(request, activate):
     if request.method != 'POST' or 'user_id' not in request.POST:
         return HttpResponseBadRequest('')
     else:
-        users = ESPUser.objects.filter(id=request.POST['user_id'])
-        if users.count() != 1:
+        user = ESPUser.objects.filter(id=request.POST['user_id']).first()
+        if user is None:
             return HttpResponseBadRequest('')
         else:
-            user = users[0]
             user.is_active = activate
             user.save()
+            if activate:
+                PendingActivation.objects.filter(user=user).delete()
             return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
 
 @admin_required
@@ -1095,24 +1069,21 @@ def redirects(request, section=""):
                     redirect_form = RedirectForm()
             elif request.POST.get('command') == 'load': # Load existing redirect into form
                 redirect_id = request.POST.get('id')
-                redirects = Redirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = Redirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     redirect_form = RedirectForm(instance = redirect)
             elif request.POST.get('command') == 'edit': # Edit existing redirect
                 redirect_id = request.POST.get('id')
-                redirects = Redirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = Redirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     redirect_form = RedirectForm(request.POST, instance = redirect)
                     if redirect_form.is_valid():
                         redirect_form.save()
                         redirect_form = RedirectForm()
             elif request.POST.get('command') == 'delete': # Delete redirect
                 redirect_id = request.POST.get('id')
-                redirects = Redirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = Redirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     redirect.delete()
         elif request.POST.get('object') == 'email_redirect':
             section = 'email_redirects'
@@ -1123,24 +1094,21 @@ def redirects(request, section=""):
                     email_redirect_form = PlainRedirectForm()
             elif request.POST.get('command') == 'load': # Load existing email redirect into form
                 redirect_id = request.POST.get('id')
-                redirects = PlainRedirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = PlainRedirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     email_redirect_form = PlainRedirectForm(instance = redirect)
             elif request.POST.get('command') == 'edit': # Edit existing email redirect
                 redirect_id = request.POST.get('id')
-                redirects = PlainRedirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = PlainRedirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     email_redirect_form = PlainRedirectForm(request.POST, instance = redirect)
                     if email_redirect_form.is_valid():
                         email_redirect_form.save()
                         email_redirect_form = PlainRedirectForm()
             elif request.POST.get('command') == 'delete': # Delete email redirect
                 redirect_id = request.POST.get('id')
-                redirects = PlainRedirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = PlainRedirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     redirect.delete()
     context['open_section'] = section
     context['redirect_form'] = redirect_form
@@ -1170,24 +1138,21 @@ def catsflagsrecs(request, section=""):
                     cat_form = CategoryForm()
             elif request.POST.get('command') == 'load': # Load existing category into form
                 cat_id = request.POST.get('id')
-                cats = ClassCategories.objects.filter(id = cat_id)
-                if cats.count() == 1:
-                    cat = cats[0]
+                cat = ClassCategories.objects.filter(id = cat_id).first()
+                if cat:
                     cat_form = CategoryForm(instance = cat)
             elif request.POST.get('command') == 'edit': # Edit existing category
                 cat_id = request.POST.get('id')
-                cats = ClassCategories.objects.filter(id = cat_id)
-                if cats.count() == 1:
-                    cat = cats[0]
+                cat = ClassCategories.objects.filter(id = cat_id).first()
+                if cat:
                     cat_form = CategoryForm(request.POST, instance = cat)
                     if cat_form.is_valid():
                         cat_form.save()
                         cat_form = CategoryForm()
             elif request.POST.get('command') == 'delete': # Delete category
                 cat_id = request.POST.get('id')
-                cats = ClassCategories.objects.filter(id = cat_id)
-                if cats.count() == 1:
-                    cat = cats[0]
+                cat = ClassCategories.objects.filter(id = cat_id).first()
+                if cat:
                     cat.delete()
         elif request.POST.get('object') == 'flag_type':
             section = 'flagtypes'
@@ -1198,24 +1163,21 @@ def catsflagsrecs(request, section=""):
                     flag_form = FlagTypeForm()
             elif request.POST.get('command') == 'load': # Load existing flag type into form
                 ft_id = request.POST.get('id')
-                fts = ClassFlagType.objects.filter(id = ft_id)
-                if fts.count() == 1:
-                    ft = fts[0]
+                ft = ClassFlagType.objects.filter(id = ft_id).first()
+                if ft:
                     flag_form = FlagTypeForm(instance = ft)
             elif request.POST.get('command') == 'edit': # Edit existing flag type
                 ft_id = request.POST.get('id')
-                fts = ClassFlagType.objects.filter(id = ft_id)
-                if fts.count() == 1:
-                    ft = fts[0]
+                ft = ClassFlagType.objects.filter(id = ft_id).first()
+                if ft:
                     flag_form = FlagTypeForm(request.POST, instance = ft)
                     if flag_form.is_valid():
                         flag_form.save()
                         flag_form = FlagTypeForm()
             elif request.POST.get('command') == 'delete': # Delete flag type
                 ft_id = request.POST.get('id')
-                fts = ClassFlagType.objects.filter(id = ft_id)
-                if fts.count() == 1:
-                    ft = fts[0]
+                ft = ClassFlagType.objects.filter(id = ft_id).first()
+                if ft:
                     ft.delete()
         elif request.POST.get('object') == 'record_type':
             section = 'recordtypes'
@@ -1226,24 +1188,21 @@ def catsflagsrecs(request, section=""):
                     rec_form = RecordTypeForm()
             elif request.POST.get('command') == 'load': # Load existing record type into form
                 ft_id = request.POST.get('id')
-                fts = RecordType.objects.filter(id = ft_id)
-                if fts.count() == 1:
-                    ft = fts[0]
+                ft = RecordType.objects.filter(id = ft_id).first()
+                if ft:
                     rec_form = RecordTypeForm(instance = ft)
             elif request.POST.get('command') == 'edit': # Edit existing record type
                 rt_id = request.POST.get('id')
-                rts = RecordType.objects.filter(id = rt_id)
-                if rts.count() == 1:
-                    rt = rts[0]
+                rt = RecordType.objects.filter(id = rt_id).first()
+                if rt:
                     rec_form = RecordTypeForm(request.POST, instance = rt)
                     if rec_form.is_valid():
                         rec_form.save()
                         rec_form = RecordTypeForm()
             elif request.POST.get('command') == 'delete': # Delete record type
                 rt_id = request.POST.get('id')
-                rts = RecordType.objects.filter(id = rt_id)
-                if rts.count() == 1:
-                    rt = rts[0]
+                rt = RecordType.objects.filter(id = rt_id).first()
+                if rt:
                     rt.delete()
     context['open_section'] = section
     context['cat_form'] = cat_form
@@ -1270,6 +1229,16 @@ def statistics(request, program=None):
                 field_ids.append(field_name)
         return field_ids
 
+    def get_form_setup(field_ids):
+        """ Data telling ajax_tools.js how to re-attach behavior to a freshly
+            rendered statistics form.
+        """
+        return {
+            'forms': [{'id': 'statistics_form', 'url': '/manage/statistics/'}],
+            'callbacks': [{'name': 'setup_update', 'args': [field_id]}
+                          for field_id in field_ids],
+        }
+
     if request.method == 'POST':
         #   Hack for proper behavior when multiselect fields are hidden
         #   (they contain '' instead of simply being absent like they should)
@@ -1291,7 +1260,7 @@ def statistics(request, program=None):
             context['field_ids'] = get_field_ids(form)
             result = {}
             result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
-            result['script'] = render_to_string('program/statistics/script.js', context)
+            result.update(get_form_setup(context['field_ids']))
             return HttpResponse(json.dumps(result), content_type='application/json')
 
         if form.is_valid():
@@ -1445,7 +1414,7 @@ def statistics(request, program=None):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 result = {}
                 result['result_html'] = context['result']
-                result['script'] = render_to_string('program/statistics/script.js', context)
+                result.update(get_form_setup(context['field_ids']))
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
@@ -1458,7 +1427,7 @@ def statistics(request, program=None):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 result = {}
                 result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
-                result['script'] = render_to_string('program/statistics/script.js', context)
+                result.update(get_form_setup(context['field_ids']))
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
@@ -1687,7 +1656,7 @@ def module_schedule_update_api(request, program_type, program_term):
 
         # Enforce hard constraints (same as admincore POST handler)
         handler = mod.module.handler
-        if handler == "RegProfileModule":
+        if handler in ("StudentRegProfileModule", "TeacherRegProfileModule"):
             mod.seq = 0
             mod.required = True
         elif "CreditCardModule_" in handler:
@@ -1850,7 +1819,7 @@ def module_schedule_reorder_api(request, program_type, program_term):
                 handler = mod.module.handler
 
                 position_locked = (
-                    handler == 'RegProfileModule' or
+                    handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
                     'CreditCardModule_' in handler or
                     handler == 'StudentRegConfirm'
                 )

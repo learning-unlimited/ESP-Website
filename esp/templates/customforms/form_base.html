@@ -1,13 +1,10 @@
 {% extends "main.html" %}
 
-{% block content %}
-
 {% comment %}
-Load jQuery Validation plugin and customforms validation script using global $j.
+Base template for custom form pages.
 {% endcomment %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js" integrity="sha512-rstIgKD0ApDGMbiSCzpzs08QP657ReiBV5FQvaJE6M6MFTC05AgudLgNyI64MvSVNTXFAWA69hU47Bvg195WOA==" crossorigin="anonymous" referrerpolicy="no-referrer" type="text/javascript"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/additional-methods.min.js" integrity="sha512-6S5LYNn3WhpL6hvLmZF1WCvzfid7mPO08XYF20Cwl4a8LhEG4cEk7deWTTCnIpWBe9hUXUqOUrmuvBhM38mL1A==" crossorigin="anonymous" referrerpolicy="no-referrer" type="text/javascript"></script>
-    <script src="/media/scripts/customforms-validation.js"></script>
-    <script src="/media/scripts/qtip.js"></script>
-{% endblock %}
 
+{% block xtrajs %}
+{{ block.super }}
+{% include "customforms/form_assets.html" %}
+{% endblock %}

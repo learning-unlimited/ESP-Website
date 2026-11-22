@@ -10,7 +10,7 @@ from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 import esp.program.controllers.autoscheduler.util as util
 from esp.program.models.class_ import \
         ClassSubject, ClassSection, ClassCategories
-from esp.program.modules import module_ext
+from esp.program.modules import program_settings
 from esp.program.tests import ProgramFrameworkTest
 from esp.resources.models import Resource, ResourceType, ResourceRequest
 
@@ -392,7 +392,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         section_obj.assign_meeting_times([timeslot])
         section_obj.assign_room(room)
         if lock:
-            module_ext.AJAXSectionDetail.objects.get_or_create(
+            program_settings.AJAXSectionDetail.objects.get_or_create(
                 program=self.program, cls_id=section_obj.id, comment="locked",
                 locked=True)
         return section_obj, timeslot, room
