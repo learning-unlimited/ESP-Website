@@ -173,9 +173,22 @@ class VolunteerOfferForm(forms.Form):
 
     def save(self):
         #   Reset user's offers
-        if self.cleaned_data['user']:
-            user = ESPUser.objects.get(id=self.cleaned_data['user'])
-            user.volunteeroffer_set.all().delete()
+        user = None
+        if self.cleaned_data.get('user'):
+            user = ESPUser.objects.filter(id=self.cleaned_data['user']).first()
+            if user:
+                user.volunteeroffer_set.filter(request__program=self.program).delete()
+
+        email = self.cleaned_data.get('email')
+        phone = self.cleaned_data.get('phone')
+        name = self.cleaned_data.get('name')
+        if email and phone and name:
+            VolunteerOffer.objects.filter(
+                email=email,
+                phone=phone,
+                name=name,
+                request__program=self.program,
+            ).delete()
 
         if self.cleaned_data.get('clear_requests', False):
             #   They want to cancel all shifts - don't do anything further.
@@ -184,16 +197,20 @@ class VolunteerOfferForm(forms.Form):
         #   Create user if one doesn't already exist, otherwise associate a user.
         #   Note that this will create a new user account if they enter an email
         #   address different from the one on file.
-        if not self.cleaned_data['user']:
-            user_data = {'first_name': self.cleaned_data['name'].split()[0],
-                         'last_name': ' '.join(self.cleaned_data['name'].split()[1:]),
-                         'email': self.cleaned_data['email'],
+        if not user:
+            name_parts = (self.cleaned_data.get('name') or '').split()
+            first_name = name_parts[0] if name_parts else ''
+            last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
+            user_data = {'first_name': first_name,
+                         'last_name': last_name,
+                         'email': self.cleaned_data.get('email', ''),
                         }
             existing_users = ESPUser.objects.filter(**user_data).order_by('-id')
             if existing_users.exists():
                 #   Arbitrarily pick the most recent account
                 #   This is not too important, we just need a link to an email address.
                 user = existing_users[0]
+                user.volunteeroffer_set.filter(request__program=self.program).delete()
             else:
                 auto_username = ESPUser.get_unused_username(user_data['first_name'], user_data['last_name'])
                 user = ESPUser.objects.create_user(auto_username, user_data['email'])
@@ -205,24 +222,21 @@ class VolunteerOfferForm(forms.Form):
         #   Record this user account as a volunteer
         user.makeVolunteer()
 
-        #   Remove offers with the same exact contact info
-        VolunteerOffer.objects.filter(email=self.cleaned_data['email'], phone=self.cleaned_data['phone'], name=self.cleaned_data['name']).delete()
-
         offer_list = []
-        for req in self.cleaned_data['requests']:
+        for req in self.cleaned_data.get('requests', []):
             o = VolunteerOffer()
             o.user_id = user.id
-            o.email = self.cleaned_data['email']
-            o.phone = self.cleaned_data['phone']
-            o.name = self.cleaned_data['name']
-            o.confirmed = self.cleaned_data['confirm']
+            o.email = self.cleaned_data.get('email')
+            o.phone = self.cleaned_data.get('phone')
+            o.name = self.cleaned_data.get('name')
+            o.confirmed = bool(self.cleaned_data.get('confirm', False))
             if 'shirt_size' in self.cleaned_data:
                 o.shirt_size = self.cleaned_data['shirt_size']
             if 'shirt_type' in self.cleaned_data:
                 o.shirt_type = self.cleaned_data['shirt_type']
             if 'comments' in self.cleaned_data:
                 o.comments = self.cleaned_data['comments']
-            o.request_id = req
+            o.request_id = int(req)
             o.save()
             offer_list.append(o)
         return offer_list
