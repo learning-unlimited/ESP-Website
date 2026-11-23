@@ -66,8 +66,10 @@ from django.core.validators import validate_email
 # this includes all comm panel emails
 # https://support.google.com/a/answer/81126?visit_id=638428689824104778-3542874255&rd=1#subscriptions
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=None,
-              return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={}, user=None,
+              return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers=None, user=None,
               *args, **kwargs):
+    extra_headers = dict(extra_headers or {})
+
     from_email = from_email.strip()
     # the from_email must match one of our DMARC domains/subdomains
     # or the email may be rejected by email clients
@@ -106,7 +108,10 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
 
     #   Get whatever type of email connection Django provides.
     #   Normally this will be SMTP, but it also has an in-memory backend for testing.
-    connection = get_connection(fail_silently=fail_silently, return_path=return_path)
+    connection = get_connection(fail_silently=fail_silently)
+    if hasattr(connection, 'return_path'):
+        connection.return_path = return_path
+
 
     #   Detect HTML tags in message and change content-type if they are found.
     #   Match the opening <html> tag whether or not it carries attributes (e.g.
@@ -359,7 +364,8 @@ class MessageRequest(models.Model):
             if self.creator is not None:
                 send_from = self.creator.get_email_sendto_address()
             else:
-                send_from = 'ESP Web Site <esp@mit.edu>'
+                send_from = '"{} {}" <{}>'.format(settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME,
+                                                  settings.DEFAULT_EMAIL_ADDRESSES['default'])
 
         users = self.recipients.getList(ESPUser).distinct()
 

@@ -40,7 +40,6 @@ local_fabfile.py
 *.swp
 .espsettings
 
-
 # Claude Code
 .claude/
 
