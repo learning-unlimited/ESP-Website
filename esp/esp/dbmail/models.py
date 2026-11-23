@@ -67,9 +67,8 @@ from django.core.validators import validate_email
 # https://support.google.com/a/answer/81126?visit_id=638428689824104778-3542874255&rd=1#subscriptions
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=None,
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers=None, user=None,
-              attachments=None, *args, **kwargs):
+              *args, **kwargs):
     extra_headers = dict(extra_headers or {})
-    attachments = list(attachments or [])
 
     from_email = from_email.strip()
     # the from_email must match one of our DMARC domains/subdomains
@@ -124,12 +123,10 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
         text_only = re.sub('[ \t]+', ' ', strip_tags(message))
         # Strip single spaces in the beginning of each line
         message_text = text_only.replace('\n ', '\n').strip()
-        msg = EmailMultiAlternatives(subject, message_text, from_email, recipients, bcc=bcc, connection=connection,
-                                     headers=extra_headers, attachments=attachments)
+        msg = EmailMultiAlternatives(subject, message_text, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
         msg.attach_alternative(message, "text/html")
     else:
-        msg = EmailMessage(subject, message, from_email, recipients, bcc=bcc, connection=connection,
-                           headers=extra_headers, attachments=attachments)
+        msg = EmailMessage(subject, message, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
 
     msg.send()
 
