@@ -13,6 +13,7 @@ from django.core.management import call_command
 from django.test import SimpleTestCase, TestCase
 
 from esp.program.models import ProgramModule
+from esp.program.modules.base import main_call
 from esp.qsd.models import QuasiStaticData
 from esp.tests.factories import make_program, make_user
 from esp.users.models import ESPUser
@@ -120,6 +121,20 @@ class WritesOnGetTest(SimpleTestCase):
         '''), ['sec.unpreregister_student()'])
 
 
+class AliasedView:
+    @main_call
+    def original(self, request):
+        pass
+    alias = original
+
+
+class MethodInfoTest(SimpleTestCase):
+    def test_alias_uses_the_original_view(self):
+        info = inv._method_info(AliasedView, 'alias')
+        self.assertIn('main_call', info.decorators)
+        self.assertEqual(info, inv._method_info(AliasedView, 'original'))
+
+
 class UnsafeReasonTest(SimpleTestCase):
     def test_session_ending_views(self):
         self.assertIn('signout', inv._unsafe_reason('/myesp/signout/'))
@@ -146,6 +161,9 @@ class InventoryTest(TestCase):
         self.assertEqual(row['expected_roles'], 'admin')
         self.assertEqual(row['call_type'], 'main')
         self.assertEqual(row['crawlable'], 'yes')
+
+        # deadlines is an alias of deadline_management, which has @needs_admin
+        self.assertEqual(self.by_url[f'/manage/{self.program.url}/deadlines']['expected_roles'], 'admin')
 
         row = self.by_url[f'/teach/{self.program.url}/teacherreg']
         self.assertEqual(row['expected_roles'], 'teacher, admin')

@@ -217,6 +217,11 @@ def _method_info(cls, name):
                 for item in node.body:
                     if isinstance(item, ast.FunctionDef) and item.name == name:
                         return _info_from_node(item, path)
+                    # An alias such as `deadlines = deadline_management`
+                    if (isinstance(item, ast.Assign) and isinstance(item.value, ast.Name)
+                            and item.value.id != name
+                            and any(isinstance(t, ast.Name) and t.id == name for t in item.targets)):
+                        return _method_info(cls, item.value.id)
         break
     return NO_INFO
 
