@@ -51,6 +51,15 @@ function generateSentence() {
       }
    }
    sentence = sentence.substring(0, sentence.length - 1) + '.';
+   var topLevelOperator = document.getElementById('top_level_operator').value;
+   var topLevelList = document.getElementById('top_level_list').value;
+   if (topLevelOperator && topLevelList) {
+       var topLevelNot = document.getElementById('top_level_not').value == 'not';
+       sentence = '(' + sentence.substring(0, sentence.length - 1) + ') ' +
+           (topLevelOperator == 'and' ? 'AND' : 'OR') + ' who ' +
+           (topLevelNot ? 'are not ' : 'are ') + '(' +
+           getListDescription(lists, topLevelList, '').toLowerCase() + ').';
+   }
    document.getElementById('finalsentence').innerHTML = sentence;
    document.getElementById('finalsent').value = sentence;
 }
@@ -80,6 +89,18 @@ function checkForNobody() {
    if (document.getElementById('base_list').value == '') {
        alert('You must select a "beginning of the sentence".');
        document.getElementById('base_list').focus();
+       return false;
+   }
+   var topLevelOperator = document.getElementById('top_level_operator').value;
+   var topLevelList = document.getElementById('top_level_list').value;
+   if (topLevelOperator != '' && topLevelList == '') {
+       alert('You must select a list to add above the query.');
+       document.getElementById('top_level_list').focus();
+       return false;
+   }
+   if (topLevelOperator == '' && topLevelList != '') {
+       alert('You must select AND or OR for the top-level condition.');
+       document.getElementById('top_level_operator').focus();
        return false;
    }
    return true;
@@ -164,6 +185,32 @@ And continue adding to the sentence below (the final sentence is at the bottom f
 {% endfor %}
 </table>
 <br />
+<p>
+Wrap the query above with a top-level condition:
+<label>
+  <span>Combine with</span>
+  <select name="top_level_operator" id="top_level_operator" onchange="generateSentence();">
+  <option value="">No top-level condition</option>
+  <option value="and">AND</option>
+  <option value="or">OR</option>
+</select>
+</label>
+<label>
+  <select name="top_level_not" id="top_level_not" onchange="generateSentence();" aria-label="Include or exclude the additional list">
+  <option value="ident">are</option>
+  <option value="not">are not</option>
+</select>
+</label>
+<label>
+  <span>users in</span>
+  <select name="top_level_list" id="top_level_list" onchange="generateSentence();">
+  <option value="">Select a list...</option>
+{% for dblist in lists %}
+  <option value="{{dblist.id}}">{{dblist.description}}</option>
+{% endfor %}
+</select>
+</label>
+</p>
 <br />
 Final  Sentence: (with parentheses for added readability)<br />
 <div id="finalsentence">Nobody.</div>

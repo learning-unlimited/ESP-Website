@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 """ This is the views portion of the users utility, which has some user-oriented views."""
 
 import logging
+import operator
 logger = logging.getLogger(__name__)
 
 from esp.middleware   import ESPError
@@ -46,6 +47,28 @@ from esp.users.controllers.usersearch import UserSearchController
 from django.db.models.query import QuerySet
 from django.conf import settings
 import pickle
+
+
+def add_top_level_filter(post_data, list_dict, query):
+    """Combine the built query with an optional top-level list condition."""
+    top_level_operator = post_data.get('top_level_operator', '')
+    top_level_list = post_data.get('top_level_list', '')
+    if not top_level_operator and not top_level_list:
+        return query
+
+    if top_level_operator not in ('and', 'or') or top_level_list not in list_dict:
+        raise ESPError('Invalid top-level filter.')
+
+    top_level_not = post_data.get('top_level_not', 'ident')
+    if top_level_not not in ('ident', 'not'):
+        raise ESPError('Invalid top-level filter.')
+
+    combine = operator.and_ if top_level_operator == 'and' else operator.or_
+    condition = list_dict[top_level_list]['list']
+    if top_level_not == 'not':
+        condition = ~condition
+    return combine(query, condition)
+
 
 def get_user_list(request, listDict2, extra=''):
     """ Get a list of users from some complicated mixture of other lists.
@@ -113,8 +136,6 @@ def get_user_list(request, listDict2, extra=''):
 
     if request.POST.get('submit_user_list') == 'true':
         # If a user list was submitted....
-        import operator
-
         # map of operators that can be done on lists (appropriately, Q Objects)
         opmapping = {'and'  : operator.and_,
                      'or'   : operator.or_,
@@ -154,6 +175,8 @@ def get_user_list(request, listDict2, extra=''):
         curList = separated['or'][0]
         for List in separated['or'][1:]:
             curList = opmapping['or'](curList, List)
+
+        curList = add_top_level_filter(request.POST, listDict, curList)
 
         filterObj = PersistentQueryFilter.getFilterFromQ(curList, ESPUser, request.POST['finalsent'])
 
@@ -308,4 +331,3 @@ def getQForUser(QRestriction):
         return Q(id = -1)
     else:
         return Q(id__in = ids)
-
