@@ -760,6 +760,102 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertIn('deadline', response.content.decode('utf-8').lower())
         self.assertEqual(response['Cache-Control'], 'no-store')
 
+    def test_catalog_pdf_open_for_non_admins(self):
+        """catalog_pdf serves the PDF to logged-out users and students, ignoring the admin catalog's options."""
+        from unittest.mock import patch
+        from django.http import HttpResponse
+
+        from esp.program.class_status import ClassStatus
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+        url = '/learn/%s/catalog_pdf' % program.getUrlBase()
+        scheduled = [cls for cls in program.classes() if cls.sections.filter(meeting_times__isnull=False).exists()]
+        hidden = scheduled[0]
+        hidden.status = ClassStatus.HIDDEN
+        hidden.save()
+        with patch('esp.program.modules.handlers.programprintables.render_to_latex',
+                   return_value=HttpResponse(b'%PDF-1.5', content_type='application/pdf')) as render:
+            for username in (None, self.students[0].username):
+                with self.subTest(username=username):
+                    self.client.logout()
+                    if username:
+                        self.client.login(username=username, password='password')
+                    response = self.client.get(url, {'sort_name_list': 'no_such_field', 'clsids': '0'})
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response['Content-Type'], 'application/pdf')
+                    self.assertEqual(response['Cache-Control'], 'public, max-age=120')
+                    template, context, file_type = render.call_args.args
+                    self.assertEqual(file_type, 'pdf')
+                    # Query-string options are for the admin coursecatalog view only
+                    self.assertTrue(context['classes'])
+                    # Like the web catalog, the public PDF leaves out hidden classes
+                    self.assertNotIn(hidden, context['classes'])
+                    self.assertTrue(all(cls.status == ClassStatus.ACCEPTED for cls in context['classes']))
+
+    def test_catalog_pdf_handles_catalog_sort_fields_tag(self):
+        """catalog_pdf works for every documented catalog_sort_fields value, including ones only the web catalog sorts by."""
+        from unittest.mock import patch
+        from django.http import HttpResponse
+        from esp.tagdict.models import Tag
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+        url = '/learn/%s/catalog_pdf' % program.getUrlBase()
+        expected_template = {'earliest_start': 'catalog_timeblock.tex', '-earliest_start': 'catalog_category.tex',
+                             '_num_students': 'catalog_category.tex', 'category__symbol, id': 'catalog_category.tex',
+                             'sections__meeting_times__start, id': 'catalog_timeblock.tex'}
+        with patch('esp.program.modules.handlers.programprintables.render_to_latex',
+                   return_value=HttpResponse(b'%PDF-1.5', content_type='application/pdf')) as render:
+            for value, template in expected_template.items():
+                with self.subTest(catalog_sort_fields=value):
+                    render.reset_mock()
+                    Tag.setTag('catalog_sort_fields', program, value)
+                    response = self.client.get(url)
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(render.call_count, 1)
+                    self.assertTrue(render.call_args.args[0].endswith(template))
+
+    def test_catalog_sort_fields(self):
+        from esp.program.modules.handlers.programprintables import ProgramPrintables
+        self.assertEqual(ProgramPrintables.catalog_sort_fields(['earliest_start', ' id']), ['meeting_times__start', 'id'])
+        self.assertEqual(ProgramPrintables.catalog_sort_fields(['-sections__meeting_times__start']), ['-meeting_times__start'])
+        self.assertEqual(ProgramPrintables.catalog_sort_fields(['timeblock', '_num_students']), ['meeting_times__start'])
+        self.assertEqual(ProgramPrintables.catalog_sort_fields(['_num_students', 'media_count', '']), ['category'])
+
+    def test_admin_course_catalog_includes_hidden_classes(self):
+        """The admin coursecatalog printable still includes hidden classes."""
+        from unittest.mock import patch
+        from django.http import HttpResponse
+        from esp.program.class_status import ClassStatus
+
+        scheduled = [cls for cls in self.program.classes() if cls.sections.filter(meeting_times__isnull=False).exists()]
+        hidden = scheduled[0]
+        hidden.status = ClassStatus.HIDDEN
+        hidden.save()
+        self.client.login(username=self.admins[0].username, password='password')
+        with patch('esp.program.modules.handlers.programprintables.render_to_latex',
+                   return_value=HttpResponse(b'%PDF-1.5', content_type='application/pdf')) as render:
+            response = self.client.get('/manage/%s/coursecatalog' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(hidden, render.call_args.args[1]['classes'])
+
+    def test_admin_course_catalog_open_classes_only(self):
+        """The admin coursecatalog printable's 'open' option leaves out full classes."""
+        from unittest.mock import patch
+        from django.http import HttpResponse
+        from esp.program.models import ClassSubject
+
+        self.client.login(username=self.admins[0].username, password='password')
+        with patch('esp.program.modules.handlers.programprintables.render_to_latex',
+                   return_value=HttpResponse(b'%PDF-1.5', content_type='application/pdf')) as render, \
+             patch.object(ClassSubject, 'isFull', lambda cls: cls.id % 2 == 0):
+            response = self.client.get('/manage/%s/coursecatalog' % self.program.getUrlBase(), {'open': ''})
+        self.assertEqual(response.status_code, 200)
+        classes = render.call_args.args[1]['classes']
+        self.assertTrue(classes)
+        self.assertTrue(all(cls.id % 2 for cls in classes))
+
 class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
     """
     Tests for Issue #227: registration type visibility filtering on the student

@@ -251,38 +251,66 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def coursecatalog(self, request, tl, one, two, module, extra, prog):
         " This renders the course catalog in LaTeX. "
+        if extra is None or len(str(extra).strip()) == 0:
+            extra = 'pdf'
+        return self.render_course_catalog(
+            mingrade=int(request.GET['mingrade']) if 'mingrade' in request.GET else None,
+            maxgrade=int(request.GET['maxgrade']) if 'maxgrade' in request.GET else None,
+            open_only='open' in request.GET,
+            sort_order=request.GET['sort_name_list'].split(',') if request.GET.get('sort_name_list') else None,
+            clsids=request.GET['clsids'].split(',') if 'clsids' in request.GET else None,
+            file_type=extra)
+
+    @staticmethod
+    def catalog_sort_fields(sort_order):
+        """Turn catalog sort fields (the catalog_sort_fields tag, or the admin's
+        sort_name_list) into fields this printable can order classes by."""
+        from esp.program.models.class_ import CATALOG_UNSORTABLE_FIELDS
+        fields = []
+        for field in (f.strip() for f in sort_order):
+            name = field.lstrip('-')
+            #   NOTE: Other catalogs can filter by _num_students but this one can't.
+            if not name or name == '_num_students' or name in CATALOG_UNSORTABLE_FIELDS:
+                continue
+            #   Replace time sort fields ('timeblock', and the web catalog's 'earliest_start'
+            #   and its legacy form) with sorting by meeting times start field.
+            if name in ('timeblock', 'earliest_start', 'sections__meeting_times__start'):
+                field = field[:len(field) - len(name)] + 'meeting_times__start'
+            fields.append(field)
+        return fields or ['category']
+
+    def render_course_catalog(self, mingrade=None, maxgrade=None, open_only=False, sort_order=None,
+                              clsids=None, file_type='pdf', public=False):
+        """Render the course catalog with LaTeX.
+
+        Does no access checks: the public PDF catalog (StudentClassRegModule.catalog_pdf)
+        calls it with public=True, which, like the web catalog, leaves out classes that
+        aren't accepted (such as hidden ones).
+        """
         from django.conf import settings
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
-        if 'mingrade' in request.GET:
-            mingrade=int(request.GET['mingrade'])
+        if mingrade is not None:
             classes = classes.filter(grade_max__gte=mingrade)
 
-        if 'maxgrade' in request.GET:
-            maxgrade=int(request.GET['maxgrade'])
+        if maxgrade is not None:
             classes = classes.filter(grade_min__lte=maxgrade)
 
-        if 'open' in request.GET:
-            classes = [cls for cls in classes if not cls.isFull()]
-
-        if request.GET.get('sort_name_list'):
-            sort_order = request.GET['sort_name_list'].split(',')
-        else:
-            sort_order = Tag.getProgramTag('catalog_sort_fields', prog, default='category').split(',')
+        if not sort_order:
+            sort_order = Tag.getProgramTag('catalog_sort_fields', self.program, default='category').split(',')
 
         #   Perform sorting based on specified order rules
-        #   NOTE: Other catalogs can filter by _num_students but this one can't.
-        if '_num_students' in sort_order:
-            sort_order.remove('_num_students')
-        #   Replace incorrect 'timeblock' sort field with sorting by meeting times start field.
-        for i in range(len(sort_order)):
-            if sort_order[i] == 'timeblock':
-                sort_order[i] = 'meeting_times__start'
+        sort_order = self.catalog_sort_fields(sort_order)
         classes = classes.order_by(*sort_order)
+
+        #   Done after ordering, since it turns the QuerySet into a list
+        if open_only:
+            classes = [cls for cls in classes if not cls.isFull()]
 
         #   Filter out classes that are not scheduled
         classes = [cls for cls in classes
-                   if cls.isAccepted() and cls.sections.all().filter(meeting_times__isnull=False).exists() ]
+                   if (cls.status == ClassStatus.ACCEPTED if public else cls.isAccepted())
+                   and cls.sections.all().filter(meeting_times__isnull=False).exists() ]
 
         #   Filter out duplicate classes in case sort order causes extra results
         unique_classes = []
@@ -293,9 +321,8 @@ class ProgramPrintables(ProgramModuleObj):
                 ids_existing.append(cls.id)
         classes = unique_classes
 
-        #   Reorder classes if an ordering was specified by request.GET['clsids']
-        if 'clsids' in request.GET:
-            clsids = request.GET['clsids'].split(',')
+        #   Reorder classes if an ordering was specified
+        if clsids is not None:
             cls_dict = {}
             for cls in classes:
                 cls_dict[str(cls.id)] = cls
@@ -314,14 +341,11 @@ class ProgramPrintables(ProgramModuleObj):
             template_name = 'catalog_timeblock.tex'
             sections = []
             for cls in classes:
-                sections += list(x for x in cls.sections.all().filter(status__gt=0, meeting_times__isnull=False).distinct() if not ('open' in request.GET and x.isFull()))
+                sections += list(x for x in cls.sections.all().filter(status__gt=0, meeting_times__isnull=False).distinct() if not (open_only and x.isFull()))
             sections.sort(key=lambda x: x.start_time())
             context['sections'] = sections
 
-        if extra is None or len(str(extra).strip()) == 0:
-            extra = 'pdf'
-
-        return render_to_latex(self.baseDir()+template_name, context, extra)
+        return render_to_latex(self.baseDir()+template_name, context, file_type)
 
     @aux_call
     @needs_admin
