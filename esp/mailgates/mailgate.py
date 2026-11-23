@@ -62,6 +62,7 @@ from django.core.exceptions import ValidationError
 from django.core.mail import get_connection
 from django.core.mail.message import EmailMessage
 from django.core.validators import validate_email
+from django.db import DatabaseError
 from esp.dbmail.base import sender_account
 from esp.dbmail.models import EmailList, send_mail as dbmail_send_mail
 from esp.users.models import ESPUser
@@ -213,7 +214,6 @@ def _rewrite_headers(message, handler_row, instance, list_address, sender):
     # A fresh Message-ID per broadcast, so that a recipient who receives the
     # message by more than one route is not deduplicated down to a single copy
     # by their mail provider.
-    del message['Message-ID']
     del message['Message-ID']
     message['Message-ID'] = email.utils.make_msgid(domain=host)
 
@@ -436,20 +436,25 @@ def main():
         bounce(delivery_address, sender.email)
 
 
-if __name__ == "__main__":
+def run():
+    """Run main() and return the exit status for the MTA."""
     try:
         main()
-    except OSError:
-        # Transient delivery problem (SMTP, network or DNS; all subclass OSError):
-        # exit EX_TEMPFAIL so the MTA queues the message and retries, rather than
-        # dropping it silently.
-        logger.warning("Mail transport failure while forwarding; asking the MTA to retry",
+    except (OSError, DatabaseError):
+        # Transient problem (SMTP, network or DNS, all of which subclass OSError,
+        # or the database being unavailable): exit EX_TEMPFAIL so the MTA queues
+        # the message and retries, rather than dropping it silently.
+        logger.warning("Transient failure while forwarding; asking the MTA to retry",
                        exc_info=True)
-        sys.exit(75)
+        return 75
     except Exception:
         # A bug or a permanently undeliverable message. Exit 0 so the MTA treats
         # delivery as handled and does not emit its own bounce.
         logger.exception("mailgate failed; dropping message")
         if DEBUG:
             raise
-    sys.exit(0)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(run())

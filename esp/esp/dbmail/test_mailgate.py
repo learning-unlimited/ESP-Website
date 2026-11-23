@@ -14,11 +14,13 @@ import importlib.util
 import io
 import os
 import smtplib
+import socket
 from unittest.mock import patch
 
 from django.core import mail
 from django.core.cache import cache
 from django.core.mail import get_connection
+from django.db import OperationalError
 from django.test import override_settings
 
 from esp.dbmail.base import sender_account
@@ -396,3 +398,27 @@ class MailgateMainTest(TestCase):
         sender's site alias, which matches no stored email."""
         self._run('gone')
         self.assertEqual([m.to for m in mail.outbox], [['main@example.com']])
+
+
+class MailgateRunTest(TestCase):
+    """run(): which failures ask the MTA to retry (exit 75) and which are dropped."""
+
+    def _status(self, error=None):
+        with patch.object(mailgate, 'main', side_effect=error):
+            return mailgate.run()
+
+    def test_success_exits_zero(self):
+        self.assertEqual(self._status(), 0)
+
+    def test_dns_failure_is_retried(self):
+        error = socket.gaierror(socket.EAI_AGAIN, 'Temporary failure in name resolution')
+        self.assertEqual(self._status(error), 75)
+
+    def test_smtp_failure_is_retried(self):
+        self.assertEqual(self._status(smtplib.SMTPServerDisconnected('gone')), 75)
+
+    def test_database_outage_is_retried(self):
+        self.assertEqual(self._status(OperationalError('could not connect')), 75)
+
+    def test_bug_is_dropped(self):
+        self.assertEqual(self._status(RuntimeError('bug')), 0)
