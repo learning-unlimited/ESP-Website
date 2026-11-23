@@ -1,9 +1,11 @@
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from django.db.models.query import Q
 
 from esp.middleware import ESPError_Log
-from esp.users.views.usersearch import add_top_level_filter
+from esp.users.views.usersearch import add_top_level_filter, get_user_list
 
 
 class AddTopLevelFilterTest(unittest.TestCase):
@@ -41,3 +43,27 @@ class AddTopLevelFilterTest(unittest.TestCase):
         for post_data in invalid_filters:
             with self.assertRaises(ESPError_Log):
                 add_top_level_filter(post_data, self.list_dict, self.query)
+
+
+class GetUserListTest(unittest.TestCase):
+    @patch('esp.users.views.usersearch.PersistentQueryFilter.getFilterFromQ')
+    @patch('esp.users.views.usersearch.getQForUser', return_value=Q(first=True))
+    def test_user_list_submission_without_mailman(self, get_q_for_user,
+                                                  get_filter_from_q):
+        filter_object = object()
+        get_filter_from_q.return_value = filter_object
+        request = SimpleNamespace(POST={
+            'submit_user_list': 'true',
+            'base_list': 'first',
+            'keys': '',
+            'finalsent': 'first',
+            'submitform': 'Create list',
+        })
+
+        result = get_user_list(
+            request,
+            {'first': {'list': object(), 'description': 'First list'}})
+
+        self.assertEqual(result, (filter_object, True))
+        get_q_for_user.assert_called_once()
+        get_filter_from_q.assert_called_once()

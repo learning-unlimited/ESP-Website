@@ -95,7 +95,6 @@ def get_user_list(request, listDict2, extra=''):
 
     if 'select_mailman' in request.POST:
         from esp.mailman import list_members
-        import operator
 
         lists = request.POST.getlist('select_mailman')
 
