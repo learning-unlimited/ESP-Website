@@ -765,9 +765,15 @@ class StudentRegTest(ProgramFrameworkTest):
         from unittest.mock import patch
         from django.http import HttpResponse
 
+        from esp.program.class_status import ClassStatus
+
         program = self.program
         Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
         url = '/learn/%s/catalog_pdf' % program.getUrlBase()
+        scheduled = [cls for cls in program.classes() if cls.sections.filter(meeting_times__isnull=False).exists()]
+        hidden = scheduled[0]
+        hidden.status = ClassStatus.HIDDEN
+        hidden.save()
         with patch('esp.program.modules.handlers.programprintables.render_to_latex',
                    return_value=HttpResponse(b'%PDF-1.5', content_type='application/pdf')) as render:
             for username in (None, self.students[0].username):
@@ -783,6 +789,26 @@ class StudentRegTest(ProgramFrameworkTest):
                     self.assertEqual(file_type, 'pdf')
                     # Query-string options are for the admin coursecatalog view only
                     self.assertTrue(context['classes'])
+                    # Like the web catalog, the public PDF leaves out hidden classes
+                    self.assertNotIn(hidden, context['classes'])
+                    self.assertTrue(all(cls.status == ClassStatus.ACCEPTED for cls in context['classes']))
+
+    def test_admin_course_catalog_includes_hidden_classes(self):
+        """The admin coursecatalog printable still includes hidden classes."""
+        from unittest.mock import patch
+        from django.http import HttpResponse
+        from esp.program.class_status import ClassStatus
+
+        scheduled = [cls for cls in self.program.classes() if cls.sections.filter(meeting_times__isnull=False).exists()]
+        hidden = scheduled[0]
+        hidden.status = ClassStatus.HIDDEN
+        hidden.save()
+        self.client.login(username=self.admins[0].username, password='password')
+        with patch('esp.program.modules.handlers.programprintables.render_to_latex',
+                   return_value=HttpResponse(b'%PDF-1.5', content_type='application/pdf')) as render:
+            response = self.client.get('/manage/%s/coursecatalog' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(hidden, render.call_args.args[1]['classes'])
 
 class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
     """

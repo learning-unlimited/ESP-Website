@@ -876,7 +876,7 @@ class StudentClassRegModule(ProgramModuleObj):
         for module in prog.getModules():
             if isinstance(module, ProgramPrintables):
                 #   Use it to generate a PDF catalog with the default settings
-                response = module.render_course_catalog()
+                response = module.render_course_catalog(public=True)
                 response['Cache-Control'] = self._catalog_cache_control(closed)
                 return response
         raise ESPError('Unable to generate a PDF catalog because the ProgramPrintables module is not installed for this program.', log=False)

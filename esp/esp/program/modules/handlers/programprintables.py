@@ -262,11 +262,12 @@ class ProgramPrintables(ProgramModuleObj):
             file_type=extra)
 
     def render_course_catalog(self, mingrade=None, maxgrade=None, open_only=False, sort_order=None,
-                              clsids=None, file_type='pdf'):
+                              clsids=None, file_type='pdf', public=False):
         """Render the course catalog with LaTeX.
 
         Does no access checks: the public PDF catalog (StudentClassRegModule.catalog_pdf)
-        calls it with the default options.
+        calls it with public=True, which, like the web catalog, leaves out classes that
+        aren't accepted (such as hidden ones).
         """
         from django.conf import settings
         classes = ClassSubject.objects.filter(parent_program = self.program)
@@ -295,7 +296,8 @@ class ProgramPrintables(ProgramModuleObj):
 
         #   Filter out classes that are not scheduled
         classes = [cls for cls in classes
-                   if cls.isAccepted() and cls.sections.all().filter(meeting_times__isnull=False).exists() ]
+                   if (cls.status == ClassStatus.ACCEPTED if public else cls.isAccepted())
+                   and cls.sections.all().filter(meeting_times__isnull=False).exists() ]
 
         #   Filter out duplicate classes in case sort order causes extra results
         unique_classes = []
