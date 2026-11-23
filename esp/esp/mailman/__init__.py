@@ -89,11 +89,12 @@ def apply_list_settings(list, data, release_nonmember_holds=False):
     Values should be either strings, or objects that, when converted to a string via repr(), represent valid Python expressions in the configuration file.
 
     If 'release_nonmember_holds' is set, also approve every post the list is
-    holding only because its sender isn't a member. Use it together with
-    'generic_nonmember_action': 0 to make that setting cover posts that
-    arrived before it was applied, e.g. while the list was being created.
-    Both happen in one config_list run, which holds the list's lock, so no
-    post can be held for that reason in between.
+    holding only because its sender isn't a member, e.g. posts that arrived
+    while a new list was being created, before 'generic_nonmember_action': 0
+    was applied. This runs in one config_list run, which holds the list's
+    lock, so no post can be held for that reason in between. An approved
+    post goes out at once to the list's members as they are then, so add
+    the members first.
     """
 
     with NamedTemporaryFile(mode="w") as f:

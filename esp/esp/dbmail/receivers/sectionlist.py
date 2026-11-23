@@ -92,15 +92,14 @@ class SectionList(BaseHandler):
             # A new Mailman list holds non-member posts until this runs. Posts
             # can arrive in that window, e.g. the activation notice and
             # moderation requests from the students list when someone emails
-            # both lists at once, so also release anything held only for
-            # being from a non-member, as if the setting had been there all
-            # along.
+            # both lists at once. They are released once the members are
+            # added, below.
             apply_list_settings(list_name, {
                 'generic_nonmember_action': 0,
                 'default_member_moderation': False,
                 'acceptable_aliases': "%s.*-(students|class)-.*@%s" % (cls.emailcode(), Site.objects.get_current().domain),
                 'subject_prefix': "[%s]" % (cls.parent_program.niceName(),),
-            }, release_nonmember_holds=True)
+            })
 
         logger.info("Settings applied still...")
         add_list_member(list_name, cls.parent_program.director_email)
@@ -108,6 +107,14 @@ class SectionList(BaseHandler):
         if 'archive' in settings.DEFAULT_EMAIL_ADDRESSES:
             add_list_member(list_name, settings.DEFAULT_EMAIL_ADDRESSES['archive'])
         logger.info("Members added")
+
+        if user_type == "teachers":
+            # Release posts held only for being from a non-member, as if the
+            # setting above had been there all along. This must come after
+            # the members are added: an approved post goes out at once to the
+            # list's members as they are then, so releasing it earlier
+            # delivers it to nobody.
+            apply_list_settings(list_name, {}, release_nonmember_holds=True)
 
         self.recipients = ["%s@%s" % (list_name, Site.objects.get_current().domain)]
         self.send = True

@@ -66,9 +66,10 @@ class ClassMailingListCreationTest(TestCase):
     The activation notice for a new students list goes to the class's
     teachers list. A brand-new Mailman list holds non-member posts until the
     teachers handler applies its settings, so if both lists are created at
-    once the notice would be held for moderation (as happened for s16774 on
-    2026-11-19). The teachers handler fixes this by releasing such held
-    posts in the same locked Mailman call that opens the list. """
+    once the notice would be held for moderation. The teachers handler fixes
+    this by releasing such held posts once the list is set up and its members
+    are added: a released post goes only to the members the list has at that
+    moment. """
 
     MAILMAN_FUNCS = ['create_list', 'load_list_settings', 'apply_list_settings',
                      'add_list_member', 'add_list_members',
@@ -127,10 +128,9 @@ class ClassMailingListCreationTest(TestCase):
                 for c in calls.apply_list_settings.call_args_list:
                     self.assertNotIn('teachers', c[0][0])
 
-    def test_teachers_list_settings_in_one_call_after_config_file(self):
+    def test_teachers_list_settings_right_after_config_file(self):
         """ The teachers list accepts non-member posts, set in a single
-        Mailman call right after the config file is loaded, which also
-        releases posts held from non-members before it ran. """
+        Mailman call right after the config file is loaded. """
         for handler_name in ['SectionList', 'ClassList']:
             with self.subTest(handler=handler_name):
                 calls = self.run_handler(handler_name, 'teachers')
@@ -138,8 +138,7 @@ class ClassMailingListCreationTest(TestCase):
                 self.assertEqual(names[:3], ['create_list',
                                              'load_list_settings',
                                              'apply_list_settings'])
-                self.assertEqual(names.count('apply_list_settings'), 1)
-                list_name, applied = calls.apply_list_settings.call_args[0]
+                list_name, applied = calls.apply_list_settings.call_args_list[0][0]
                 # SectionList's own teachers list is per section; the
                 # activation notice always goes to the class-level one,
                 # which ClassList creates.
@@ -148,9 +147,29 @@ class ClassMailingListCreationTest(TestCase):
                 self.assertEqual(applied['generic_nonmember_action'], 0)
                 self.assertIs(applied['default_member_moderation'], False)
                 self.assertEqual(applied['subject_prefix'], '[Splash 2026]')
-                self.assertEqual(calls.apply_list_settings.call_args[1],
-                                 {'release_nonmember_holds': True})
+                self.assertEqual(calls.apply_list_settings.call_args_list[0][1], {})
                 calls.send_mail.assert_not_called()
+
+    def test_teachers_list_releases_holds_after_members_added(self):
+        """ Held non-member posts are released only after every member is
+        added, since a released post goes to the members the list has at
+        that moment. """
+        for handler_name in ['SectionList', 'ClassList']:
+            with self.subTest(handler=handler_name):
+                with override_settings(DEFAULT_EMAIL_ADDRESSES=dict(
+                        settings.DEFAULT_EMAIL_ADDRESSES,
+                        archive='archive@example.com')):
+                    calls = self.run_handler(handler_name, 'teachers')
+                names = [c[0] for c in calls.mock_calls]
+                self.assertEqual(names.count('apply_list_settings'), 2)
+                self.assertEqual(names[-1], 'apply_list_settings')
+                self.assertEqual(calls.apply_list_settings.call_args_list[-1],
+                                 mock.call(calls.apply_list_settings.call_args_list[0][0][0],
+                                           {}, release_nonmember_holds=True))
+                added = [c[1][1] for c in calls.mock_calls
+                         if c[0] == 'add_list_member']
+                self.assertIn('archive@example.com', added)
+                self.assertIn('add_list_members', names)
 
     def test_class_config_file_leaves_nonmember_action_alone(self):
         """ load_list_settings() applies lists/class_mailman.config. If it set
