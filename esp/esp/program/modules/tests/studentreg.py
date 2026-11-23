@@ -760,6 +760,30 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertIn('deadline', response.content.decode('utf-8').lower())
         self.assertEqual(response['Cache-Control'], 'no-store')
 
+    def test_catalog_pdf_open_for_non_admins(self):
+        """catalog_pdf serves the PDF to logged-out users and students, ignoring the admin catalog's options."""
+        from unittest.mock import patch
+        from django.http import HttpResponse
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+        url = '/learn/%s/catalog_pdf' % program.getUrlBase()
+        with patch('esp.program.modules.handlers.programprintables.render_to_latex',
+                   return_value=HttpResponse(b'%PDF-1.5', content_type='application/pdf')) as render:
+            for username in (None, self.students[0].username):
+                with self.subTest(username=username):
+                    self.client.logout()
+                    if username:
+                        self.client.login(username=username, password='password')
+                    response = self.client.get(url, {'sort_name_list': 'no_such_field', 'clsids': '0'})
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response['Content-Type'], 'application/pdf')
+                    self.assertEqual(response['Cache-Control'], 'public, max-age=120')
+                    template, context, file_type = render.call_args.args
+                    self.assertEqual(file_type, 'pdf')
+                    # Query-string options are for the admin coursecatalog view only
+                    self.assertTrue(context['classes'])
+
 class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
     """
     Tests for Issue #227: registration type visibility filtering on the student

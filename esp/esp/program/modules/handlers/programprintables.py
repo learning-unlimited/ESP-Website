@@ -251,24 +251,37 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def coursecatalog(self, request, tl, one, two, module, extra, prog):
         " This renders the course catalog in LaTeX. "
+        if extra is None or len(str(extra).strip()) == 0:
+            extra = 'pdf'
+        return self.render_course_catalog(
+            mingrade=int(request.GET['mingrade']) if 'mingrade' in request.GET else None,
+            maxgrade=int(request.GET['maxgrade']) if 'maxgrade' in request.GET else None,
+            open_only='open' in request.GET,
+            sort_order=request.GET['sort_name_list'].split(',') if request.GET.get('sort_name_list') else None,
+            clsids=request.GET['clsids'].split(',') if 'clsids' in request.GET else None,
+            file_type=extra)
+
+    def render_course_catalog(self, mingrade=None, maxgrade=None, open_only=False, sort_order=None,
+                              clsids=None, file_type='pdf'):
+        """Render the course catalog with LaTeX.
+
+        Does no access checks: the public PDF catalog (StudentClassRegModule.catalog_pdf)
+        calls it with the default options.
+        """
         from django.conf import settings
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
-        if 'mingrade' in request.GET:
-            mingrade=int(request.GET['mingrade'])
+        if mingrade is not None:
             classes = classes.filter(grade_max__gte=mingrade)
 
-        if 'maxgrade' in request.GET:
-            maxgrade=int(request.GET['maxgrade'])
+        if maxgrade is not None:
             classes = classes.filter(grade_min__lte=maxgrade)
 
-        if 'open' in request.GET:
+        if open_only:
             classes = [cls for cls in classes if not cls.isFull()]
 
-        if request.GET.get('sort_name_list'):
-            sort_order = request.GET['sort_name_list'].split(',')
-        else:
-            sort_order = Tag.getProgramTag('catalog_sort_fields', prog, default='category').split(',')
+        if not sort_order:
+            sort_order = Tag.getProgramTag('catalog_sort_fields', self.program, default='category').split(',')
 
         #   Perform sorting based on specified order rules
         #   NOTE: Other catalogs can filter by _num_students but this one can't.
@@ -293,9 +306,8 @@ class ProgramPrintables(ProgramModuleObj):
                 ids_existing.append(cls.id)
         classes = unique_classes
 
-        #   Reorder classes if an ordering was specified by request.GET['clsids']
-        if 'clsids' in request.GET:
-            clsids = request.GET['clsids'].split(',')
+        #   Reorder classes if an ordering was specified
+        if clsids is not None:
             cls_dict = {}
             for cls in classes:
                 cls_dict[str(cls.id)] = cls
@@ -314,14 +326,11 @@ class ProgramPrintables(ProgramModuleObj):
             template_name = 'catalog_timeblock.tex'
             sections = []
             for cls in classes:
-                sections += list(x for x in cls.sections.all().filter(status__gt=0, meeting_times__isnull=False).distinct() if not ('open' in request.GET and x.isFull()))
+                sections += list(x for x in cls.sections.all().filter(status__gt=0, meeting_times__isnull=False).distinct() if not (open_only and x.isFull()))
             sections.sort(key=lambda x: x.start_time())
             context['sections'] = sections
 
-        if extra is None or len(str(extra).strip()) == 0:
-            extra = 'pdf'
-
-        return render_to_latex(self.baseDir()+template_name, context, extra)
+        return render_to_latex(self.baseDir()+template_name, context, file_type)
 
     @aux_call
     @needs_admin
