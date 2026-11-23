@@ -39,7 +39,6 @@ local_fabfile.py
 *.orig
 *.swp
 .espsettings
-.github/copilot-instructions.md
 
 # Claude Code
 .claude/
