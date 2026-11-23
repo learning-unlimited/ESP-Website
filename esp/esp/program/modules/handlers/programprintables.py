@@ -296,15 +296,16 @@ class ProgramPrintables(ProgramModuleObj):
         if maxgrade is not None:
             classes = classes.filter(grade_min__lte=maxgrade)
 
-        if open_only:
-            classes = [cls for cls in classes if not cls.isFull()]
-
         if not sort_order:
             sort_order = Tag.getProgramTag('catalog_sort_fields', self.program, default='category').split(',')
 
         #   Perform sorting based on specified order rules
         sort_order = self.catalog_sort_fields(sort_order)
         classes = classes.order_by(*sort_order)
+
+        #   Done after ordering, since it turns the QuerySet into a list
+        if open_only:
+            classes = [cls for cls in classes if not cls.isFull()]
 
         #   Filter out classes that are not scheduled
         classes = [cls for cls in classes

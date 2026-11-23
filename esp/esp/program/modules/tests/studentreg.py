@@ -809,9 +809,11 @@ class StudentRegTest(ProgramFrameworkTest):
                    return_value=HttpResponse(b'%PDF-1.5', content_type='application/pdf')) as render:
             for value, template in expected_template.items():
                 with self.subTest(catalog_sort_fields=value):
+                    render.reset_mock()
                     Tag.setTag('catalog_sort_fields', program, value)
                     response = self.client.get(url)
                     self.assertEqual(response.status_code, 200)
+                    self.assertEqual(render.call_count, 1)
                     self.assertTrue(render.call_args.args[0].endswith(template))
 
     def test_catalog_sort_fields(self):
@@ -837,6 +839,22 @@ class StudentRegTest(ProgramFrameworkTest):
             response = self.client.get('/manage/%s/coursecatalog' % self.program.getUrlBase())
         self.assertEqual(response.status_code, 200)
         self.assertIn(hidden, render.call_args.args[1]['classes'])
+
+    def test_admin_course_catalog_open_classes_only(self):
+        """The admin coursecatalog printable's 'open' option leaves out full classes."""
+        from unittest.mock import patch
+        from django.http import HttpResponse
+        from esp.program.models import ClassSubject
+
+        self.client.login(username=self.admins[0].username, password='password')
+        with patch('esp.program.modules.handlers.programprintables.render_to_latex',
+                   return_value=HttpResponse(b'%PDF-1.5', content_type='application/pdf')) as render, \
+             patch.object(ClassSubject, 'isFull', lambda cls: cls.id % 2 == 0):
+            response = self.client.get('/manage/%s/coursecatalog' % self.program.getUrlBase(), {'open': ''})
+        self.assertEqual(response.status_code, 200)
+        classes = render.call_args.args[1]['classes']
+        self.assertTrue(classes)
+        self.assertTrue(all(cls.id % 2 for cls in classes))
 
 class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
     """
