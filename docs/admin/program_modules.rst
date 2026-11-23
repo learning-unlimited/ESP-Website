@@ -202,7 +202,7 @@ This is a module to allow students to fill out a global application for the prog
 Student Lunch Selection (StudentLunchSelection)
 -----------------------------------------------
 
-If you are using lunch constraints, some students may be confused by the requirement that they select a lunch period if they have both "morning" and "afternoon" classes.  To reduce confusion, this module forces students to choose a lunch period for each day before they proceed to the rest of student registration.  If they end up having a schedule that is not subject to the constraints, they will be allowed to manually remove the lunch period then.
+If you are using lunch constraints, some students may be confused by being told that they should select a lunch period if they have both "morning" and "afternoon" classes.  To reduce confusion, this module forces students to choose a lunch period for each day before they proceed to the rest of student registration.  They can remove the lunch period again later; if their schedule still calls for one, they will keep seeing the warning on their schedule, or be blocked from removing it if you have enabled "enforce" on the Lunch Constraints page.
 
 Add "Confirm Registration" link (StudentRegConfirm)
 ---------------------------------------------------
@@ -673,13 +673,7 @@ During and after scheduling a program, you should periodically visit this page
 to see if you made any mistakes.  It may take a few minutes to run, but you
 will see a summary of common issues such as teachers that have to travel
 between adjacent timeslots and classes that aren't assigned the resources they
-need.
-
-For larger chapters the page may take a long time to load.  More improvements
-are in the works, but for now, the page
-<site>.learningu.org/manage/<program>/<instance>/scheduling_check_list
-will display a list of links to display the checks individually; most will load
-much more quickly than the entire page.
+need. Note that for larger chapters the page may take a long time to load.
 
 Survey Management (SurveyManagement)
 ------------------------------------
@@ -760,7 +754,7 @@ It is useful to have a record of which students attended your program, e.g. by s
 Show open classes at registration (OnSiteClassList)
 ---------------------------------------------------
 
-This module creates a view which shows a scrolling list, suitable for projection on a large screen at your program.  The list shows non-full classes sorted by time slot, with an emphasis on those beginning in the next hour.  Students can also view this list if they have a computer or mobile device with Internet access.
+This module creates a view which shows a scrolling list, suitable for projection on a large screen at your program.  The list shows non-full classes sorted by time slot, with an emphasis on those beginning in the next hour.  Classes that fill up while the list is scrolling are crossed out until the list next reloads.  Students can also view this list if they have a computer or mobile device with Internet access.
 
 This module is very useful because it includes the class changes grid (classchange_grid), which is now the preferred way to handle students' class change requests during a program.  The class change grid is a compact display of all classes with color codes indicating how much (predicted and actual) space there is in each.  You can find a student to highlight their selections, and check boxes to change them.  Performance may be an issue with slow laptops/browsers and large programs.
 
