@@ -296,6 +296,14 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
 
     if current_theme is None:
         current_theme = request.POST.get('theme', '')
+        # Opened directly rather than from the theme selector or a submitted form
+        if not current_theme:
+            return HttpResponseRedirect(reverse('themes_select'))
+
+    try:
+        tc.base_dir(current_theme)
+    except ValueError:
+        raise ESPError(f'Invalid theme name: {current_theme!r}', log=False)
 
     if request.method == 'POST' and request.POST.get('confirm_overwrite', '0') == '1':
         files_to_keep = []

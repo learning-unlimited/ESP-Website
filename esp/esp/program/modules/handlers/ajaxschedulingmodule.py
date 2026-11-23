@@ -197,8 +197,11 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @needs_admin
     @json_response()
     def ajax_change_log(self, request, tl, one, two, module, extra, prog):
+        try:
+            last_fetched_index = int(request.GET['last_fetched_index'])
+        except (KeyError, ValueError):
+            return HttpResponse('Missing or invalid last_fetched_index.', status=400)
         cl = self.get_change_log(prog)
-        last_fetched_index = int(request.GET['last_fetched_index'])
 
         #check whether we have a log entry at least as old as the last fetched time
         #if not, we return a command to reload instead of the log

@@ -348,8 +348,6 @@ def ajax_qsd(request):
 def ajax_qsd_preview(request):
     """ Ajax function for previewing the result of QSD editing. """
     import json
-    data = request.POST['data']
-
     # Get the URL
     url = request.POST.get('url', '')
 
@@ -360,6 +358,10 @@ def ajax_qsd_preview(request):
     # Enforce QSD edit permission before looking up the QSD
     if not Permission.user_can_edit_qsd(request.user, url):
         return HttpResponse(content='Sorry, you do not have permission to preview this page.', status=403)
+
+    data = request.POST.get('data')
+    if data is None:
+        return HttpResponse('Missing data to preview.', status=400)
 
     # Try to look up an existing QSD by URL, if any
     qsd = QuasiStaticData.objects.get_by_url(url) if url else None
