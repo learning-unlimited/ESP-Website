@@ -97,6 +97,7 @@ Bug Fixes
 - Creating a survey question type in the admin panel now fails with a validation error if there is no matching question template, instead of creating a question type that crashes any survey that uses it.
 - The class management pages (manage class, add section, class availability, and approve, reject or propose class) now show a "No class was specified" error when opened without a class ID, instead of crashing.
 - Charts (such as on the big board, onsite attendance, statistics, accounting and map pages) now load Highcharts' accessibility module, which adds keyboard navigation and screen reader descriptions and removes a Highcharts warning from the browser console.
+- Opening a later step of a multi-step admin tool directly (for example from a bookmark or the browser's back button) now takes you back to the tool's first step instead of showing an error. This covers batch class registration, filter permissions, group texts, user groups, user records, mass deactivation and the communications panel. Errors from incomplete or out-of-date submissions of these tools, and from links to missing printable jobs, are no longer reported to the web team as server errors.
 - The onsite scrolling class list now crosses out classes that fill up (or are cancelled) while it scrolls, checking at the configured refresh interval, instead of showing them as open until the end of the scroll cycle.
 
 Developer Notes

@@ -226,6 +226,8 @@ class CommModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def commprev(self, request, tl, one, two, module, extra, prog):
+        if request.method != 'POST':
+            return self.redirect_to_main_view()
         from django.conf import settings
 
         filterid, listcount, subject, body = CommModule.get_required_post_fields(
@@ -336,6 +338,8 @@ class CommModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def commfinal(self, request, tl, one, two, module, extra, prog):
+        if request.method != 'POST':
+            return self.redirect_to_main_view()
         from esp.dbmail.models import MessageRequest # noqa: F811
 
         filterid, fromemail, replytoemail, subject, body = CommModule.get_required_post_fields(
@@ -508,6 +512,8 @@ class CommModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def maincomm2(self, request, tl, one, two, module, extra, prog):
+        if request.method != 'POST':
+            return self.redirect_to_main_view()
 
         filterid, listcount, fromemail, replytoemail, subject, body = CommModule.get_required_post_fields(
             request, ['filterid', 'listcount', 'from', 'replyto', 'subject', 'body'])

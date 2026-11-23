@@ -1485,7 +1485,7 @@ class ProgramPrintables(ProgramModuleObj):
         try:
             job = PrintableJob.objects.get(id=extra, program=prog)
         except (PrintableJob.DoesNotExist, ValueError, ValidationError):
-            raise ESPError("Job not found.")
+            raise ESPError("Job not found.", log=False)
         if job.status == 'COMPLETED' and job.file and request.GET.get('download'):
             job.file.open('rb')
             content_type = mimetypes.guess_type(job.file.name)[0] or 'application/octet-stream'

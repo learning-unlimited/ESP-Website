@@ -645,15 +645,17 @@ class AdminCore(ProgramModuleObj, CoreModule):
     @needs_admin
     def filter_permission_final(self, request, tl, one, two, module, extra, prog):
         """Step 2: set permission type and dates, then create the permission."""
-        if request.method != 'POST' or 'filterid' not in request.GET:
-            raise ESPError()('Filter has not been properly set. Please start over.')
+        if request.method != 'POST':
+            return HttpResponseRedirect(f'/manage/{prog.url}/filter_permission')
+        if 'filterid' not in request.GET:
+            raise ESPError('Filter has not been properly set. Please start over.', log=False)
 
         try:
             filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
         except PersistentQueryFilter.DoesNotExist:
-            raise ESPError()('The selected filter no longer exists. Please start over.')
+            raise ESPError('The selected filter no longer exists. Please start over.', log=False)
         if str(ESPUser) != filterObj.item_model:
-            raise ESPError()('The selected filter is not a user filter. Please start over.')
+            raise ESPError('The selected filter is not a user filter. Please start over.', log=False)
 
         options_form = FilterPermissionOptionsForm(request.POST.copy())
         if not options_form.is_valid():
