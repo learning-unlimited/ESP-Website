@@ -261,6 +261,24 @@ class ProgramPrintables(ProgramModuleObj):
             clsids=request.GET['clsids'].split(',') if 'clsids' in request.GET else None,
             file_type=extra)
 
+    @staticmethod
+    def catalog_sort_fields(sort_order):
+        """Turn catalog sort fields (the catalog_sort_fields tag, or the admin's
+        sort_name_list) into fields this printable can order classes by."""
+        from esp.program.models.class_ import CATALOG_UNSORTABLE_FIELDS
+        fields = []
+        for field in (f.strip() for f in sort_order):
+            name = field.lstrip('-')
+            #   NOTE: Other catalogs can filter by _num_students but this one can't.
+            if not name or name == '_num_students' or name in CATALOG_UNSORTABLE_FIELDS:
+                continue
+            #   Replace time sort fields ('timeblock', and the web catalog's 'earliest_start'
+            #   and its legacy form) with sorting by meeting times start field.
+            if name in ('timeblock', 'earliest_start', 'sections__meeting_times__start'):
+                field = field[:len(field) - len(name)] + 'meeting_times__start'
+            fields.append(field)
+        return fields or ['category']
+
     def render_course_catalog(self, mingrade=None, maxgrade=None, open_only=False, sort_order=None,
                               clsids=None, file_type='pdf', public=False):
         """Render the course catalog with LaTeX.
@@ -285,13 +303,7 @@ class ProgramPrintables(ProgramModuleObj):
             sort_order = Tag.getProgramTag('catalog_sort_fields', self.program, default='category').split(',')
 
         #   Perform sorting based on specified order rules
-        #   NOTE: Other catalogs can filter by _num_students but this one can't.
-        if '_num_students' in sort_order:
-            sort_order.remove('_num_students')
-        #   Replace incorrect 'timeblock' sort field with sorting by meeting times start field.
-        for i in range(len(sort_order)):
-            if sort_order[i] == 'timeblock':
-                sort_order[i] = 'meeting_times__start'
+        sort_order = self.catalog_sort_fields(sort_order)
         classes = classes.order_by(*sort_order)
 
         #   Filter out classes that are not scheduled

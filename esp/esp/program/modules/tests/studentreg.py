@@ -793,6 +793,34 @@ class StudentRegTest(ProgramFrameworkTest):
                     self.assertNotIn(hidden, context['classes'])
                     self.assertTrue(all(cls.status == ClassStatus.ACCEPTED for cls in context['classes']))
 
+    def test_catalog_pdf_handles_catalog_sort_fields_tag(self):
+        """catalog_pdf works for every documented catalog_sort_fields value, including ones only the web catalog sorts by."""
+        from unittest.mock import patch
+        from django.http import HttpResponse
+        from esp.tagdict.models import Tag
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+        url = '/learn/%s/catalog_pdf' % program.getUrlBase()
+        expected_template = {'earliest_start': 'catalog_timeblock.tex', '-earliest_start': 'catalog_category.tex',
+                             '_num_students': 'catalog_category.tex', 'category__symbol, id': 'catalog_category.tex',
+                             'sections__meeting_times__start, id': 'catalog_timeblock.tex'}
+        with patch('esp.program.modules.handlers.programprintables.render_to_latex',
+                   return_value=HttpResponse(b'%PDF-1.5', content_type='application/pdf')) as render:
+            for value, template in expected_template.items():
+                with self.subTest(catalog_sort_fields=value):
+                    Tag.setTag('catalog_sort_fields', program, value)
+                    response = self.client.get(url)
+                    self.assertEqual(response.status_code, 200)
+                    self.assertTrue(render.call_args.args[0].endswith(template))
+
+    def test_catalog_sort_fields(self):
+        from esp.program.modules.handlers.programprintables import ProgramPrintables
+        self.assertEqual(ProgramPrintables.catalog_sort_fields(['earliest_start', ' id']), ['meeting_times__start', 'id'])
+        self.assertEqual(ProgramPrintables.catalog_sort_fields(['-sections__meeting_times__start']), ['-meeting_times__start'])
+        self.assertEqual(ProgramPrintables.catalog_sort_fields(['timeblock', '_num_students']), ['meeting_times__start'])
+        self.assertEqual(ProgramPrintables.catalog_sort_fields(['_num_students', 'media_count', '']), ['category'])
+
     def test_admin_course_catalog_includes_hidden_classes(self):
         """The admin coursecatalog printable still includes hidden classes."""
         from unittest.mock import patch
