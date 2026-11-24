@@ -25,6 +25,7 @@ from esp.survey.models import (
     Survey,
     SurveyResponse,
 )
+from esp.survey.templatetags.survey import average, stdev
 from esp.survey.views import survey_review
 from esp.program.modules.forms.surveys import QuestionForm
 from esp.tests.util import CacheFlushTestCase as TestCase
@@ -906,3 +907,47 @@ class SurveyViewsContextIsolationTest(ProgramFrameworkTest):
 
         self.assertIsNot(first_context, second_context)
         self.assertNotIn('leaked_from_first_request', second_context)
+
+
+# ===== Template Filter Tests =====
+
+class SurveyTemplateFiltersTest(TestCase):
+    """Tests for the average and stdev template filters in esp.survey.templatetags.survey."""
+
+    def test_average_fractional_result(self):
+        self.assertEqual(average([3, 4, 4]), '3.67')
+        self.assertEqual(average(['3', '4', '4']), '3.67')
+
+    def test_average_exact_result(self):
+        self.assertEqual(average([2, 4, 6]), '4.0')
+        self.assertEqual(average([5]), '5.0')
+
+    def test_average_empty_list(self):
+        self.assertEqual(average([]), 'N/A')
+
+    def test_average_non_numeric_input(self):
+        self.assertEqual(average(['3', 'invalid', '4']), 'N/A')
+        self.assertEqual(average([None]), 'N/A')
+
+    def test_stdev_fractional_result(self):
+        # Population stdev of [3, 4, 4]: mean = 11/3, variance = 2/9, stdev = sqrt(2)/3 ≈ 0.4714 -> '0.47'
+        self.assertEqual(stdev([3, 4, 4]), '0.47')
+        self.assertEqual(stdev(['3', '4', '4']), '0.47')
+
+    def test_stdev_distinguishes_from_mean_absolute_deviation(self):
+        # For [1, 2, 3, 4]: mean = 2.5
+        # Mean absolute deviation = (1.5 + 0.5 + 0.5 + 1.5) / 4 = 1.0
+        # Population stdev = sqrt((2.25 + 0.25 + 0.25 + 2.25) / 4) = sqrt(1.25) ≈ 1.118 -> '1.12'
+        self.assertEqual(stdev([1, 2, 3, 4]), '1.12')
+
+    def test_stdev_identical_values(self):
+        self.assertEqual(stdev([4, 4, 4]), '0.0')
+        self.assertEqual(stdev([5]), '0.0')
+
+    def test_stdev_empty_list(self):
+        self.assertEqual(stdev([]), 'N/A')
+
+    def test_stdev_non_numeric_input(self):
+        self.assertEqual(stdev(['3', 'invalid', '4']), 'N/A')
+        self.assertEqual(stdev([None]), 'N/A')
+
