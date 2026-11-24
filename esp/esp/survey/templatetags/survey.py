@@ -40,6 +40,7 @@ from django.template import loader
 from esp.program.models import Program, ClassSubject, ClassSection
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 
+import math
 import os
 import subprocess
 
@@ -136,7 +137,7 @@ def average(lst):
         sum = 0.0
         for l in lst:
             sum += float(l)
-        return str(round(sum // len(lst), 2))
+        return str(round(sum / len(lst), 2))
     except (ValueError, TypeError):
         return 'N/A'
 
@@ -149,10 +150,10 @@ def stdev(lst):
         std_sum = 0.0
         for l in lst:
             sum += float(l)
-        mean = sum // len(lst)
+        mean = sum / len(lst)
         for l in lst:
-            std_sum += abs(float(l) - mean)
-        return str(round(std_sum // len(lst), 2))
+            std_sum += (float(l) - mean) ** 2
+        return str(round(math.sqrt(std_sum / len(lst)), 2))
     except (ValueError, TypeError):
         return 'N/A'
 
