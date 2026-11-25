@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.conf import settings
+from django.test import override_settings
 
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.models import Form
@@ -49,6 +49,19 @@ from esp.users.models import ESPUser
 
 import json
 
+#   Credit card test keys, so both credit card modules' views load.  Set with
+#   override_settings, not by assigning to settings, which would leak them into
+#   later tests (Stripe's link would then appear on ModuleExistenceTest's pages).
+@override_settings(
+    STRIPE_CONFIG={
+        'secret_key': 'sk_test_4eC39HqLyjWDarjtT1zdp7dc',
+        'publishable_key': 'pk_test_TYooMQauvdEDq54NiTphI7jx',
+    },
+    CYBERSOURCE_CONFIG={
+        'post_url': 'https://apitest.cybersource.com/pts/v2/payments',
+        'merchant_id': 'test',
+    },
+)
 class AllViewsTest(ProgramFrameworkTest):
     def setUp(self):
         # Set up the program framework and randomly schedule classes
@@ -128,15 +141,6 @@ class AllViewsTest(ProgramFrameworkTest):
         Tag.setTag(key='teach_extraform_id', value=form.id, target=self.program)
         Tag.setTag(key='quiz_form_id', value=form.id, target=self.program)
 
-        # Set up credit card test keys
-        settings.STRIPE_CONFIG = {
-            'secret_key': 'sk_test_4eC39HqLyjWDarjtT1zdp7dc',
-            'publishable_key': 'pk_test_TYooMQauvdEDq54NiTphI7jx',
-        }
-        settings.CYBERSOURCE_CONFIG = {
-            'post_url': 'https://apitest.cybersource.com/pts/v2/payments',
-            'merchant_id': 'test',
-        }
 
     def tearDown(self):
         # clean up custom form

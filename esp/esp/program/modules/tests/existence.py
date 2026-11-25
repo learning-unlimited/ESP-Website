@@ -118,7 +118,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
                 missing_mods.append(target_modules[i])
         for i in range(len(actual_modules)):
             if actual_module_ids[i] not in target_module_ids:
-                missing_mods.append(actual_modules[i])
+                extra_mods.append(actual_modules[i])
 
         #   Report any inconsistencies we detected.
         self.assertTrue(len(missing_mods) == 0, 'Missing modules: %s' % [x.__class__.__name__ for x in missing_mods])
