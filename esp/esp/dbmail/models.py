@@ -518,17 +518,20 @@ class MessageVars(models.Model):
         newMessageVar.save()
         return newMessageVar
 
+    def _load_provider(self):
+        try:
+            return pickle.loads(self.pickled_provider)
+        except Exception:
+            raise ESPError('Could not load variable provider object!')
+
     def getDict(self, user):
-        provider = pickle.loads(self.pickled_provider)
+        provider = self._load_provider()
         actionhandler = ActionHandler(provider, user)
         return {self.provider_name: actionhandler}
 
     def getVar(self, key, user):
         """ Get a variable from this object. """
-        try:
-            provider = pickle.loads(self.pickled_provider)
-        except Exception:
-            raise ESPError('Could not load variable provider object!')
+        provider = self._load_provider()
 
         if hasattr(provider, 'get_msg_vars'):
             return str(provider.get_msg_vars(user, key))

@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import pickle
 from unittest.mock import patch
 
 from django.contrib.auth.models import Group
@@ -39,7 +40,8 @@ from django.core import mail
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
-from esp.dbmail.models import ActionHandler, MessageRequest, PlainRedirect, send_mail
+from esp.dbmail.models import ActionHandler, MessageRequest, MessageVars, PlainRedirect, send_mail
+from esp.middleware import ESPError
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import ESPUser, PersistentQueryFilter
 
@@ -102,6 +104,66 @@ class ActionHandlerTest(TestCase):
         handler = ActionHandler(FakeObj(), 'testuser')
         result = handler.foo('testuser')
         self.assertEqual(result, 'result_testuser')
+
+
+class _DummyVarProvider:
+    def get_msg_vars(self, user, key):
+        return f'{key}_for_{user}'
+
+
+class MessageVarsTest(TestCase):
+    """Tests for MessageVars unpickling and error handling (#6300)."""
+
+    def test_get_dict_valid_provider(self):
+        msg_var = MessageVars(
+            provider_name='Program',
+            pickled_provider=pickle.dumps(_DummyVarProvider()),
+        )
+        result = msg_var.getDict('alice')
+        self.assertIn('Program', result)
+        self.assertIsInstance(result['Program'], ActionHandler)
+        self.assertEqual(result['Program'].schedule, 'schedule_for_alice')
+
+    def test_get_var_valid_provider(self):
+        msg_var = MessageVars(
+            provider_name='Program',
+            pickled_provider=pickle.dumps(_DummyVarProvider()),
+        )
+        self.assertEqual(msg_var.getVar('schedule', 'alice'), 'schedule_for_alice')
+
+    def test_get_var_provider_without_get_msg_vars_returns_none(self):
+        msg_var = MessageVars(
+            provider_name='Plain',
+            pickled_provider=pickle.dumps({'a': 1}),
+        )
+        self.assertIsNone(msg_var.getVar('a', 'alice'))
+
+    def test_get_dict_invalid_pickle_raises_esperror(self):
+        msg_var = MessageVars(
+            provider_name='Program',
+            pickled_provider=b'garbage',
+        )
+        with self.assertRaisesMessage(ESPError, 'Could not load variable provider object!'):
+            msg_var.getDict('alice')
+
+    def test_get_var_invalid_pickle_raises_esperror(self):
+        msg_var = MessageVars(
+            provider_name='Program',
+            pickled_provider=b'garbage',
+        )
+        with self.assertRaisesMessage(ESPError, 'Could not load variable provider object!'):
+            msg_var.getVar('schedule', 'alice')
+
+    def test_get_dict_missing_class_pickle_raises_esperror(self):
+        # Simulate a pickled object whose module/class no longer exists
+        missing_class_pickle = b'\x80\x04\x95%\x00\x00\x00\x00\x00\x00\x00\x8c\x14nonexistent_esp_mod\x94\x8c\x0bMissingType\x94\x93\x94)\x81\x94.'
+        msg_var = MessageVars(
+            provider_name='Program',
+            pickled_provider=missing_class_pickle,
+        )
+        with self.assertRaisesMessage(ESPError, 'Could not load variable provider object!'):
+            msg_var.getDict('alice')
+
 
 
 class MessageRequestTest(TestCase):
