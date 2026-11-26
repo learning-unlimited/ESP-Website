@@ -95,8 +95,10 @@ class GroupTextModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def grouptextfinal(self, request, tl, one, two, module, extra, prog):
-        if request.method != 'POST' or 'filterid' not in request.GET or 'message' not in request.POST:
-            raise ESPError()('Filter or message have not been properly set')
+        if request.method != 'POST':
+            return self.redirect_to_main_view()
+        if 'filterid' not in request.GET or 'message' not in request.POST:
+            raise ESPError('Filter or message have not been properly set', log=False)
 
         if not self.is_configured():
             return render_to_response(self.baseDir() + 'not_configured.html', request, {})
@@ -106,7 +108,7 @@ class GroupTextModule(ProgramModuleObj):
         try:
             filterObj = PersistentQueryFilter.objects.get(id=filter_id)
         except (PersistentQueryFilter.DoesNotExist, ValueError, TypeError):
-            raise ESPError()('The requested query filter is invalid or no longer exists.')
+            raise ESPError('The requested query filter is invalid or no longer exists.', log=False)
         message = request.POST['message']
         override = False
         if 'text-override' in request.POST:
@@ -155,7 +157,7 @@ class GroupTextModule(ProgramModuleObj):
             pass
 
         if not users:
-            raise ESPError()("Your query did not match any users")
+            raise ESPError("Your query did not match any users", log=False)
 
         account_sid = settings.TWILIO_ACCOUNT_SID
         auth_token = settings.TWILIO_AUTH_TOKEN

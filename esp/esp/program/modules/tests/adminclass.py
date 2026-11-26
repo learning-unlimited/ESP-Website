@@ -456,3 +456,27 @@ class ClassAvailabilityConflictTest(ProgramFrameworkTest):
             self.assertIn(key, response.context)
         self.assertEqual(response.context['class'], self.cls)
         self.assertEqual(response.context['program'], self.program)
+
+
+class MissingClassIdTest(ProgramFrameworkTest):
+    """Class management views opened without a class ID show an error page instead of crashing."""
+
+    def setUp(self):
+        super().setUp()
+        self.client.login(username=self.admins[0].username, password='password')
+        self.manage_url = self.program.get_manage_url()
+
+    def test_views_without_class_id_show_error(self):
+        statuses = {cls.id: cls.status for cls in self.program.classes()}
+        for view in ['addsection', 'manageclass', 'approveclass', 'rejectclass', 'proposeclass',
+                     'classavailability']:
+            with self.subTest(view=view):
+                response = self.client.get(f'{self.manage_url}{view}')
+                self.assertTemplateUsed(response, 'error.html')
+                self.assertContains(response, 'No class was specified.', status_code=500)
+        self.assertEqual({cls.id: cls.status for cls in self.program.classes()}, statuses)
+
+    def test_non_numeric_class_id_shows_error(self):
+        response = self.client.get(f'{self.manage_url}manageclass/abc')
+        self.assertTemplateUsed(response, 'error.html')
+        self.assertContains(response, 'Invalid class ID abc.', status_code=500)

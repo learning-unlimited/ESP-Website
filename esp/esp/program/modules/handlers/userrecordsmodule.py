@@ -71,13 +71,15 @@ class UserRecordsModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def userrecordsfinal(self, request, tl, one, two, module, extra, prog):
-        if request.method != 'POST' or 'filterid' not in request.GET:
-            raise ESPError()('User filter has not been properly set')
+        if request.method != 'POST':
+            return self.redirect_to_main_view()
+        if 'filterid' not in request.GET:
+            raise ESPError('User filter has not been properly set', log=False)
 
         try:
             filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
         except (PersistentQueryFilter.DoesNotExist, ValueError):
-            raise ESPError()('The specified filter no longer exists or is invalid. Please restart the user records management process.')
+            raise ESPError('The specified filter no longer exists or is invalid. Please restart the user records management process.', log=False)
         users = filterObj.getList(ESPUser)
         try:
             users = users.distinct()
@@ -85,7 +87,7 @@ class UserRecordsModule(ProgramModuleObj):
             pass
 
         if not users:
-            raise ESPError()("Your query did not match any users")
+            raise ESPError("Your query did not match any users", log=False)
 
         records = request.POST.getlist('records')
         record_type_map = {

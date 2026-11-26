@@ -220,6 +220,11 @@ class ProgramModuleObj(ExpirableModel):
     def goToCore(self, tl):
         return HttpResponseRedirect(self.getCoreURL(tl) or '/')
 
+    def redirect_to_main_view(self):
+        """Send the user to this module's main page, e.g. when a later step of a
+        multi-step form is opened directly instead of being submitted."""
+        return HttpResponseRedirect(self.get_full_path())
+
     def require_auth(self):
         return True
 

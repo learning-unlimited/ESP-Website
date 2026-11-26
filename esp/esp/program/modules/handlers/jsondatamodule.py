@@ -56,11 +56,10 @@ from esp.resources.models import ResourceAssignment, ResourceRequest, ResourceTy
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, UserAvailability, StudentInfo, Record
 from esp.utils.decorators import cached_module_view, json_response
-from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.accounting.controllers import ProgramAccountingController
 from esp.accounting.models import Transfer
 from esp.utils.ids import get_by_id_or_404, parse_id
 
-from decimal import Decimal
 
 class JSONDataModule(ProgramModuleObj, CoreModule):
     doc = """A program module dedicated to returning program-specific data in JSON form."""
@@ -1201,20 +1200,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         dictOut["stats"].append({"id": "accounting", "data": accounting_data})
 
         return dictOut
-
-    @aux_call
-    @needs_student_in_grade
-    def set_donation_amount(self, request, tl, one, two, module, extra, prog):
-        """ Set the student's desired donation amount.
-            Creates a line item type for donations if it does not exist. """
-
-        amount_donation = Decimal(request.POST.get('amount', '0'))
-        iac = IndividualAccountingController(prog, request.user)
-        #   Clear the Transfers by specifying quantity 0
-        iac.set_preference('Donation to Learning Unlimited', 0)
-        if amount_donation != Decimal('0'):
-            #   Specify quantity 1 and the desired amount
-            iac.set_preference('Donation to Learning Unlimited', 1, amount=amount_donation)
 
     @aux_call
     @json_response()

@@ -873,6 +873,77 @@ class OnsiteAuthorizationTests(CacheFlushTestCase):
         resp = self._call_catalog_status(self.admin)
         self.assertEqual(resp.status_code, 200)
         self.assertIn('application/json', resp.get('Content-Type', ''))
+
+
+class ClassListFullStatusTests(ProgramFrameworkTest):
+    """The scrolling onsite class list should mark classes that fill up mid-scroll,
+    using full_status with the same fullness check as the list."""
+
+    def setUp(self):
+        super().setUp(
+            num_timeslots=2,
+            num_teachers=2,
+            classes_per_teacher=1,
+            sections_per_class=1,
+            num_rooms=2,
+            num_students=0,
+        )
+        self.schedule_randomly()
+        self.factory = RequestFactory()
+        self.admin = self.admins[0]
+
+    def _render(self):
+        options = {'refresh': '30', 'scrollspeed': '1'}
+        request = self.factory.get('/onsite/classlist', options)
+        request.user = self.admin
+        module = SimpleNamespace(
+            program=self.program,
+            baseDir=lambda: 'program/modules/onsiteclasslist/'
+        )
+        resp = OnSiteClassList.classList_base(
+            module,
+            request,
+            'onsite',
+            'one',
+            'two',
+            None,
+            None,
+            self.program,
+            options=options,
+            template_name='classlist.html',
+        )
+        resp.render()
+        return resp.content.decode()
+
+    def _call_full_status(self, params=None):
+        request = self.factory.get('/onsite/full_status', params or {})
+        request.user = self.admin
+        fn = getattr(OnSiteClassList.full_status, 'method', OnSiteClassList.full_status)
+        return json.loads(fn(SimpleNamespace(), request, None, None, None, None, None, self.program).content)
+
+    def test_rows_carry_section_ids(self):
+        """Each listed class row must be tagged with its section ID so it can be marked full."""
+        content = self._render()
+        for section in self.program.sections():
+            self.assertIn('data-section-id="%d"' % section.id, content)
+
+    def test_polls_full_status_on_refresh_interval(self):
+        """The page must poll full_status, with the list's fullness check, every refresh interval."""
+        content = self._render()
+        self.assertIn('/onsite/one/two/full_status?ignore_changes=true', content)
+        self.assertIn('setInterval(update_full_status, refresh_interval_ms)', content)
+
+    def test_full_status_ignore_changes_uses_list_fullness_check(self):
+        """ignore_changes=true must use isFullIgnoreChanges, which the list filters on."""
+        with patch.object(ClassSection, 'isFullIgnoreChanges', return_value=True), \
+                patch.object(ClassSection, 'isFull', return_value=False):
+            default = self._call_full_status()
+            ignoring = self._call_full_status({'ignore_changes': 'true'})
+        self.assertTrue(default)
+        self.assertFalse(any(is_full for _, is_full in default))
+        self.assertTrue(all(is_full for _, is_full in ignoring))
+
+
 class SchedulePdfTests(SimpleTestCase):
     """Regression tests for schedule_pdf early failure cases and success path."""
 

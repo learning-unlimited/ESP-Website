@@ -205,17 +205,9 @@ class DonationModule(ProgramModuleObj):
 
                 return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
 
-        # Donations and non-donations go through different code paths. If a
-        # user chooses to make a donation, set_donation_amount() is called via
-        # an AJAX request. If a user chooses not to make a donation, their
-        # browser makes a request to the studentreg main page. Therefore, it is
-        # impossible set the donation_done Record after the user is actually
-        # done with the module. So our only option is to mark them done when
-        # they first visit the page. This should be fine, since donations are
-        # always optional. If we really care about being correct, if we switch
-        # this page to not use AJAX but instead use a normal form submission,
-        # we can then switch to granting the Record after the user is done with
-        # the page.
+        # Donating is optional, and a student who doesn't donate can leave this
+        # page without submitting the form, so mark the module done as soon as
+        # they first visit it.
         rt = RecordType.objects.get(name=self.event)
         Record.objects.get_or_create(user=user, program=self.program, event=rt)
 

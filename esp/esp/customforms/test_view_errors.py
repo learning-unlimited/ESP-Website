@@ -63,14 +63,15 @@ class CustomFormsViewErrorsTest(TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_getperms_requires_a_form_builder_user(self):
-        for username in (None, 'viewerr_student'):
-            with self.subTest(username=username):
-                self.client.logout()
-                if username:
-                    self.client.login(username=username, password='password')
-                response = self.client.get('/customforms/getperms/', {'prog_id': 999999}, **AJAX)
-                self.assertEqual(response.status_code, 302)
-                self.assertTrue(response['Location'].startswith('/accounts/login/'))
+        self.client.logout()
+        response = self.client.get('/customforms/getperms/', {'prog_id': 999999}, **AJAX)
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response['Location'].startswith('/accounts/login/'))
+
+        # A logged-in user without access is refused rather than sent back to log in
+        self.client.login(username='viewerr_student', password='password')
+        response = self.client.get('/customforms/getperms/', {'prog_id': 999999}, **AJAX)
+        self.assertEqual(response.status_code, 403)
 
     def test_getmodules_with_missing_or_non_numeric_program_is_bad_request(self):
         for params in ({}, {'program': 'abc'}):

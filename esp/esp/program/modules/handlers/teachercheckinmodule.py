@@ -224,8 +224,8 @@ class TeacherCheckinModule(ProgramModuleObj):
         snippet
         """
         context = {}
-        context['class'] = get_by_id_or_404(ClassSubject, request.GET['class'])
-        if request.GET['show_flags']:
+        context['class'] = get_by_id_or_404(ClassSubject, request.GET.get('class'))
+        if request.GET.get('show_flags'):
             context['show_flags'] = True
             context['flag_types'] = ClassFlagType.get_flag_types(self.program)
         return render_to_response(self.baseDir()+'classdetail.html', request, context)

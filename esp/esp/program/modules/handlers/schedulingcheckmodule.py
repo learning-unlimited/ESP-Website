@@ -129,7 +129,7 @@ class SchedulingCheckRunner:
         self.formatter = formatter
 
         request = get_current_request()
-        self.incl_unreview = bool(request and "unreviewed" in request.GET)
+        self.incl_unreview = "unreviewed" in request.GET
 
         self.lunch_blocks = self._getLunchByDay()
 
@@ -420,23 +420,22 @@ class SchedulingCheckRunner:
             name_heading = 'Teacher/' + self.p.getModeratorTitle().capitalize() + "'s Name"
         else:
             name_heading = "Teacher's Name"
-        d = self._timeslot_dict(slot=lambda: {})
-        l = []
+        # Compare actual start/end times (not timeslot keys) so walk-ins in open class time blocks are handled
+        d = defaultdict(list)
         for s in self._all_class_sections():
-            mt = self._section_meeting_times(s)
-            for t in mt:
-                for teach in self._section_teachers(s):
-                    if not teach in d[t]:
-                        d[t][teach] = str(s) + (" (Teacher)" if self.p.hasModule("TeacherModeratorModule") else "")
-                    else:
-                        l.append({"Username": teach, name_heading: teach.name(), "Timeslot": t,
-                                  "Section 1": str(s) + (" (Teacher)" if self.p.hasModule("TeacherModeratorModule") else ""), "Section 2": d[t][teach]})
-                for mod in self._section_moderators(s):
-                    if not mod in d[t]:
-                        d[t][mod] = str(s) + " (" + str(self.p.getModeratorTitle().capitalize()) + ")"
-                    else:
-                        l.append({"Username": mod, name_heading: mod.name(), "Timeslot": t,
-                                  "Section 1": str(s) + " (" + str(self.p.getModeratorTitle().capitalize()) + ")", "Section 2": d[t][mod]})
+            mt = list(self._section_meeting_times(s))
+            for teach in self._section_teachers(s):
+                d[teach].append((str(s) + (" (Teacher)" if self.p.hasModule("TeacherModeratorModule") else ""), mt))
+            for mod in self._section_moderators(s):
+                d[mod].append((str(s) + " (" + str(self.p.getModeratorTitle().capitalize()) + ")", mt))
+        l = []
+        for person, sections in d.items():
+            for i, (label1, mt1) in enumerate(sections):
+                for label2, mt2 in sections[:i]:
+                    for t in mt1:
+                        if any(t.start < t2.end and t2.start < t.end for t2 in mt2):
+                            l.append({"Username": person, name_heading: person.name(), "Timeslot": t,
+                                      "Section 1": label1, "Section 2": label2})
         return self.formatter.format_table(l, {'headings': ["Username", name_heading, "Timeslot", "Section 1", "Section 2"]})
 
     def multiple_classes_same_resource_same_time(self):

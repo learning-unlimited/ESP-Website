@@ -1,4 +1,5 @@
 from copy import deepcopy
+import functools
 import json
 import os
 
@@ -18,7 +19,7 @@ from esp.customforms.DynamicForm import FormHandler
 from esp.customforms.linkfields import cf_cache
 from esp.tagdict.models import Tag
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth.decorators import user_passes_test, login_required
+from django.contrib.auth.decorators import login_required
 
 from esp.users.models import ESPUser
 from esp.middleware import ESPError, Http403
@@ -27,7 +28,20 @@ from esp.utils.web import render_to_response, zip_download, error404
 def test_func(user):
     return user.is_authenticated and (user.is_morphed() or user.isTeacher() or user.isAdministrator())
 
-@user_passes_test(test_func)
+def form_builder_required(view):
+    """Send anonymous users to log in, and refuse logged-in users who fail test_func.
+
+    user_passes_test would send both to the login page, which sends a
+    logged-in user straight back: a redirect loop.
+    """
+    @functools.wraps(view)
+    def _view(request, *args, **kwargs):
+        if not test_func(request.user):
+            raise Http403('Only teachers and administrators can use custom forms.')
+        return view(request, *args, **kwargs)
+    return login_required(_view)
+
+@form_builder_required
 def landing(request):
     forms = Form.objects.all().order_by('-link_type', '-link_id', '-id')
     if not (request.user.isAdministrator() or request.user.is_morphed()):
@@ -43,7 +57,7 @@ def landing(request):
                     form.link_obj = "(deleted)"
     return render_to_response("customforms/landing.html", request, {'form_list': forms})
 
-@user_passes_test(test_func)
+@form_builder_required
 def formBuilder(request):
     prog_list = Program.objects.all()
     form_list = Form.objects.all().order_by('-id')
@@ -54,7 +68,7 @@ def formBuilder(request):
         context['edit'] = request.GET.get('edit')
     return render_to_response('customforms/index.html', request, context)
 
-@user_passes_test(test_func)
+@form_builder_required
 def formBuilderData(request):
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'GET':
@@ -68,7 +82,7 @@ def formBuilderData(request):
             return HttpResponse(json.dumps(data))
     return HttpResponse(status=400)
 
-@user_passes_test(test_func)
+@form_builder_required
 def getPerms(request):
     """
     Returns the various permissions available for the current program via AJAX.
@@ -109,7 +123,7 @@ def check_no_anonymous_link_fields(anonymous, metadata):
                 if cf_cache.isLinkField(field['data']['field_type']):
                     raise ESPError('Anonymous forms cannot contain linked fields.', log=False)
 
-@user_passes_test(test_func)
+@form_builder_required
 @transaction.atomic
 def onSubmit(request):
     #Stores form metadata in the database.
@@ -207,7 +221,7 @@ def get_or_create_altered_obj(model, initial_id, **attrs):
 def get_new_or_altered_obj(*args, **kwargs):
     return get_or_create_altered_obj(*args, **kwargs)[0]
 
-@user_passes_test(test_func)
+@form_builder_required
 @transaction.atomic
 def onModify(request):
     """
@@ -406,7 +420,7 @@ def viewResponse(request, form_id):
         raise Http403('You do not have permission to view responses for this form.')
     return render_to_response('customforms/view_results.html', request, {'form': form})
 
-@user_passes_test(test_func)
+@form_builder_required
 def getExcelData(request, form_id):
     """
     Returns the response data as an excel spreadsheet
@@ -425,7 +439,7 @@ def getExcelData(request, form_id):
     response['Content-Disposition']=f'attachment; filename={form.title}.xlsx'
     return response
 
-@user_passes_test(test_func)
+@form_builder_required
 def getData(request):
     """
     Returns response data via Ajax
@@ -444,7 +458,7 @@ def getData(request):
             return HttpResponse(resp_data)
     return HttpResponse(status=400)
 
-@user_passes_test(test_func)
+@form_builder_required
 def bulkDownloadFiles(request):
     """
     Returns a download of a zip file containing all of the file responses to a single custom form field
@@ -473,7 +487,7 @@ def bulkDownloadFiles(request):
         return zip_download([os.path.join(settings.MEDIA_ROOT, filename) for filename in filenames if filename], 'surveyfiles')
     return HttpResponse(status=400)
 
-@user_passes_test(test_func)
+@form_builder_required
 def getRebuildData(request):
     """
     Returns form metadata for rebuilding via AJAX
@@ -492,7 +506,7 @@ def getRebuildData(request):
                 return HttpResponse(json.dumps({'message': str(err)}), status=400)
     return HttpResponse(status=400)
 
-@user_passes_test(test_func)
+@form_builder_required
 def get_links(request):
     """
     Returns the instances for the specified model, to link to in the form builder.
@@ -514,7 +528,7 @@ def get_links(request):
             return HttpResponse(json.dumps(retval))
     return HttpResponse(status=400)
 
-@user_passes_test(test_func)
+@form_builder_required
 def get_modules(request):
     """
     Returns the modules that are enabled for the program that use custom forms.
