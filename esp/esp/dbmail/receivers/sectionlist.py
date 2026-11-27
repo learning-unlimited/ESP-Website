@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 from esp.users.models import ESPUser
 from esp.dbmail.base import BaseHandler
 from esp.program.models import ClassSubject
-from esp.mailman import create_list, load_list_settings, add_list_member, add_list_members, set_list_moderator_password, apply_list_settings
+from esp.mailman import create_list, add_list_members, set_list_moderator_password, apply_list_settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
@@ -61,13 +61,18 @@ class SectionList(BaseHandler):
 
         list_name = "%s-%s" % (section.emailcode(), user_type)
 
-        create_list(list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
-        load_list_settings(list_name, "lists/class_mailman.config")
+        # Without the list, nothing below can work, and the email would go to
+        # a list address that doesn't exist: let a failure stop here. The
+        # mailgate logs it and bounces the email, and the next email to the
+        # list tries the setup again.
+        created = create_list(list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
+        # It can already exist when two first emails to it arrive at once, or
+        # after an earlier setup failed partway (that failure was logged).
+        # The setup below is then redone, except for a new moderator password
+        # and its notice: the password in the first notice must keep working.
 
         if user_type != "teachers":
-            add_list_members(list_name, section.students())
-
-            apply_list_settings(list_name, {
+            apply_list_settings(list_name, listfile='lists/class_mailman.config', data={
                 'moderator': [
                     settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'],
                     '%s-teachers@%s' % (cls.emailcode(),
@@ -81,31 +86,35 @@ class SectionList(BaseHandler):
                     cls.parent_program.director_email,
                 ],
                 'subject_prefix': "[%s]" % (cls.parent_program.niceName(),),
-            })
+            }, errors='log')
             logger.info("Settings applied...")
-            send_mail("[ESP] Activated class mailing list: %s@%s" % (list_name, Site.objects.get_current().domain),
-                      render_to_string("mailman/new_list_intro_teachers.txt",
-                                       { 'classname': str(cls),
-                                         'mod_password': set_list_moderator_password(list_name) }),
-                      settings.DEFAULT_EMAIL_ADDRESSES['default'], ["%s-teachers@%s" % (cls.emailcode(), Site.objects.get_current().domain), ])
+            if created:
+                send_mail("[ESP] Activated class mailing list: %s@%s" % (list_name, Site.objects.get_current().domain),
+                          render_to_string("mailman/new_list_intro_teachers.txt",
+                                           { 'classname': str(cls),
+                                             'mod_password': set_list_moderator_password(list_name, errors='log') }),
+                          settings.DEFAULT_EMAIL_ADDRESSES['default'], ["%s-teachers@%s" % (cls.emailcode(), Site.objects.get_current().domain), ])
         else:
             # A new Mailman list holds non-member posts until this runs. Posts
             # can arrive in that window, e.g. the activation notice and
             # moderation requests from the students list when someone emails
             # both lists at once. They are released once the members are
             # added, below.
-            apply_list_settings(list_name, {
+            apply_list_settings(list_name, listfile='lists/class_mailman.config', data={
                 'generic_nonmember_action': 0,
                 'default_member_moderation': False,
                 'acceptable_aliases': "%s.*-(students|class)-.*@%s" % (cls.emailcode(), Site.objects.get_current().domain),
                 'subject_prefix': "[%s]" % (cls.parent_program.niceName(),),
-            })
+            }, errors='log')
 
         logger.info("Settings applied still...")
-        add_list_member(list_name, cls.parent_program.director_email)
-        add_list_members(list_name, cls.get_teachers())
+        # All the members in one add_members run.
+        members = [cls.parent_program.director_email] + list(cls.get_teachers())
         if 'archive' in settings.DEFAULT_EMAIL_ADDRESSES:
-            add_list_member(list_name, settings.DEFAULT_EMAIL_ADDRESSES['archive'])
+            members.append(settings.DEFAULT_EMAIL_ADDRESSES['archive'])
+        if user_type != "teachers":
+            members += list(section.students())
+        add_list_members(list_name, members, errors='log')
         logger.info("Members added")
 
         if user_type == "teachers":
@@ -114,7 +123,7 @@ class SectionList(BaseHandler):
             # the members are added: an approved post goes out at once to the
             # list's members as they are then, so releasing it earlier
             # delivers it to nobody.
-            apply_list_settings(list_name, {}, release_nonmember_holds=True)
+            apply_list_settings(list_name, {}, release_nonmember_holds=True, errors='log')
 
         self.recipients = ["%s@%s" % (list_name, Site.objects.get_current().domain)]
         self.send = True

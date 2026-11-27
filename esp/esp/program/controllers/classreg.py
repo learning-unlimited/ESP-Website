@@ -196,7 +196,7 @@ class ClassCreationController(object):
             raise ESPError(message, log=False)
 
     def add_teacher_to_program_mailinglist(self, user):
-        add_list_member("%s_%s-teachers" % (self.program.program_type, self.program.program_instance), user)
+        add_list_member("%s_%s-teachers" % (self.program.program_type, self.program.program_instance), user, errors='log')
 
     def add_rsrc_requests_to_class(self, cls, resource_formset):
         for sec in cls.get_sections():

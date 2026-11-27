@@ -75,12 +75,18 @@ def get_user_list(request, listDict2, extra=''):
 
 
     if 'select_mailman' in request.POST:
-        from esp.mailman import list_members
+        from esp.mailman import list_members, MailmanError
         import operator
 
         lists = request.POST.getlist('select_mailman')
 
-        all_list_members = reduce(operator.or_, (list_members(x) for x in lists))
+        try:
+            all_list_members = reduce(operator.or_, (list_members(x) for x in lists))
+        except MailmanError as e:
+            logger.error('Could not read mailing list members: %s', e)
+            return (_mailman_list_picker(request, "Couldn't read the members of the "
+                                         "selected lists from Mailman. Please try again, "
+                                         "or tell the webmasters if this keeps happening."), False)
         filterObj = PersistentQueryFilter.getFilterFromQ(Q(id__in=[x.id for x in all_list_members]), ESPUser, 'Custom Mailman filter: ' + ", ".join(lists))
 
         if request.POST['submitform'] == 'I want to search within this list':
@@ -226,10 +232,24 @@ def get_user_list(request, listDict2, extra=''):
 
         return (render_to_response('users/create_list.html', request, {'lists': arrLists}), False) # No, we didn't find it yet...
     else:
-        from esp.mailman import all_lists
+        return (_mailman_list_picker(request), False) # No, we didn't find it yet...
+
+
+def _mailman_list_picker(request, error=None):
+    """ The page for picking Mailman lists. If Mailman can't be read, it says
+    so, rather than showing what looks like no lists. """
+    from esp.mailman import all_lists, MailmanError
+    public_lists, nonpublic_lists = [], []
+    try:
         public_lists = all_lists()
         nonpublic_lists = list( set(all_lists(show_nonpublic=True)) - set(public_lists) )
-        return (render_to_response('users/select_mailman_list.html', request, {'public_lists': public_lists, 'nonpublic_lists': nonpublic_lists}), False) # No, we didn't find it yet...
+    except MailmanError as e:
+        logger.error('Could not read the mailing lists: %s', e)
+        error = error or ("Couldn't read the mailing lists from Mailman. Please try "
+                          "again, or tell the webmasters if this keeps happening.")
+    return render_to_response('users/select_mailman_list.html', request,
+                              {'public_lists': public_lists, 'nonpublic_lists': nonpublic_lists,
+                               'mailman_error': error})
 
 def get_user_checklist(request, userList, extra='', nextpage=None, extra_context={}):
     """ Generate a checklist of users given an initial list of users to pick from.

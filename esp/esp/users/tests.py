@@ -805,5 +805,6 @@ class UpdateEmailTest(TestCase):
         self.mailman['lists_containing'].return_value = ['announcements']
         student.email = 'new@example.com'
         self.update(student)
-        self.mailman['add_list_member'].assert_called_once_with('announcements', student.get_email_sendto_address())
-        self.mailman['remove_list_member'].assert_called_once_with('announcements', 'old@example.com')
+        self.mailman['add_list_member'].assert_called_once_with('announcements', student.get_email_sendto_address(), errors='log')
+        self.mailman['remove_list_member'].assert_called_once_with('announcements', 'old@example.com', errors='log')
+        self.mailman['lists_containing'].assert_called_once_with('old@example.com', errors='log')

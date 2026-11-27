@@ -265,6 +265,7 @@ if SENTRY_DSN:
     # enabled and will receive exceptions before Sentry does.
     import sentry_sdk
     from sentry_sdk.integrations.logging import LoggingIntegration
+    from esp.utils.log import sentry_secret_filter
 
     try:
         _sentry_release = subprocess.check_output(
@@ -288,5 +289,9 @@ if SENTRY_DSN:
         traces_sample_rate=0,
         send_client_reports=False,
         auto_session_tracking=False,
+        # Mailman's newlist takes the list admin password as an argument, so
+        # it can be in frame variables and in subprocess breadcrumbs.
+        before_send=sentry_secret_filter([globals().get('MAILMAN_PASSWORD')]),
+        before_breadcrumb=sentry_secret_filter([globals().get('MAILMAN_PASSWORD')]),
     )
 

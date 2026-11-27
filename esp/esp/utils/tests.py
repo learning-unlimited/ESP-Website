@@ -544,3 +544,32 @@ class TexEscapeTest(unittest.TestCase):
         self.assertEqual(texescape(u'\u201cquoted\u201d'), u"``quoted''")
         self.assertEqual(texescape(u'line one\nline two'), u'line one~\\\\\nline two')
         self.assertIsInstance(texescape(u'plain'), str)
+
+
+class BreadcrumbSecretFilterTest(unittest.TestCase):
+    """ Sentry events and breadcrumbs can carry secrets anywhere, e.g.
+    Mailman's newlist command line with the list admin password. """
+
+    def test_secret_redacted_everywhere(self):
+        from esp.utils.log import sentry_secret_filter
+        hook = sentry_secret_filter(['s3cret-pw', None, ''])
+        crumb = {'type': 'subprocess', 'category': 'subprocess',
+                 'message': '/esp/fake_mailman_bin/run newlist -q s1-teachers o@example.com s3cret-pw',
+                 'data': {'args': ['newlist', '-q', 's1-teachers', 's3cret-pw'], 'pid': 12}}
+        result = hook(crumb, {})
+        self.assertNotIn('s3cret-pw', repr(result))
+        self.assertEqual(result['message'],
+                         '/esp/fake_mailman_bin/run newlist -q s1-teachers o@example.com [Filtered]')
+        self.assertEqual(result['data'], {'args': ['newlist', '-q', 's1-teachers', '[Filtered]'], 'pid': 12})
+
+    def test_no_secrets_leaves_breadcrumb_alone(self):
+        from esp.utils.log import sentry_secret_filter
+        crumb = {'message': 'pdflatex x.tex'}
+        self.assertIs(sentry_secret_filter([None])(crumb, {}), crumb)
+
+    def test_event_frame_vars_redacted(self):
+        from esp.utils.log import sentry_secret_filter
+        event = {'exception': {'values': [{'stacktrace': {'frames': [
+            {'function': 'create_list', 'vars': {'admin_password': "'s3cret-pw'",
+                                                 'args': ["'newlist'", "'s3cret-pw'"]}}]}}]}}
+        self.assertNotIn('s3cret-pw', repr(sentry_secret_filter(['s3cret-pw'])(event, {})))

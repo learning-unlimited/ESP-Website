@@ -15,6 +15,8 @@
 <h1>Select Mailing List(s)</h1>
 <br />
 
+{% if mailman_error %}<p class="alert alert-danger">{{ mailman_error }}</p>{% endif %}
+
 <p>Please select the mailing list or lists whose users you would like to email.</p>
 
 <p>Note that we're <b>not permitted to send advertisements</b> through this Web interface, because it doesn't provide Unsubscribe support properly like the regular mailing lists do.  These are also real mailing lists; just send mail to them instead.</p>

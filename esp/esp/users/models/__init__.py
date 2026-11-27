@@ -1352,7 +1352,7 @@ def _update_email(**kwargs):
         # to which they should be added.
         for g in groups:
             if g in group_map:
-                mailman.add_list_member(group_map[g], new_email)
+                mailman.add_list_member(group_map[g], new_email, errors='log')
     elif new_email is None:
         groups_to_deactivate = set(groups)
         if 'Student' in groups or 'Guardian' in groups or 'Educator' in groups:
@@ -1370,11 +1370,11 @@ def _update_email(**kwargs):
         # Only remove them from group-based lists; keep them on program and
         # class lists.
         for l in set(group_map.values()):
-            mailman.remove_list_member(l, old_email)
+            mailman.remove_list_member(l, old_email, errors='log')
     else:
         # Transition all their lists, not just the group-based ones.  Rather
         # than try to guess which lists that is, we can just ask mailman.
-        mailman_lists = mailman.lists_containing(old_email)
+        mailman_lists = mailman.lists_containing(old_email, errors='log')
         if other_users.exists():
             # If this is not their only account, only transition lists that
             # make sense for this account type.
@@ -1409,10 +1409,10 @@ def _update_email(**kwargs):
         else:
             lists = mailman_lists
         for l in lists:
-            mailman.add_list_member(l, new_email)
+            mailman.add_list_member(l, new_email, errors='log')
         if not other_users.exists():
             for l in lists:
-                mailman.remove_list_member(l, old_email)
+                mailman.remove_list_member(l, old_email, errors='log')
 
 update_email = enable_with_setting(settings.USE_MAILMAN)(_update_email)
 

@@ -730,6 +730,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             add_list_members(
                 "%s_%s-teachers" % (prog.program_type, prog.program_instance),
                 coteachers,
+                errors='log',
             )
 
         op = ""

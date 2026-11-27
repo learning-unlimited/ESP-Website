@@ -83,7 +83,7 @@ from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback, Transfer
 from esp.dbmail.models import MessageRequest, TextOfEmail, PlainRedirect
-from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
+from esp.mailman import create_list, apply_list_settings, add_list_members, MailmanError
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
 from django.conf import settings
@@ -500,6 +500,31 @@ def manage_programs(request):
                'user': request.user}
     return render_to_response('program/manage_programs.html', request, context)
 
+
+def create_program_lists(prog):
+    """ Create the new program 'prog''s Mailman lists, <type>_<instance>-students
+    and -teachers, with the director and archive address as members. A Mailman
+    failure is logged; the program is created anyway. A list that already
+    exists (e.g. an earlier program with the same name, whose members it
+    still has) is set up again, with a warning. """
+    mailing_list_name = "%s_%s" % (prog.program_type, prog.program_instance)
+    for kind in ('students', 'teachers'):
+        list_name = "%s-%s" % (mailing_list_name, kind)
+        try:
+            created = create_list(list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
+        except MailmanError as e:
+            # Nothing else can work on a list that isn't there.
+            logger.error('Mailman command failed: %s', e)
+            continue
+        if not created:
+            logger.warning('New program %s: Mailman list %s already existed; it keeps its '
+                           'members and archives', prog.url, list_name)
+        apply_list_settings(list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], prog.director_email]},
+                            listfile="lists/program_mailman.config", errors='log')
+        if 'archive' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys()):
+            add_list_members(list_name, [prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']], errors='log')
+
+
 @admin_required
 def newprogram(request):
     # First, if the user selected a template program, pre-populate fields with that program's data.
@@ -593,22 +618,7 @@ def newprogram(request):
             manage_url = '/manage/' + new_prog.url + '/resources'
             # While we're at it, create the program's mailing list
             if settings.USE_MAILMAN and 'mailman_moderator' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys()):
-                mailing_list_name = "%s_%s" % (new_prog.program_type, new_prog.program_instance)
-                teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
-                students_list_name = "%s-%s" % (mailing_list_name, "students")
-
-                create_list(students_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
-                create_list(teachers_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
-
-                load_list_settings(teachers_list_name, "lists/program_mailman.config")
-                load_list_settings(students_list_name, "lists/program_mailman.config")
-
-                apply_list_settings(teachers_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
-                apply_list_settings(students_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
-
-                if 'archive' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys()):
-                    add_list_members(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
-                    add_list_members(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
+                create_program_lists(new_prog)
             # Submit and create the program
             return HttpResponseRedirect(manage_url)
     # If the form has not been submitted, the default view is a blank form (or the pre-populated form with the template data).

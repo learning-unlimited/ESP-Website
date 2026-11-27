@@ -1850,6 +1850,41 @@ class LotterySnapshotTest(ProgramFrameworkTest):
         self.assertEqual(enrolled.count(), 2)
         self.assertEqual({(sr.user_id, sr.section_id) for sr in enrolled}, set(pairs))
 
+    def test_save_from_pairs_syncs_mailman_lists(self):
+        """ One sync per existing list: the program list gets every lotteried
+        student, a class list the students of all its sections, a section
+        list its own; teachers, director and archive stay; lists that don't
+        exist are skipped. """
+        from esp.program.controllers.lottery import base
+        cls = next(c for c in self.program.classes() if c.sections.count() >= 1)
+        sections = list(cls.sections.all())
+        pairs = [(self.students[0].id, sections[0].id)]
+        if len(sections) > 1:
+            pairs.append((self.students[1].id, sections[1].id))
+        existing = {'%s-students' % cls.emailcode().lower(),
+                    '%s-students' % sections[0].emailcode().lower()}
+        calls = {}
+
+        def record(name, members, keep=(), errors='raise'):
+            self.assertEqual(errors, 'log')
+            calls[name] = ({m.id for m in members}, set(keep))
+        with override_settings(USE_MAILMAN=True, DEFAULT_EMAIL_ADDRESSES=dict(
+                    settings.DEFAULT_EMAIL_ADDRESSES, archive='archive@example.com')), \
+                mock.patch.object(base, 'existing_lists', return_value=existing), \
+                mock.patch.object(base, 'sync_list_members', side_effect=record):
+            BaseLotteryAssignmentController.save_from_pairs(
+                self.program, pairs, lotteried_student_ids=[s.id for s in self.students[:3]])
+
+        program_list = '%s_%s-students' % (self.program.program_type, self.program.program_instance)
+        self.assertEqual(set(calls), {program_list} | {'%s-students' % cls.emailcode(),
+                                                       '%s-students' % sections[0].emailcode()})
+        self.assertEqual(calls[program_list][0], {s.id for s in self.students[:3]})
+        self.assertEqual(calls['%s-students' % cls.emailcode()][0], {sid for sid, sec in pairs})
+        self.assertEqual(calls['%s-students' % sections[0].emailcode()][0], {self.students[0].id})
+        keep = calls['%s-students' % cls.emailcode()][1]
+        self.assertTrue({'archive@example.com', self.program.director_email} <= keep)
+        self.assertTrue(set(cls.get_teachers().values_list('email', flat=True)) <= keep)
+
     def test_save_from_pairs_clears_previous_enrollments(self):
         sections = list(self.program.sections())[:2]
         BaseLotteryAssignmentController.save_from_pairs(

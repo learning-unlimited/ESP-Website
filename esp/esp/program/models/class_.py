@@ -49,7 +49,8 @@ import re
 
 # django Util
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
+from django.dispatch import receiver
 from django.db.models.query import Q
 from django.db.models import signals, Sum
 from django.db.models.manager import Manager
@@ -70,7 +71,7 @@ from esp.utils.property import PropertyDict
 from esp.utils.query_utils import nest_Q
 from esp.utils import cmp
 from esp.tagdict.models import Tag
-from esp.mailman import add_list_member, remove_list_member
+from esp.mailman import add_list_member, add_list_members, remove_list_member, existing_lists
 
 # ESP models
 from esp.cal.models import Event
@@ -1345,7 +1346,8 @@ class ClassSection(models.Model):
         # Remove the student from any existing class mailing lists
         list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
         for list_name in list_names:
-            remove_list_member(list_name, user.email)
+            # These lists exist only once someone has emailed them.
+            remove_list_member(list_name, user.email, errors='ignore')
 
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False, webapp=False):
         if prereg_verb is None:
@@ -1395,8 +1397,9 @@ class ClassSection(models.Model):
             #   Add the student to the class mailing lists, if they exist
             list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
             for list_name in list_names:
-                add_list_member(list_name, user)
-            add_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user)
+                # These lists exist only once someone has emailed them.
+                add_list_member(list_name, user, errors='ignore')
+            add_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user, errors='log')
 
             return True
         else:
@@ -2142,12 +2145,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         super(ClassSubject, self).save(*args, **kwargs)
         if self.status < ClassStatus.UNREVIEWED: #ie, all rejected or cancelled classes.
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
-            teachers = self.get_teachers()
-            for t in teachers:
-                if t.getTaughtClasses(self.parent_program).filter(status__gte=ClassStatus.UNREVIEWED).count() == 0:
-                    mailing_list_name = "%s_%s" % (self.parent_program.program_type, self.parent_program.program_instance)
-                    teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
-                    remove_list_member(teachers_list_name, t.email)
+            teachers = [t for t in self.get_teachers()
+                        if not t.getTaughtClasses(self.parent_program).filter(status__gte=ClassStatus.UNREVIEWED).exists()]
+            if teachers:
+                teachers_list_name = "%s_%s-teachers" % (self.parent_program.program_type, self.parent_program.program_instance)
+                remove_list_member(teachers_list_name, teachers, errors='log')
 
     class Meta:
         db_table = 'program_class'
@@ -2182,6 +2184,98 @@ def sections_in_program_by_id(prog):
     return [int(x) for x in ClassSection.objects.filter(parent_class__parent_program=prog).distinct().values_list('id', flat=True)]
 sections_in_program_by_id.depend_on_model(ClassSection)
 sections_in_program_by_id.depend_on_model(ClassSubject)
+
+def class_mailing_list_names(cls):
+    """ The Mailman lists a class can have, all of which get the class's
+    teachers as members when they are created (see esp.dbmail.receivers):
+    the class's own s123-teachers (which gets the "Activated class mailing
+    list" notices), s123-students and s123-class, and the same three per
+    section (s123s1-teachers, ...). Mailman list names are lower case. """
+    codes = [cls.emailcode()] + [sec.emailcode() for sec in cls.sections.all()]
+    return ['%s-%s' % (code.lower(), kind)
+            for code in codes for kind in ('teachers', 'students', 'class')]
+
+
+def _existing_list_names():
+    """ The names (lower case) of all Mailman lists, or an empty set if
+    Mailman is off or can't be read (the failure is logged). """
+    # (existing_lists returns False, not a set, when USE_MAILMAN is off.)
+    return existing_lists(errors='log') or set()
+
+
+def sync_class_teachers_lists(cls, added=(), removed=(), existing=None):
+    """ Add teachers to, or remove them from, the class's existing mailing
+    lists (teachers, students and class lists, for the class and each
+    section: class_mailing_list_names). A list gets its members when it is
+    created (by the first email to it, see esp.dbmail.receivers), so without
+    this a co-teacher added later never gets its mail, and a removed one
+    keeps getting it.
+
+    Lists that don't exist yet are skipped (one existing_lists call finds them,
+    unless 'existing', the result of _existing_list_names(), is passed in);
+    they will get the class's teachers when they are created. Failures are
+    logged, never raised: this runs after a teacher change has been saved. """
+    if not (added or removed):
+        return
+    if existing is None:
+        existing = _existing_list_names()
+    lists = [name for name in class_mailing_list_names(cls) if name in existing]
+    if not lists:
+        return  # none created yet, or Mailman is off or couldn't be read
+    # The list setup also subscribes these, and a remaining teacher (e.g. a
+    # second account with the same email) still needs theirs: a teacher
+    # change must not drop them.
+    keep = set(addr.lower() for addr in [cls.parent_program.director_email,
+                                         settings.DEFAULT_EMAIL_ADDRESSES.get('archive')] if addr)
+    if removed:
+        keep |= set(email.lower() for email in cls.teachers.values_list('email', flat=True) if email)
+    removed = [u.email for u in removed if u.email and u.email.lower() not in keep]
+    for name in lists:
+        if added:
+            add_list_members(name, list(added), errors='log')
+        if removed:
+            remove_list_member(name, removed, errors='log')
+
+
+@receiver(signals.m2m_changed, sender=ClassSubject.teachers.through)
+def _class_teachers_changed(sender, instance, action, reverse, pk_set, **kwargs):
+    """ Keep a class's mailing lists in step with ClassSubject.teachers, however
+    it changes (co-teacher page, class registration, admin). Runs after the
+    transaction commits, so a rolled-back change touches no list. """
+    if not settings.USE_MAILMAN:
+        return
+    if action == 'pre_clear':
+        # The teachers are gone by post_clear; note them now.
+        if reverse:
+            pairs = [(cls, [instance]) for cls in instance.classsubject_set.all()]
+        else:
+            pairs = [(instance, list(instance.get_teachers()))]
+        action = 'post_remove'
+    elif action in ('post_add', 'post_remove') and pk_set:
+        if reverse:
+            pairs = [(cls, [instance]) for cls in ClassSubject.objects.filter(id__in=pk_set)]
+        else:
+            pairs = [(instance, list(ESPUser.objects.filter(id__in=pk_set)))]
+    else:
+        return
+
+    def sync():
+        try:
+            existing = _existing_list_names()  # once, however many classes changed
+        except Exception:
+            logger.exception('Could not update the mailing lists of classes %s',
+                             [cls.id for cls, users in pairs])
+            return
+        for cls, users in pairs:
+            try:
+                if action == 'post_add':
+                    sync_class_teachers_lists(cls, added=users, existing=existing)
+                else:
+                    sync_class_teachers_lists(cls, removed=users, existing=existing)
+            except Exception:
+                logger.exception('Could not update the mailing lists of class %s', cls.id)
+    transaction.on_commit(sync)
+
 
 def install():
     """ Initialize the default class categories. """

@@ -1,6 +1,6 @@
-Hi,
+{% autoescape off %}Hi,
 
-   The mailing list for your class, "{{ classname }}", has just been activated.  The list's moderator password is:
+   The mailing list for your class, "{{ classname }}", has just been activated.  {% if mod_password %}The list's moderator password is:
 
 {{ mod_password}}
 
@@ -9,6 +9,8 @@ To be sure that the email goes through, you'll need to accept it. To do so:
 2. Click the link.
 3. Enter the password above.
 4. Click "Accept" next to your email and then click "Save."
+{% else %}Our website ran into an error setting the list's moderator password. Please send us an email and we'll fix this for you.
+{% endif %}
 
 
 We've had some confusion and annoyance in the past with class mailing lists.  So, we'd like to clarify a few things:
@@ -27,4 +29,4 @@ Well, that's it for depressing warnings and such.  Don't get too worried about t
 Thanks,
 MIT ESP Program Organizers
 
-[1] https://ist.mit.edu/athena/rules
+[1] https://ist.mit.edu/athena/rules{% endautoescape %}

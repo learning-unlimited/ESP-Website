@@ -60,7 +60,7 @@ from esp.program.models import (
     ClassSection,
 )
 from esp.program.models.class_ import ClassCategories
-from esp.mailman import add_list_members, remove_list_member, list_contents
+from esp.mailman import existing_lists, sync_list_members
 from esp.tagdict.models import Tag
 
 from django.conf import settings
@@ -951,33 +951,53 @@ class BaseLotteryAssignmentController(object):
         self.student_ids = numpy.loadtxt(BytesIO(data_parts[1]), ndmin=1)
         self.section_ids = numpy.loadtxt(BytesIO(data_parts[2]), ndmin=1)
 
-    @staticmethod
-    def clear_mailman_list(list_name):
-        contents = list_contents(list_name)
-        for address in contents:
-            remove_list_member(list_name, address)
-
     def update_mailman_lists(self, delete=True):
-        if hasattr(settings, "USE_MAILMAN") and settings.USE_MAILMAN:
-            program_list = "%s_%s-students" % (
-                self.program.program_type,
-                self.program.program_instance,
-            )
-            self.clear_mailman_list(program_list)
-            # Add all registered students into the program mailing list, even
-            # if they didn't get enrolled into any classes.
-            add_list_members(
-                program_list,
-                ESPUser.objects.filter(id__in=list(self.student_ids)).distinct(),
-            )
-            for i in range(self.num_sections):
-                section = ClassSection.objects.get(id=self.section_ids[i])
-                list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
-                student_ids = self.student_ids[numpy.nonzero(self.student_sections[:, i])]
-                students = ESPUser.objects.filter(id__in=student_ids).distinct()
-                for list_name in list_names:
-                    self.clear_mailman_list(list_name)
-                    add_list_members(list_name, students)
+        students_by_section = {}
+        for i in range(self.num_sections):
+            student_ids = self.student_ids[numpy.nonzero(self.student_sections[:, i])]
+            students_by_section[int(self.section_ids[i])] = [int(x) for x in student_ids]
+        self.sync_mailman_lists(self.program, [int(x) for x in self.student_ids], students_by_section)
+
+    @staticmethod
+    def sync_mailman_lists(program, lotteried_student_ids, students_by_section):
+        """ Make the program's students list hold every lotteried student
+        (enrolled in a class or not), and each section's and class's students
+        list hold the students the lottery enrolled there (a class's: those of
+        all its sections). Sections missing from 'students_by_section' get no
+        students. Only lists that exist are changed: a class's lists exist only
+        once someone has emailed them. The director, the archive address and
+        the class's teachers, which the list setup subscribes, stay on.
+        Mailman failures are logged, never raised: the enrollments are saved. """
+        if not getattr(settings, "USE_MAILMAN", False):
+            return
+        base_keep = [a for a in (program.director_email, settings.DEFAULT_EMAIL_ADDRESSES.get('archive')) if a]
+        program_list = "%s_%s-students" % (program.program_type, program.program_instance)
+        sync_list_members(program_list, ESPUser.objects.filter(id__in=lotteried_student_ids).distinct(),
+                          keep=base_keep, errors='log')
+
+        existing = existing_lists(errors='log') or set()
+        sections = ClassSection.objects.filter(parent_class__parent_program=program).select_related('parent_class')
+        sections_by_class = {}
+        for section in sections:
+            sections_by_class.setdefault(section.parent_class, []).append(section)
+        lists = []  # (list name, student ids, class)
+        for cls, cls_sections in sections_by_class.items():
+            class_ids = set()
+            for section in cls_sections:
+                section_ids = set(students_by_section.get(section.id, ()))
+                class_ids |= section_ids
+                lists.append(('%s-students' % section.emailcode(), section_ids, cls))
+            lists.append(('%s-students' % cls.emailcode(), class_ids, cls))
+        lists = [entry for entry in lists if entry[0].lower() in existing]
+        if not lists:
+            return
+        users = ESPUser.objects.in_bulk(set().union(*[ids for name, ids, cls in lists]))
+        teachers = {}
+        for name, ids, cls in lists:
+            if cls.id not in teachers:
+                teachers[cls.id] = list(cls.teachers.values_list('email', flat=True))
+            sync_list_members(name, [users[i] for i in ids if i in users],
+                              keep=base_keep + teachers[cls.id], errors='log')
 
     # ------------------------------------------------------------------
     # Frozen-snapshot persistence (LotteryInputSnapshot/LotteryRun):
@@ -1190,20 +1210,7 @@ class BaseLotteryAssignmentController(object):
 
     @classmethod
     def _update_mailman_lists_from_pairs(cls, program, enrolled_pairs, lotteried_student_ids):
-        if not (hasattr(settings, "USE_MAILMAN") and settings.USE_MAILMAN):
-            return
-
-        program_list = "%s_%s-students" % (program.program_type, program.program_instance)
-        cls.clear_mailman_list(program_list)
-        add_list_members(program_list, ESPUser.objects.filter(id__in=lotteried_student_ids).distinct())
-
-        by_section = {}
+        students_by_section = {}
         for student_id, section_id in enrolled_pairs:
-            by_section.setdefault(section_id, []).append(student_id)
-        for section_id, section_student_ids in by_section.items():
-            section = ClassSection.objects.get(id=section_id)
-            list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
-            students = ESPUser.objects.filter(id__in=section_student_ids).distinct()
-            for list_name in list_names:
-                cls.clear_mailman_list(list_name)
-                add_list_members(list_name, students)
+            students_by_section.setdefault(section_id, []).append(student_id)
+        cls.sync_mailman_lists(program, lotteried_student_ids, students_by_section)

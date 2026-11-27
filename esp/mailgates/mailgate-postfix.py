@@ -26,8 +26,11 @@ if os.environ.get('VIRTUAL_ENV') is None:
 
 import django
 django.setup()
+import logging
 from esp.dbmail.models import EmailList
 from django.conf import settings
+
+logger = logging.getLogger('esp.mailgate')
 
 host = socket.gethostname()
 import_location = 'esp.dbmail.receivers.'
@@ -140,19 +143,33 @@ except Exception as e:
     if isinstance(e, SystemExit):
         raise
 
+    # An address for something that doesn't exist (e.g. a class id that was
+    # never used) is the sender's mistake, or a bot's: say so, don't log it.
+    # Anything else is our bug: report it (it reaches Bugsink). Either way,
+    # Postfix bounces the message with the text printed below.
+    from django.core.exceptions import ObjectDoesNotExist
+    not_found = isinstance(e, ObjectDoesNotExist)
+    if not not_found:
+        logger.exception('Mailgate failed for %s', user)
+
     if DEBUG:
         raise
     else:
+        if not_found:
+            problem = 'Could not find user "%s"' % user
+        else:
+            problem = ('Your message to "%s" could not be delivered: our website ran\n'
+                       'into an error handling it.' % user)
         print("""
 ESP MAIL SERVER
 ===============
 
-Could not find user "%s"
+%s
 
 If you are experiencing difficulty, please email %s.
 
 -Educational Studies Program
 
 
-""" % (user, SUPPORT))
+""" % (problem, SUPPORT))
         sys.exit(1)
