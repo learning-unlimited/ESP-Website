@@ -1358,24 +1358,47 @@ def statistics(request, program=None):
             #   Get list of programs the query applies to
             programs = Program.objects.all()
             if not form.cleaned_data['program_type_all']:
-                programs = programs.filter(url__startswith=form.cleaned_data['program_type'])
+                programs = programs.filter(url__startswith=form.cleaned_data['program_type'] + '/')
             if not form.cleaned_data['program_instance_all']:
                 programs = programs.filter(url__in=form.cleaned_data['program_instances'])
             result_dict['programs'] = programs
 
-            #   Get list of users the query applies to
-            users_q = Q()
-            for program in programs:
-                if 'student_reg_types' in form.cleaned_data and form.cleaned_data['student_reg_types'] and not form.cleaned_data['student_reg_types']:
-                    students_objects = program.students(QObjects=True)
-                    for reg_type in form.cleaned_data['student_reg_types']:
-                        if reg_type in list(students_objects.keys()):
-                            users_q = users_q | students_objects[reg_type]
-                elif 'teacher_reg_types' in form.cleaned_data and form.cleaned_data['teacher_reg_types'] and not form.cleaned_data['teacher_reg_types']:
-                    teachers_objects = program.teachers(QObjects=True)
-                    for reg_type in form.cleaned_data['teacher_reg_types']:
-                        if reg_type in list(teachers_objects.keys()):
-                            users_q = users_q | teachers_objects[reg_type]
+            #   Which registration dimension applies matches StatisticsQueryForm.hide_unwanted_fields:
+            #   teacher_reg / class_reg use the teacher fields; every other query uses the student fields.
+            teacher_only = form.cleaned_data['query'] in ('teacher_reg', 'class_reg')
+
+            #   Get list of users the query applies to.
+            #   "All" means every registration type shown on the form (not program.students_union(),
+            #   which adds expensive categories such as attended_past).
+            #   Per-program Q objects are ORed together and each role filter is applied once:
+            #   (prog_q1 | prog_q2 | ...) & role is much faster than ORing (prog_q & role) per program.
+            #   (Ported from LU e46eac375, #5010.)
+            if teacher_only:
+                reg_all = form.cleaned_data.get('teacher_reg_type_all')
+                reg_types = form.cleaned_data.get('teacher_reg_types')
+                on_form = [choice[0] for choice in StatisticsQueryForm.teacher_reg_categories]
+            else:
+                reg_all = form.cleaned_data.get('student_reg_type_all')
+                reg_types = form.cleaned_data.get('student_reg_types')
+                on_form = [choice[0] for choice in StatisticsQueryForm.student_reg_categories]
+            wanted_types = on_form if reg_all else (reg_types or [])
+
+            reg_q = None
+            if wanted_types:
+                for program in programs:
+                    if teacher_only:
+                        reg_objects = program.teachers(QObjects=True)
+                    else:
+                        reg_objects = program.students(QObjects=True)
+                    for reg_type in wanted_types:
+                        if reg_type in reg_objects:
+                            reg_q = reg_objects[reg_type] if reg_q is None else (reg_q | reg_objects[reg_type])
+
+            if reg_q is None:
+                users_q = Q(pk__in=[])
+            else:
+                #   Restrict to the role, so e.g. teachers with student-like records aren't counted as students.
+                users_q = reg_q & ESPUser.getAllOfType('Teacher' if teacher_only else 'Student')
 
             #   Narrow down by school (perhaps not ideal results, but faster)
             if form.cleaned_data['school_query_type'] == 'name':
@@ -1432,6 +1455,9 @@ def statistics(request, program=None):
             context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
             if request.is_ajax():
+                result = {}
+                result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
+                result['script'] = render_to_string('program/statistics/script.js', context)
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)

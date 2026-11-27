@@ -45,7 +45,7 @@ from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.qsd.models import QuasiStaticData
 from esp.resources.models import Resource, ResourceType
-from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
+from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission, Record, RecordType
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
 
@@ -1439,6 +1439,276 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         scrmi.save()
 
         self.testLottery()
+
+class StatisticsViewTest(ProgramFrameworkTest):
+    """/manage/statistics: which users a query covers, plus the None-data crashes."""
+
+    def setUp(self):
+        super(StatisticsViewTest, self).setUp(num_students=4, num_teachers=2)
+        self.add_user_profiles()
+        # Students 0-1 have a valid zip, student 2 a missing zip, student 3 no contact info.
+        for student, zip_code in zip(self.students[:3], ['02139', '02139', None]):
+            profile = RegistrationProfile.objects.get(user=student, program=self.program)
+            profile.contact_user = ContactInfo.objects.create(user=student, address_zip=zip_code)
+            profile.save()
+        # A student who never registered for any program must not be counted.
+        self.outsider = ESPUser.objects.create(username='outsider', email='outsider@learningu.org')
+        self.outsider.makeRole('Student')
+        RegistrationProfile.objects.create(
+            user=self.outsider, most_recent_profile=True,
+            student_info=StudentInfo.objects.create(user=self.outsider),
+            contact_user=ContactInfo.objects.create(user=self.outsider, address_zip='90210'),
+        )
+        self.client.login(username=self.admins[0].username, password='password')
+
+    def query(self, query, **extra):
+        data = {
+            'query': query,
+            'limit': '',
+            'program_type': self.program.program_type,
+            'program_instance_all': 'on',
+            'student_reg_type_all': 'on',
+            'teacher_reg_type_all': 'on',
+            'school_query_type': 'all',
+            'zip_query_type': 'all',
+        }
+        data.update(extra)
+        data = {k: v for k, v in data.items() if v is not None}
+        return self.client.post('/manage/statistics/', data)
+
+    def num_users(self, response):
+        self.assertEqual(response.status_code, 200)
+        match = re.search(r'(\d+) users were matched by the query', six.text_type(response.context['result']))
+        self.assertIsNotNone(match, response.context['result'])
+        return int(match.group(1))
+
+    def test_all_students_means_registered_students_only(self):
+        # Before the fix the reg-type filter never applied, so this counted every user on the
+        # site (the outsider, teachers, admins), and the None zip crashed the sort.
+        response = self.query('zipcodes')
+        self.assertEqual(self.num_users(response), len(self.students))
+        result = six.text_type(response.context['result'])
+        self.assertIn('2 users had invalid Zip codes', result)
+        self.assertIn('02139', result)
+        self.assertNotIn('90210', result)
+
+    def test_selected_student_reg_types(self):
+        section = self.program.sections()[0]
+        section.preregister_student(self.students[0], fast_force_create=True)
+        response = self.query('zipcodes', student_reg_type_all=None, student_reg_types='classreg')
+        self.assertEqual(self.num_users(response), 1)
+
+    def test_teacher_queries_count_teachers(self):
+        response = self.query('teacher_reg')
+        self.assertEqual(self.num_users(response), len(self.teachers))
+
+    def test_demographics_with_missing_graduation_year(self):
+        info = RegistrationProfile.objects.get(user=self.students[0], program=self.program).student_info
+        info.graduation_year = None
+        info.save()
+        response = self.query('demographics')
+        self.assertEqual(self.num_users(response), len(self.students))
+
+    def test_invalid_form_over_ajax(self):
+        response = self.client.post(
+            '/manage/statistics/',
+            {'query': 'zipcodes', 'program_type': self.program.program_type,
+             'school_query_type': 'all', 'zip_query_type': 'all'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('statistics_form_contents_html', json.loads(response.content.decode('utf-8')))
+
+    def test_heardabout_groups_punctuation_variants(self):
+        from esp.program.statistics import heardabout
+
+        class Dummy(object):
+            def __init__(self, **kwargs):
+                self.__dict__.update(kwargs)
+
+        form = Dummy(cleaned_data={'limit': None})
+        profiles = [Dummy(student_info=Dummy(heard_about=text)) for text in ['Friend', 'friend!', 'Google']]
+        result_dict = {}
+        heardabout(form, [], [], profiles, result_dict)
+        self.assertEqual(result_dict['heardabout_data'], [('Friend', 2), ('Google', 1)])
+
+    def run_query(self, query, **extra):
+        """Run a query through the view; return what it passed to the query function:
+        (program urls, user ids, result_dict)."""
+        from esp.program import statistics as statistics_functions
+        seen = {}
+        real = getattr(statistics_functions, query)
+
+        def spy(form, programs, users, profiles, result_dict):
+            seen['programs'] = sorted(p.url for p in programs)
+            seen['users'] = set(users.values_list('id', flat=True))
+            out = real(form, programs, users, profiles, result_dict)
+            seen['result'] = result_dict
+            return out
+
+        with mock.patch.object(statistics_functions, query, spy):
+            response = self.query(query, **extra)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('result', seen, 'query function not called: %r' % response.context.get('form').errors)
+        self.assertEqual(self.num_users(response), len(seen['users']))
+        return seen['programs'], seen['users'], seen['result']
+
+    def ids(self, users):
+        return {u.id for u in users}
+
+    def confirm(self, student, program=None):
+        Record.objects.create(user=student, event=RecordType.objects.get(name='reg_confirmed'),
+                              program=program or self.program)
+
+    def test_every_query_type_covers_the_registered_users(self):
+        from esp.program.forms import StatisticsQueryForm
+        for query, _ in StatisticsQueryForm.stats_questions:
+            with self.subTest(query=query):
+                programs, users, _ = self.run_query(query)
+                self.assertEqual(programs, [self.program.url])
+                expected = self.teachers if query in ('teacher_reg', 'class_reg') else self.students
+                self.assertEqual(users, self.ids(expected))
+
+    def test_overlapping_categories_count_each_user_once(self):
+        section = self.program.sections()[0]
+        section.preregister_student(self.students[0], fast_force_create=True)
+        self.confirm(self.students[0])
+        self.confirm(self.students[1])
+        cases = [(['classreg'], self.students[:1]),
+                 (['confirmed'], self.students[:2]),
+                 (['classreg', 'confirmed'], self.students[:2])]
+        for reg_types, expected in cases:
+            with self.subTest(reg_types=reg_types):
+                _, users, _ = self.run_query('zipcodes', student_reg_type_all=None, student_reg_types=reg_types)
+                self.assertEqual(users, self.ids(expected))
+
+    def test_no_categories_selected_counts_nobody(self):
+        _, users, _ = self.run_query('zipcodes', student_reg_type_all=None)
+        self.assertEqual(users, set())
+        _, users, _ = self.run_query('teacher_reg', teacher_reg_type_all=None)
+        self.assertEqual(users, set())
+
+    def test_program_selection(self):
+        ptype = self.program.program_type
+        other_instance = Program.objects.create(url=ptype + '/2223_Fall', name=ptype + ' Fall 2223', grade_min=7, grade_max=12)
+        longer_type = Program.objects.create(url=ptype + 'Extra/2223_Fall', name=ptype + 'Extra Fall 2223', grade_min=7, grade_max=12)
+
+        programs, _, _ = self.run_query('zipcodes')
+        # Every instance of the type, but not a type whose name merely starts with it.
+        self.assertEqual(programs, sorted([self.program.url, other_instance.url]))
+        programs, users, _ = self.run_query('zipcodes', program_instance_all=None, program_instances=[self.program.url])
+        self.assertEqual(programs, [self.program.url])
+        self.assertEqual(users, self.ids(self.students))
+        programs, _, _ = self.run_query('zipcodes', program_instance_all=None,
+                                        program_instances=[self.program.url, other_instance.url])
+        self.assertEqual(programs, sorted([self.program.url, other_instance.url]))
+        programs, _, _ = self.run_query('zipcodes', program_type_all='on')
+        self.assertEqual(programs, sorted(Program.objects.values_list('url', flat=True)))
+        self.assertIn(longer_type.url, programs)
+
+    def test_instance_of_another_type_is_a_form_error(self):
+        other = Program.objects.create(url='OtherType/2030_Fall', name='OtherType Fall 2030', grade_min=7, grade_max=12)
+        response = self.query('zipcodes', program_instance_all=None, program_instances=[other.url])
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('program_instances', response.context['form'].errors)
+        self.assertNotIn('users were matched', six.text_type(response.context.get('result', '')))
+
+    def test_school_filters(self):
+        for student, school in zip(self.students, ['Alpha High', 'Alpha High', 'Beta Academy']):
+            info = RegistrationProfile.objects.get(user=student, program=self.program).student_info
+            info.school = school
+            info.save()
+        _, users, result = self.run_query('schools')
+        self.assertEqual(result['school_data'], [('Alpha High', 2), ('Beta Academy', 1)])
+        self.assertEqual(result['num_school'], 3)
+        _, users, _ = self.run_query('schools', school_query_type='name', school_name='alpha')
+        self.assertEqual(users, self.ids(self.students[:2]))
+        _, users, _ = self.run_query('schools', school_query_type='list', school_multisel=['Sch:Beta Academy'])
+        self.assertEqual(users, self.ids(self.students[2:3]))
+
+    def test_zip_filters(self):
+        _, users, _ = self.run_query('zipcodes', zip_query_type='exact', zip_code='02139')
+        self.assertEqual(users, self.ids(self.students[:2]))
+        _, users, _ = self.run_query('zipcodes', zip_query_type='partial', zip_code_partial='021')
+        self.assertEqual(users, self.ids(self.students[:2]))
+        # The outsider has zip 90210 but never registered, so a match on it finds nobody.
+        _, users, _ = self.run_query('zipcodes', zip_query_type='partial', zip_code_partial='902')
+        self.assertEqual(users, set())
+
+    def test_teacher_categories(self):
+        from esp.program.class_status import ClassStatus
+        rejected_teacher, approved_teacher = self.teachers
+        for cls in ClassSubject.objects.filter(parent_program=self.program, teachers=rejected_teacher):
+            cls.status = ClassStatus.REJECTED
+            cls.save()
+        cases = [('class_approved', [approved_teacher]),
+                 ('class_rejected', [rejected_teacher]),
+                 ('class_proposed', [])]
+        for reg_type, expected in cases:
+            for query in ('teacher_reg', 'class_reg'):
+                with self.subTest(reg_type=reg_type, query=query):
+                    _, users, _ = self.run_query(query, teacher_reg_type_all=None, teacher_reg_types=[reg_type])
+                    self.assertEqual(users, self.ids(expected))
+
+    def test_query_results(self):
+        section = self.program.sections()[0]
+        section.preregister_student(self.students[0], fast_force_create=True)
+        self.confirm(self.students[0])
+        self.confirm(self.students[1])
+
+        _, _, result = self.run_query('student_reg')
+        (program, (student_lottery, class_lottery, enrolled, checked_in)), = result['prog_data']
+        self.assertEqual(program, self.program)
+        self.assertEqual((enrolled, checked_in), (1, 0))
+
+        _, _, result = self.run_query('repeats')
+        self.assertEqual(result['repeat_data'], [('1x %s' % self.program.program_type, 2)])
+
+        _, _, result = self.run_query('startreg')
+        (program, reg_dates, confirm_dates), = result['program_data']
+        self.assertEqual(sum(count for _, count in reg_dates), 1)
+        self.assertEqual(sum(count for _, count in confirm_dates), 2)
+
+        _, _, result = self.run_query('teacher_reg')
+        (program, (registered, approved, scheduled)), = result['prog_data']
+        self.assertEqual((registered, approved), (2, 2))
+
+        _, _, result = self.run_query('class_reg')
+        (program, stats), = result['prog_data']
+        self.assertEqual(stats[:2], [4, 4])  # classes registered, approved
+
+        _, _, result = self.run_query('demographics')
+        self.assertEqual(result['num_classes'], 4)
+        self.assertEqual(result['gradyear_data'], [(ESPUser.program_schoolyear(self.program) + 2, 4)])
+
+    def test_instance_choices_follow_selected_program_type(self):
+        from esp.program.forms import StatisticsQueryForm
+        other = Program.objects.create(url='OtherType/2030_Fall', name='OtherType Fall 2030', grade_min=7, grade_max=12)
+
+        def instance_urls(form):
+            return [url for url, _ in form.fields['program_instances'].choices]
+
+        form = StatisticsQueryForm({'program_type': 'OtherType'})
+        self.assertEqual(instance_urls(form), [other.url])
+        form = StatisticsQueryForm({'program_type': self.program.program_type})
+        self.assertIn(self.program.url, instance_urls(form))
+        self.assertNotIn(other.url, instance_urls(form))
+        # Unbound (first page load) or an unknown type: the first type in the list.
+        first_type = StatisticsQueryForm().fields['program_type'].choices[0][0]
+        for form in (StatisticsQueryForm(), StatisticsQueryForm({'program_type': 'NoSuchType'})):
+            self.assertTrue(instance_urls(form))
+            self.assertTrue(all(url.split('/')[0] == first_type for url in instance_urls(form)))
+
+        # The page's re-render on a field change returns the filtered list.
+        response = self.client.post('/manage/statistics/?update_form', {
+            'form': 'statistics_form', 'query': 'zipcodes', 'program_type': 'OtherType',
+            'program_instances': other.url, 'student_reg_type_all': 'on', 'teacher_reg_type_all': 'on',
+            'school_query_type': 'all', 'zip_query_type': 'all'})
+        self.assertEqual(response.status_code, 200)
+        html = json.loads(response.content.decode())['statistics_form_contents_html']
+        self.assertIn('value="%s"' % other.url, html)
+        self.assertNotIn('value="%s"' % self.program.url, html)
+
 
 @unittest.skipIf(ilp_lottery.gp is None, "gurobipy is not installed")
 class ILPLotteryAssignmentControllerTest(ProgramFrameworkTest):

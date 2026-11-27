@@ -235,7 +235,7 @@ class StatisticsQueryForm(forms.Form):
 
     @staticmethod
     def get_program_instance_choices(program_name):
-        programs = Program.objects.all()
+        programs = [x for x in Program.objects.all() if x.program_type == program_name]
         names_url = [x.url for x in programs]
         names_friendly = [x.name for x in programs]
         result = sorted(zip(names_url, names_friendly), key=lambda pair: pair[0])
@@ -284,7 +284,13 @@ class StatisticsQueryForm(forms.Form):
         super(StatisticsQueryForm, self).__init__(*args, **kwargs)
 
         self.fields['program_type'].choices = StatisticsQueryForm.get_program_type_choices()
-        self.fields['program_instances'].choices = StatisticsQueryForm.get_program_instance_choices(self.fields['program_type'].choices[0][0])
+        #   Offer only instances of the selected program type (the page
+        #   re-renders the form whenever a field changes)
+        type_values = [choice[0] for choice in self.fields['program_type'].choices]
+        selected_type = self.data.get('program_type') if self.is_bound else None
+        if selected_type not in type_values:
+            selected_type = type_values[0] if type_values else None
+        self.fields['program_instances'].choices = StatisticsQueryForm.get_program_instance_choices(selected_type)
 
         school_choices = StatisticsQueryForm.get_school_choices()
         if len(school_choices) > 0:
