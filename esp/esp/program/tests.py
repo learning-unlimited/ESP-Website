@@ -1917,6 +1917,63 @@ class ILPLotteryAssignmentControllerTest(ProgramFrameworkTest):
         stats = controller.compute_stats(display=False)
         self.assertEqual(stats['num_registrations'], numpy.sum(controller.student_sections))
 
+    def _zero_capacity_target(self):
+        """A section students ranked/starred, and a ClassSection.capacity
+        replacement that makes just that section's capacity 0 (as a notebook
+        capacity override that disables a class does)."""
+        target = StudentRegistration.objects.filter(
+            section__parent_class__parent_program=self.program,
+            relationship__in=[self.priority_rt, self.interested_rt],
+        ).values_list('section_id', flat=True).first()
+        self.assertIsNotNone(target)
+        real_capacity = ClassSection.capacity
+        return target, property(lambda sec: 0 if sec.id == target else real_capacity.fget(sec))
+
+    def test_capacity_zero_section_gets_no_empty_section_penalty(self):
+        # For a capacity-0 section the default empty-section penalty collapses
+        # to the single breakpoint (0, 1000), and Gurobi rejects a PWL
+        # objective whose breakpoints are all at x=0 ("all x values ... differ
+        # less than 1E-6"). The capacity constraint already forces enrollment
+        # to 0, so the section must get no penalty variable at all. Gurobi is
+        # mocked, so this runs without a license.
+        target, zero_target = self._zero_capacity_target()
+        with mock.patch.object(ClassSection, 'capacity', zero_target), \
+                mock.patch.object(ilp_lottery, 'gp', mock.MagicMock()), \
+                mock.patch.object(ilp_lottery, 'GRB', mock.MagicMock()):
+            controller = ILPLotteryAssignmentController(
+                self.program, rank_weights=self.rank_weights, deweight_factor=0.8,
+            )
+            sj = controller.section_indices[target]
+            self.assertEqual(controller.section_capacities[sj], 0)
+            self.assertEqual(controller._section_penalty_pwl[target][0], [0])
+
+            controller.model = ilp_lottery.gp.Model()
+            controller._setup_pref_weight()
+            controller._create_vars()
+            controller._setup_empty_section_penalty_pwl()
+
+        self.assertTrue(controller.section_pref_students[sj])  # students did want it
+        self.assertNotIn(sj, controller.section_enrolled_vars)
+        # Other wanted sections still get one.
+        self.assertTrue(controller.section_enrolled_vars)
+
+    def test_capacity_zero_section_solves(self):
+        # The same through a real solve: needs a usable Gurobi license.
+        try:
+            ilp_lottery.gp.Model().dispose()
+        except ilp_lottery.gp.GurobiError as e:
+            self.skipTest("no usable Gurobi license: %s" % e)
+
+        target, zero_target = self._zero_capacity_target()
+        with mock.patch.object(ClassSection, 'capacity', zero_target):
+            controller = ILPLotteryAssignmentController(
+                self.program, rank_weights=self.rank_weights, deweight_factor=0.8,
+            )
+            controller.compute_assignments()
+
+        sj = controller.section_indices[target]
+        self.assertEqual(int(numpy.sum(controller.student_sections[:, sj])), 0)
+
     def test_remote_solver_roundtrip(self):
         """build_model() -> write .mps.gz -> submit to the locally-running
         lottery-solver-service -> poll -> fetch solution ->
