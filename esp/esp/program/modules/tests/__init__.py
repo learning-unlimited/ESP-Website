@@ -59,4 +59,4 @@ from esp.program.modules.tests.checkscan import (CheckScanAccessTest, CheckScanB
 from esp.program.modules.tests.dayof import (CheckInStudentTest, RecorderTest, CheckInViewsTest,
                                              BackfillPaymentMethodTest, TroubleshootingTest, DayOfCardTest,
                                              HelpDeskSalesTest, ReceiptTest, PrintingTest,
-                                             PrintServerClientTest, PrintServerScriptTest)
+                                             PrintServerClientTest, PrintServerScriptTest, PJLBackendTest)
