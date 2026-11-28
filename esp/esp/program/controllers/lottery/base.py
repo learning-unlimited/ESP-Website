@@ -64,6 +64,8 @@ from esp.mailman import existing_lists, sync_list_members
 from esp.tagdict.models import Tag
 
 from django.conf import settings
+from django.db import connection, transaction
+from django.db.models import signals
 import os
 import zlib
 import base64
@@ -888,20 +890,17 @@ class BaseLotteryAssignmentController(object):
         """Store lottery assignments in the database once they have been computed.
         This is a fairly time consuming step compared to computing the assignments."""
 
-        self.clear_saved_assignments()
-
         assignments = numpy.nonzero(self.student_sections)
         student_ids = self.student_ids[assignments[0]]
         section_ids = self.section_ids[assignments[1]]
 
         assert student_ids.shape == section_ids.shape
 
-        relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
-        self.now = datetime.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
-        srs = StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
-        # Trigger any relevant caches
-        for sr in srs:
-            sr.save()
+        # self.now: the time that all the registrations start at, in case all lottery registrations need to be manually reverted later
+        self.now, expired, srs = self.replace_enrollments(
+            self.program, [(student_ids[i], section_ids[i]) for i in range(student_ids.shape[0])])
+        # Trigger any relevant caches (the expired registrations' too)
+        self.invalidate_registration_caches(expired + srs)
         if self.options['stats_display']:
             logger.info("StudentRegistration enrollments all created to start at %s", self.now)
             logger.info('Created %d registrations', student_ids.shape[0])
@@ -1165,25 +1164,84 @@ class BaseLotteryAssignmentController(object):
         pairs -- e.g. a completed remote/async run's captured result. Mirrors
         save_assignments()."""
 
-        old_registrations = StudentRegistration.objects.filter(
-            section__parent_class__parent_program=program,
-            relationship__name="Enrolled",
-        )
-        old_registrations.filter(StudentRegistration.is_valid_qobject()).update(end_date=datetime.now())
-
-        relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
-        now = datetime.now()
-        srs = StudentRegistration.objects.bulk_create([
-            StudentRegistration(user_id=student_id, section_id=section_id, relationship=relationship, start_date=now)
-            for student_id, section_id in enrolled_pairs
-        ])
-        for sr in srs:
-            sr.save()
+        expired, srs = cls.replace_enrollments(program, enrolled_pairs)[1:]
+        cls.invalidate_registration_caches(expired + srs)
 
         if try_mailman:
             if lotteried_student_ids is None:
                 lotteried_student_ids = cls.get_lotteried_student_ids(program)
-            cls._update_mailman_lists_from_pairs(program, enrolled_pairs, lotteried_student_ids)
+            cls.update_mailman_lists_from_pairs(program, enrolled_pairs, lotteried_student_ids)
+
+    # First key of the Postgres advisory lock that serializes lottery saves (the second is the
+    # program id). Any constant works as long as nothing else uses it; two-key locks are a
+    # separate key space from one-key ones (e.g. refresh.py's per-run lock).
+    SAVE_LOCK_KEY = 0x107777
+
+    @classmethod
+    def replace_enrollments(cls, program, enrolled_pairs):
+        """Expire the program's current enrollments and create these (student_id, section_id)
+        ones, in one transaction, so a failure can't leave the program with its old enrollments
+        expired and only some of the new ones. Returns (now, expired registrations, new
+        registrations); the caller expires their caches.
+
+        Saves for the same program are serialized by a transaction-scoped advisory lock (held
+        until the outermost transaction ends -- for a web request, the end of the request):
+        otherwise two concurrent saves could both expire the same old rows and both insert
+        theirs, leaving the program with two runs' enrollments. An advisory lock locks no
+        rows, so it can't block anything but another lottery save; and it's taken before
+        anything else here, so two saves can't deadlock on each other."""
+        relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT pg_advisory_xact_lock(%s, %s)', [cls.SAVE_LOCK_KEY, program.id])
+            now = datetime.now()
+            expiring = StudentRegistration.objects.filter(
+                StudentRegistration.is_valid_qobject(now),
+                section__parent_class__parent_program=program,
+                relationship__name="Enrolled",
+            )
+            expired = list(expiring)
+            expiring.update(end_date=now)
+            for sr in expired:
+                sr.end_date = now
+            srs = StudentRegistration.objects.bulk_create([
+                StudentRegistration(user_id=student_id, section_id=section_id, relationship=relationship, start_date=now)
+                for student_id, section_id in enrolled_pairs
+            ])
+        return now, expired, srs
+
+    @staticmethod
+    def invalidate_registration_caches(registrations):
+        """Expire the caches that depend on these registrations. bulk_create() and update()
+        send no signals, so we send post_save ourselves, without an UPDATE query per
+        registration.
+
+        Every StudentRegistration cache dependency (depend_on_row) evicts by the
+        registration's user, its section, or the section's program, some filtered by the
+        relationship. So one signal per distinct (relationship, user) and per distinct
+        (relationship, section) evicts the same keys as one per registration, at a fraction
+        of the cost (each signal runs ~16 receivers, ~45 ms). A new dependency keyed on
+        anything else must be added to the dedup key here."""
+        registrations = list(registrations)
+        users = ESPUser.objects.in_bulk({sr.user_id for sr in registrations})
+        sections = ClassSection.objects.select_related('parent_class__parent_program').in_bulk(
+            {sr.section_id for sr in registrations})
+        relationships = RegistrationType.objects.in_bulk({sr.relationship_id for sr in registrations})
+        seen_users, seen_sections = set(), set()
+        for sr in registrations:
+            # A related object may have been deleted since the enrollment transaction committed.
+            if sr.user_id not in users or sr.section_id not in sections or sr.relationship_id not in relationships:
+                continue
+            user_key = (sr.relationship_id, sr.user_id)
+            section_key = (sr.relationship_id, sr.section_id)
+            if user_key in seen_users and section_key in seen_sections:
+                continue
+            seen_users.add(user_key)
+            seen_sections.add(section_key)
+            sr.user = users[sr.user_id]
+            sr.section = sections[sr.section_id]
+            sr.relationship = relationships[sr.relationship_id]
+            signals.post_save.send(sender=StudentRegistration, instance=sr, created=False)
 
     @staticmethod
     def get_lotteried_student_ids(program):
@@ -1209,7 +1267,7 @@ class BaseLotteryAssignmentController(object):
             raise LotteryException('Cannot retrieve lottery preferences for program, please ensure that it has the lottery module.')
 
     @classmethod
-    def _update_mailman_lists_from_pairs(cls, program, enrolled_pairs, lotteried_student_ids):
+    def update_mailman_lists_from_pairs(cls, program, enrolled_pairs, lotteried_student_ids):
         students_by_section = {}
         for student_id, section_id in enrolled_pairs:
             students_by_section.setdefault(section_id, []).append(student_id)

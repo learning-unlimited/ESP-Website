@@ -3,8 +3,10 @@ import json
 import logging
 import random
 import tempfile
+from datetime import timedelta
 
 from django.conf import settings
+from django.db import connection, transaction
 from django.utils import timezone
 
 from esp.program.models import StudentRegistration, LotteryInputSnapshot, LotteryRun
@@ -25,6 +27,8 @@ logger = logging.getLogger(__name__)
 
 class LotteryFrontendModule(ProgramModuleObj):
     doc = """Run the class lottery and assign students to classes."""
+
+    MAILMAN_SYNC_LOCK_KEY = 0x107778
 
     @classmethod
     def module_properties(cls):
@@ -349,13 +353,39 @@ class LotteryFrontendModule(ProgramModuleObj):
         if not isinstance(run.enrolled_pairs, list):
             return {'response': [{'error_msg': 'This run has no result to save yet.'}]}
 
-        snapshot_data = BaseLotteryAssignmentController.decode_snapshot_blob(bytes(run.snapshot.data))
-        BaseLotteryAssignmentController.save_from_pairs(
-            prog, run.enrolled_pairs, lotteried_student_ids=snapshot_data['students'], try_mailman=True,
-        )
-        run.saved_at = timezone.now()
-        run.saved_by = request.user
-        run.save(update_fields=['saved_at', 'saved_by'])
+        controller = BaseLotteryAssignmentController
+        snapshot_data = controller.decode_snapshot_blob(bytes(run.snapshot.data))
+        lotteried_student_ids = snapshot_data['students']
+        enrolled_pairs = run.enrolled_pairs
+        saved_runs = LotteryRun.objects.filter(program=prog, saved_at__isnull=False).order_by('-saved_at', '-id')
+        with transaction.atomic():
+            _, expired, new_registrations = controller.replace_enrollments(prog, enrolled_pairs)
+            # Assign a distinct, increasing save time while holding the enrollment lock.
+            last_saved_at = saved_runs.values_list('saved_at', flat=True).first()
+            saved_at = timezone.now()
+            if last_saved_at is not None and saved_at <= last_saved_at:
+                saved_at = last_saved_at + timedelta(microseconds=1)
+            run.saved_at = saved_at
+            run.saved_by = request.user
+            run.save(update_fields=['saved_at', 'saved_by'])
+
+            def refresh_after_save():
+                # Order the callbacks per program while allowing the next enrollment write to commit.
+                with transaction.atomic():
+                    with connection.cursor() as cursor:
+                        cursor.execute('SELECT pg_advisory_xact_lock(%s, %s)', [self.MAILMAN_SYNC_LOCK_KEY, prog.id])
+                    try:
+                        with transaction.atomic():
+                            controller.invalidate_registration_caches(expired + new_registrations)
+                    except Exception:
+                        logger.exception('Could not invalidate lottery enrollment caches for program %s', prog.id)
+
+                    # A delayed callback still invalidates its affected caches, but only the latest
+                    # save may sync Mailman. Keep the lock through the sync itself.
+                    if saved_runs.values_list('id', 'saved_at').first() == (run.id, saved_at):
+                        controller.update_mailman_lists_from_pairs(prog, enrolled_pairs, lotteried_student_ids)
+
+            transaction.on_commit(refresh_after_save)
         return {'response': [{'run': self._serialize_run(run)}]}
 
     @aux_call

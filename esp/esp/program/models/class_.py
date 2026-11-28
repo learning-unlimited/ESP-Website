@@ -52,7 +52,7 @@ from django.conf import settings
 from django.db import models, transaction
 from django.dispatch import receiver
 from django.db.models.query import Q
-from django.db.models import signals, Sum
+from django.db.models import F, signals, Sum
 from django.db.models.manager import Manager
 from collections import OrderedDict
 from django.template.loader import render_to_string
@@ -512,7 +512,7 @@ class ClassSection(models.Model):
 
         self.getResourceRequests().delete()
         self.getResourceAssignments().delete()
-        self.meeting_times.clear()
+        self.clear_meeting_times()
 
         super(ClassSection, self).delete()
 
@@ -549,10 +549,34 @@ class ClassSection(models.Model):
     def initial_rooms(self):
         meeting_times = self.get_meeting_times()
         if len(meeting_times) > 0:
-            initial_time = min(meeting_times, key=lambda event: event.start)
+            initial_time = min(meeting_times, key=lambda event: (event.start, event.id))
             return self.classrooms().filter(event=initial_time).order_by('id')
         else:
             return Resource.objects.none()
+
+    @staticmethod
+    def scheduled_classroom_assignments(section_ids):
+        """Classroom assignments for the sections' current meeting times."""
+        return ResourceAssignment.objects.filter(
+            target_id__in=section_ids, resource__res_type__name='Classroom',
+            target__meeting_times=F('resource__event_id'),
+        )
+
+    @classmethod
+    def room_names_by_section(cls, section_ids):
+        """List each assigned room name once per section, including rooms used later."""
+        rooms = {section_id: [] for section_id in section_ids}
+        assignments = cls.scheduled_classroom_assignments(rooms).order_by('resource__name')
+        for section_id, name in assignments.values_list('target_id', 'resource__name').distinct():
+            rooms[section_id].append(name)
+        return rooms
+
+    def display_rooms(self):
+        """Return one classroom resource per room name, for displays that link to maps."""
+        assignments = (self.scheduled_classroom_assignments([self.id])
+                       .order_by('resource__name', 'resource__event__start', 'resource_id')
+                       .distinct('resource__name').values('resource_id'))
+        return Resource.objects.filter(id__in=assignments).order_by('name')
 
     def initial_lat_long(self):
         classroom = self.initial_rooms().first()
@@ -566,11 +590,7 @@ class ClassSection(models.Model):
         return len(self.get_meeting_times()) > 0
 
     def prettyrooms(self):
-        """ Return the pretty name of the rooms. """
-        if self.isScheduled():
-            return [x.name for x in self.initial_rooms()]
-        else:
-            return []
+        return self.room_names_by_section([self.id])[self.id]
 
     def emailcode(self):
         return self.parent_class.emailcode() + six.u('s') + six.text_type(self.index())
@@ -676,13 +696,19 @@ class ClassSection(models.Model):
         return result
     unsatisfied_requests.depend_on_cache(scheduling_status, lambda cs=wildcard, **kwargs: {'self': cs})
 
+    #   Change meeting_times with remove()/add(), never clear(): argcache's m2m dependencies
+    #   handle a clear by expiring their caches once for *every Event on the site* (it can't tell
+    #   which events were linked), ~60,000 memcached deletes per section. remove() names the events.
+    #   The deltas are by event id (Event's == compares start times), from the links in the DB
+    #   (values_list re-queries even when meeting_times was prefetched).
     def assign_meeting_times(self, event_list):
-        self.meeting_times.clear()
-        for event in set(event_list):
-            self.meeting_times.add(event)
+        wanted = {event.id for event in event_list}
+        linked = set(self.meeting_times.values_list('id', flat=True))
+        self.meeting_times.remove(*(linked - wanted))
+        self.meeting_times.add(*(wanted - linked))
 
     def clear_meeting_times(self):
-        self.meeting_times.clear()
+        self.meeting_times.remove(*self.meeting_times.values_list('id', flat=True))
 
     def assign_start_time(self, first_event):
         """ Get enough events following the first one until you have the class duration covered.
@@ -1124,7 +1150,7 @@ class ClassSection(models.Model):
         #   If specified, remove the class's time and room assignment.
         if unschedule:
             self.clearRooms()
-            self.meeting_times.clear()
+            self.clear_meeting_times()
             # add a scheduler log entry to make the change occur if anyone currently has the scheduler open
             prog = self.parent_program
             prog.getModule("AJAXSchedulingModule").get_change_log(prog).appendScheduling([], "", int(self.id), None)
@@ -1986,7 +2012,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def clearTimes(self):
         for sec in self.sections.all():
-            sec.meeting_times.clear()
+            sec.clear_meeting_times()
 
     @cache_function
     def docs_summary(self):

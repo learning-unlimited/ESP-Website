@@ -406,7 +406,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         num_affected_sections = 0
         for section in affected_sections:
-            section.meeting_times.clear()
+            section.clear_meeting_times()
             num_affected_sections += 1
 
         return num_affected_sections

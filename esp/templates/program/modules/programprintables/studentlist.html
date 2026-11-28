@@ -29,16 +29,16 @@
    <td>{{ forloop.counter }}</td>
    <td>{{ student.last_name }}, {{ student.first_name}}</td>
    {% if "student_profile_pronoun_field"|getBooleanTag %}
-      <td>{{ student.getLastProfile.student_info.pronoun|default_if_none:"" }}</td>
+      <td>{{ student.list_profile.student_info.pronoun|default_if_none:"" }}</td>
    {% endif %}
    <td>{{ student.email}}</td>
-   <td>{{ student.getLastProfile.student_info.dob|date:"m/d/Y" }}</td>
-   <td>{{ student|getGradeForProg:program.id }}</td>
-   <td>{{ student.getLastProfile.contact_emergency.phone_day }}&nbsp;</td>
-   <td>{{ student.getLastProfile.contact_emergency.phone_cell }}&nbsp;</td>
+   <td>{{ student.list_profile.student_info.dob|date:"m/d/Y" }}</td>
+   <td>{{ student.list_grade }}</td>
+   <td>{{ student.list_profile.contact_emergency.phone_day }}&nbsp;</td>
+   <td>{{ student.list_profile.contact_emergency.phone_cell }}&nbsp;</td>
    <td>{{ student.id }}</td>
-   <td>{{ student.getLastProfile.student_info.shirt_size }}</td>
-   <td>{{ student.getLastProfile.student_info.shirt_type }}</td>
+   <td>{{ student.list_profile.student_info.shirt_size }}</td>
+   <td>{{ student.list_profile.student_info.shirt_type }}</td>
 </tr>
  {% endfor %}
 </table>

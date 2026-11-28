@@ -153,7 +153,9 @@ class SectionManageForm(ManagementForm):
         sec.status = self.cleaned_data['status']
         if self.cleaned_data['reg_status']:
             sec.registration_status = self.cleaned_data['reg_status']
-        sec.meeting_times.clear()
+        #   Unlink only the times no longer chosen (see ClassSection.assign_meeting_times on why not clear())
+        chosen = {int(mi) for mi in self.cleaned_data['times']}
+        sec.meeting_times.remove(*(set(sec.meeting_times.values_list('id', flat=True)) - chosen))
         for mi in self.cleaned_data['times']:
             ts = Event.objects.get(id=mi)
             ct = ResourceType.get_or_create('Classroom')

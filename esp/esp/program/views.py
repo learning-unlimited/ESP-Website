@@ -1354,6 +1354,7 @@ def statistics(request, program=None):
             result_dict = {}
             #   A dictionary for template rendering the final response
             context = {}
+            query = form.cleaned_data['query']
 
             #   Get list of programs the query applies to
             programs = Program.objects.all()
@@ -1365,14 +1366,15 @@ def statistics(request, program=None):
 
             #   Which registration dimension applies matches StatisticsQueryForm.hide_unwanted_fields:
             #   teacher_reg / class_reg use the teacher fields; every other query uses the student fields.
-            teacher_only = form.cleaned_data['query'] in ('teacher_reg', 'class_reg')
+            teacher_only = query in ('teacher_reg', 'class_reg')
 
             #   Get list of users the query applies to.
             #   "All" means every registration type shown on the form (not program.students_union(),
             #   which adds expensive categories such as attended_past).
-            #   Per-program Q objects are ORed together and each role filter is applied once:
-            #   (prog_q1 | prog_q2 | ...) & role is much faster than ORing (prog_q & role) per program.
-            #   (Ported from LU e46eac375, #5010.)
+            #   Each (program, category) Q object is evaluated on its own and the user ids are
+            #   unioned here: ORing them all into one query joins every related table at once
+            #   (profiles, records, registrations, ...), and that query took 11s for one program.
+            #   The role filter is applied once, afterwards (users_q).
             if teacher_only:
                 reg_all = form.cleaned_data.get('teacher_reg_type_all')
                 reg_types = form.cleaned_data.get('teacher_reg_types')
@@ -1383,22 +1385,20 @@ def statistics(request, program=None):
                 on_form = [choice[0] for choice in StatisticsQueryForm.student_reg_categories]
             wanted_types = on_form if reg_all else (reg_types or [])
 
-            reg_q = None
+            reg_ids = set()
             if wanted_types:
+                list_func = 'teachers' if teacher_only else 'students'
                 for program in programs:
-                    if teacher_only:
-                        reg_objects = program.teachers(QObjects=True)
-                    else:
-                        reg_objects = program.students(QObjects=True)
+                    #   Build only the wanted lists (the descriptions say which the program has),
+                    #   not all of them: the full ones need every section's capacity
+                    defined = program.teacherDesc() if teacher_only else program.studentDesc()
                     for reg_type in wanted_types:
-                        if reg_type in reg_objects:
-                            reg_q = reg_objects[reg_type] if reg_q is None else (reg_q | reg_objects[reg_type])
+                        if reg_type in defined:
+                            reg_ids.update(ESPUser.objects.filter(program.user_list(list_func, reg_type))
+                                           .values_list('id', flat=True))
 
-            if reg_q is None:
-                users_q = Q(pk__in=[])
-            else:
-                #   Restrict to the role, so e.g. teachers with student-like records aren't counted as students.
-                users_q = reg_q & ESPUser.getAllOfType('Teacher' if teacher_only else 'Student')
+            #   Restrict to the role, so e.g. teachers with student-like records aren't counted as students.
+            users_q = Q(id__in=reg_ids) & ESPUser.getAllOfType('Teacher' if teacher_only else 'Student')
 
             #   Narrow down by school (perhaps not ideal results, but faster)
             if form.cleaned_data['school_query_type'] == 'name':
@@ -1413,25 +1413,42 @@ def statistics(request, program=None):
                         school_names.append(item[4:])
                 users_q = users_q & (Q(studentinfo__school__in=school_names) | Q(studentinfo__k12school__id__in=k12school_ids))
 
-            #   Narrow down by Zip code, simply using the latest profile
-            #   Note: it would be harder to track users better (i.e. zip code A in fall 2008, zip code B in fall 2009)
-            if form.cleaned_data['zip_query_type'] == 'exact':
-                users_q = users_q & Q(registrationprofile__contact_user__address_zip=form.cleaned_data['zip_code'], registrationprofile__most_recent_profile=True)
-            elif form.cleaned_data['zip_query_type'] == 'partial':
-                users_q = users_q & Q(registrationprofile__contact_user__address_zip__startswith=form.cleaned_data['zip_code_partial'], registrationprofile__most_recent_profile=True)
-            elif form.cleaned_data['zip_query_type'] == 'distance':
-                zipc = ZipCode.objects.get(zip_code=form.cleaned_data['zip_code'])
-                zipcodes = zipc.close_zipcodes(form.cleaned_data['zip_code_distance'])
-                users_q = users_q & Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
+            #   Evaluate the user query once; the statistics functions get a cheap id-list queryset.
+            user_ids = list(ESPUser.objects.filter(users_q).distinct().values_list('id', flat=True))
 
-            users = ESPUser.objects.filter(users_q).distinct()
-            result_dict['num_users'] = users.count()
-            profiles = [user.getLastProfile() for user in users]
+            #   Use the latest profile for the selected programs, falling back to the latest overall.
+            zip_query_type = form.cleaned_data['zip_query_type']
+            filter_by_zip = zip_query_type in ('exact', 'partial', 'distance')
+            if filter_by_zip or query == 'zipcodes':
+                latest_zips = (RegistrationProfile.objects.order_by('user_id', '-last_ts', '-id')
+                               .distinct('user_id').values_list('user_id', 'contact_user__address_zip'))
+                user_zips = dict(latest_zips.filter(user__in=user_ids, program__in=programs))
+                missing_users = [user_id for user_id in user_ids if user_id not in user_zips]
+                user_zips.update(latest_zips.filter(user__in=missing_users))
+            if filter_by_zip:
+                if zip_query_type == 'exact':
+                    zip_matches = lambda zip_code: zip_code == form.cleaned_data['zip_code']
+                elif zip_query_type == 'partial':
+                    zip_matches = lambda zip_code: zip_code is not None and zip_code.startswith(form.cleaned_data['zip_code_partial'])
+                else:
+                    zipc = ZipCode.objects.get(zip_code=form.cleaned_data['zip_code'])
+                    zipcodes = set(zipc.close_zipcodes(form.cleaned_data['zip_code_distance']))
+                    zip_matches = lambda zip_code: zip_code in zipcodes
+                user_ids = [user_id for user_id in user_ids if user_id in user_zips and zip_matches(user_zips[user_id])]
+
+            users = ESPUser.objects.filter(id__in=user_ids)
+            result_dict['num_users'] = len(user_ids)
 
             #   Accumulate desired information for selected query
             from esp.program import statistics as statistics_functions
-            if hasattr(statistics_functions, form.cleaned_data['query']):
-                context['result'] = getattr(statistics_functions, form.cleaned_data['query'])(form, programs, users, profiles, result_dict)
+            if query == 'zipcodes':
+                context['result'] = statistics_functions.zipcodes(
+                    form, programs, users, (), result_dict,
+                    zip_codes=(user_zips.get(user_id) for user_id in user_ids))
+            elif hasattr(statistics_functions, query):
+                profiles = list(RegistrationProfile.get_last_profiles(
+                    users, ('user', 'contact_user', 'student_info', 'student_info__k12school')).values())
+                context['result'] = getattr(statistics_functions, query)(form, programs, users, profiles, result_dict)
             else:
                 context['result'] = 'Unsupported query'
 

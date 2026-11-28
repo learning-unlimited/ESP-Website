@@ -152,11 +152,7 @@ class StudentClassRegModule(ProgramModuleObj):
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
-        if len(self.program.dates()) == 0: # If current program doesn't have dates set yet, there are no past programs
-            past_programs = []
-        else:
-            past_programs = [x for x in Program.objects.all()
-                             if len(x.dates()) > 0 and x.dates()[0] < self.program.dates()[0]]
+        past_programs = self.program.earlier_program_ids()
         Past = Q(studentregistration__section__parent_class__parent_program__in=past_programs)
 
         # Force Django to generate two subqueries without joining SRs to SSIs,
@@ -197,8 +193,9 @@ class StudentClassRegModule(ProgramModuleObj):
         for item in role_choices:
             role_dict[item[0]] = item[1]
 
-        return {'classreg': """Students who signed up for at least one class""",
-                'enrolled': """Students who are enrolled in at least one class""",
+        # (same keys and order as students(): the user search page lists them in this order)
+        return {'enrolled': """Students who are enrolled in at least one class""",
+                'classreg': """Students who signed up for at least one class""",
                 'enrolled_past': """Students who have enrolled in a past program""",
                 'attended_past': """Students who have attended a past program"""}
 

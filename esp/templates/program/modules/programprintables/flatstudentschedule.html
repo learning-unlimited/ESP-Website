@@ -45,9 +45,9 @@ td, th {
  <td>{{ forloop.counter }}</td>
  <td>{{ scheditem.name }}</td>
  <td>{{ scheditem.cls.title }}</td>
- <td>{{ scheditem.cls.parent_class.getTeacherNames|join:", " }}</td>
- <td>{{ scheditem.cls.prettyrooms|join:"<br />"}}</td>
- <td>{{ scheditem.cls.friendly_times|join:"<br />"}}</td>
+ <td>{{ scheditem.cls.flat_teachers|join:", " }}</td>
+ <td>{{ scheditem.cls.flat_rooms|join:"<br />"}}</td>
+ <td>{{ scheditem.cls.flat_times|join:"<br />"}}</td>
 </tr>
 {% endfor %}
 </table>

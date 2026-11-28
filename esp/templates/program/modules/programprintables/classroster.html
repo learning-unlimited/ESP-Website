@@ -3,23 +3,23 @@
 
 <div style="page-break-after: always;">&nbsp;</div>
 <div class="classroster">
-  <div class="classtitle">{{ section }}</div>
+  <div class="classtitle">{{ section.roster_title }}</div>
   {% autoescape off %}
   <table align="center" cellspacing="0" cellpadding="0">
   <tr>
    <td>
-      <div class="blocks">{{ section.friendly_times|join:"<br />" }}</div>
+      <div class="blocks">{{ section.roster_times|join:"<br />" }}</div>
    </td>
    <td>
-      <div class="classroom">{{ section.prettyrooms|join:"<br />" }}</div>
+      <div class="classroom">{{ section.roster_rooms|join:"<br />" }}</div>
    </td>
   </tr>
   </table>
   <br />
   <div class="teachername"><span>{% if bymoderator %}{{ program.getModeratorTitle }}{% else %}Teacher{% endif %}: {{ item.teacher.name }}</span></div>
   <br />
-  <div class="teachername">Class Email: <tt>{{ section.emailcode }}-class@{{ EMAIL_HOST_SENDER }}</tt><br />
-Students Email: <tt>{{ section.emailcode }}-students@{{ EMAIL_HOST_SENDER }}</tt>
+  <div class="teachername">Class Email: <tt>{{ section.roster_code }}-class@{{ EMAIL_HOST_SENDER }}</tt><br />
+Students Email: <tt>{{ section.roster_code }}-students@{{ EMAIL_HOST_SENDER }}</tt>
   </div>
   <br />
   <br />
@@ -39,16 +39,16 @@ Students Email: <tt>{{ section.emailcode }}-students@{{ EMAIL_HOST_SENDER }}</tt
       <th>Pronouns</th>
       {% endif %}
       <th>Grade</th>
-    </tr>{% for student in section.students %}
+    </tr>{% for student in section.roster_students %}
     <tr>
       <td align="right">{{ forloop.counter }}</td>
       <td>{{ student.id }}</td>
       <td>{{ student.name }}</td>
       {% if "student_profile_pronoun_field"|getBooleanTag %}
-         <td>{{ student.getLastProfile.student_info.pronoun|default_if_none:"" }}</td>
+         <td>{{ student.roster_pronoun|default_if_none:"" }}</td>
       {% endif %}
       <td>
-          {{ student|getGradeForProg:program.id }}</td>
+          {{ student.roster_grade }}</td>
     </tr>
     {% endfor %}
   </table>

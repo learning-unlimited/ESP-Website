@@ -68,14 +68,14 @@ table.sortable thead {
  <td>{{ sec.parent_class.class_info|truncatewords_html:10 }}</td>
  <td>{{ sec.parent_class.grade_min }}</td>
  <td>{{ sec.parent_class.grade_max }}</td>
- <td>{{ sec.parent_class.getTeacherNamesLast|join:"; " }}</td>
- <td>{% for teacher in sec.teachers %}{% if teacher.getLastProfile.contact_user.phone_cell %}{{ teacher.getLastProfile.contact_user.phone_cell }}{% else %}{{ teacher.getLastProfile.contact_user.phone_day }}{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
+ <td>{{ sec.print_teacher_names|join:"; " }}</td>
+ <td>{% for teacher in sec.print_teachers %}{% if teacher.print_profile.contact_user.phone_cell %}{{ teacher.print_profile.contact_user.phone_cell }}{% else %}{{ teacher.print_profile.contact_user.phone_day }}{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
  {% if program|hasModule:"TeacherModeratorModule" %}
  <td>{{ sec.getModeratorNamesLast|join:"; " }}</td>
- <td>{% for moderator in sec.get_moderators %}{% if moderator.getLastProfile.contact_user.phone_cell %}{{ moderator.getLastProfile.contact_user.phone_cell }}{% else %}{{ moderator.getLastProfile.contact_user.phone_day }}{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
+ <td>{% for moderator in sec.moderators.all %}{% if moderator.print_profile.contact_user.phone_cell %}{{ moderator.print_profile.contact_user.phone_cell }}{% else %}{{ moderator.print_profile.contact_user.phone_day }}{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
  {% endif %}
- <td>{% if sec.prettyrooms|length_is:0 %}Unassigned{% else %}{{ sec.prettyrooms|join:"<br />"}}{% endif %}</td>
- <td>{% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{{ sec.friendly_times|join:"<br />"}}{% endif %}</td>
+ <td>{% if sec.print_rooms|length_is:0 %}Unassigned{% else %}{{ sec.print_rooms|join:"<br />"}}{% endif %}</td>
+ <td>{% if sec.print_times|length_is:0 %}Unassigned{% else %}{{ sec.print_times|join:"<br />"}}{% endif %}</td>
  <td>{{ sec.status_str|capfirst }}</td>
  <td>{% if sec.parent_class.allow_lateness %} Y {% else %} N {% endif %}</td>
 </tr>

@@ -36,12 +36,15 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 import json
-from collections import OrderedDict
+from collections import Counter, OrderedDict, defaultdict
 from numpy import mean
 
+from django.db.models import Count, DecimalField, F, Max, Min, Sum
 from django.template.loader import render_to_string
 
-from esp.program.models import Program, StudentRegistration
+from esp.accounting.controllers import ProgramAccountingController
+from esp.cal.models import Event
+from esp.program.models import ClassSection, ClassSubject, FinancialAidRequest, StudentRegistration
 from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, Record
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
@@ -58,45 +61,44 @@ Do not place a top-level function in this file if you would not like it to
 be supported as a type of query.
 """
 
-def zipcodes(form, programs, students, profiles, result_dict={}):
+def zipcodes(form, programs, students, profiles, result_dict=None, *, zip_codes=None):
+    if result_dict is None:
+        result_dict = {}
+    if zip_codes is None:
+        zip_codes = (profile.contact_user.address_zip if profile.contact_user else None for profile in profiles)
 
-    #   Get zip codes and filter out invalid ones (None, blank, not 5 digits, no contact info)
-    zip_dict = {}
+    #   Count valid five-digit Zip codes and track missing or invalid values.
+    zip_counts = Counter()
     result_dict['invalid'] = 0
-    for profile in profiles:
-        if profile.contact_user:
-            zip_code = profile.contact_user.address_zip
-            if zip_code and len(zip_code) == 5 and zip_code.isnumeric():
-                if zip_code not in zip_dict:
-                    zip_dict[zip_code] = 0
-                zip_dict[zip_code] += 1
-            else:
-                result_dict['invalid'] += 1
+    for zip_code in zip_codes:
+        if zip_code and len(zip_code) == 5 and zip_code.isnumeric():
+            zip_counts[zip_code] += 1
         else:
             result_dict['invalid'] += 1
-    zip_codes = sorted(zip_dict.keys())
-    zip_counts = [zip_dict[x] for x in zip_codes]
 
     #   Compile and render
-    result_dict['zip_data'] = sorted(zip(zip_codes, zip_counts), key=lambda pair: -pair[1])
+    result_dict['zip_data'] = sorted(zip_counts.items(), key=lambda pair: (-pair[1], pair[0]))
     if form.cleaned_data['limit']:
         result_dict['zip_data'] = result_dict['zip_data'][:form.cleaned_data['limit']]
     return render_to_string('program/statistics/zip_codes.html', result_dict)
 
 
-def demographics(form, programs, students, profiles, result_dict={}):
+def demographics(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
 
-    #   Get aggregate 'vitals' info
-    result_dict['num_classes'] = result_dict['num_sections'] = 0
-    result_dict['num_class_hours'] = result_dict['num_student_class_hours'] = 0
-    for program in programs:
-        result_dict['num_classes'] += program.classes().select_related().filter(status=ClassStatus.ACCEPTED).count()
-        result_dict['num_sections'] += program.sections().select_related().filter(status=ClassStatus.ACCEPTED).count()
-        for section in program.sections().select_related().filter(status=ClassStatus.ACCEPTED):
-            result_dict['num_class_hours'] += section.duration or 0
-            result_dict['num_student_class_hours'] += (section.duration or 0) * (section.parent_class.class_size_max or 0)
-    result_dict['num_class_hours'] = int(result_dict['num_class_hours'])
-    result_dict['num_student_class_hours'] = int(result_dict['num_student_class_hours'])
+    #   Get aggregate 'vitals' info: accepted classes, and accepted sections with their hours
+    #   (a missing duration or class size counts as 0)
+    result_dict['num_classes'] = ClassSubject.objects.filter(
+        parent_program__in=programs, status=ClassStatus.ACCEPTED).count()
+    section_totals = ClassSection.objects.filter(
+        parent_class__parent_program__in=programs, status=ClassStatus.ACCEPTED).aggregate(
+        num_sections=Count('id'),
+        num_class_hours=Sum('duration'),
+        num_student_class_hours=Sum(F('duration') * F('parent_class__class_size_max'), output_field=DecimalField()))
+    result_dict['num_sections'] = section_totals['num_sections']
+    result_dict['num_class_hours'] = int(section_totals['num_class_hours'] or 0)
+    result_dict['num_student_class_hours'] = int(section_totals['num_student_class_hours'] or 0)
 
     #   Get grade/age info
     gradyear_dict = {}
@@ -114,18 +116,24 @@ def demographics(form, programs, students, profiles, result_dict={}):
                     birthyear_dict[profile.student_info.dob.year] = 0
                 birthyear_dict[profile.student_info.dob.year] += 1
 
-    #   Get financial aid info
-    finaid_applied = []
-    finaid_lunch = []
+    #   Get financial aid info: students with a completed request for one of the programs,
+    #   those of them who reported reduced lunch, and those who got aid for that program
+    finaid_requests = FinancialAidRequest.objects.filter(user__in=students, program__in=programs, done=True)
+    applied_pairs = set(finaid_requests.values_list('user_id', 'program_id'))
+    finaid_applied = [user_id for user_id, program_id in applied_pairs]
+    finaid_lunch = list(finaid_requests.filter(reduced_lunch=True).values_list('user_id', flat=True))
+    #   Approved = has aid for that program, as ESPUser.hasFinancialAid (amount_finaid() > 0),
+    #   computed per program for all its applicants at once
+    applicants_by_program = defaultdict(set)
+    for user_id, program_id in applied_pairs:
+        applicants_by_program[program_id].add(user_id)
+    applicants = ESPUser.objects.in_bulk({user_id for user_id, program_id in applied_pairs})
     finaid_approved = []
-    for student in students:
-        for program in programs:
-            if student.appliedFinancialAid(program):
-                finaid_applied.append(student.id)
-                if student.financialaidrequest_set.filter(program=program, done=True, reduced_lunch=True).count() > 0:
-                    finaid_lunch.append(student.id)
-                if student.hasFinancialAid(program):
-                    finaid_approved.append(student.id)
+    for program in programs:
+        if applicants_by_program[program.id]:
+            rows = ProgramAccountingController(program).student_payment_rows(
+                [applicants[user_id] for user_id in sorted(applicants_by_program[program.id])])
+            finaid_approved.extend(row['student'].id for row in rows if row['amount_finaid'] > 0)
 
     #   Compile and render
     grad_years = sorted(gradyear_dict.keys())
@@ -140,7 +148,9 @@ def demographics(form, programs, students, profiles, result_dict={}):
     return render_to_string('program/statistics/demographics.html', result_dict)
 
 
-def schools(form, programs, students, profiles, result_dict={}):
+def schools(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
 
     #   Count by name of every student's school
     school_dict = {}
@@ -168,7 +178,9 @@ def schools(form, programs, students, profiles, result_dict={}):
     return render_to_string('program/statistics/schools.html', result_dict)
 
 
-def startreg(form, programs, students, profiles, result_dict={}):
+def startreg(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
 
     #   Get first class registration bit and confirmation bit for each student and bin by day
     reg_dict = {}
@@ -177,26 +189,31 @@ def startreg(form, programs, students, profiles, result_dict={}):
         reg_dict[program] = {}
         confirm_dict[program] = {}
 
-    for student in students:
-        for program in programs:
+    program_by_id = {program.id: program for program in programs}
 
-            reg_bits = StudentRegistration.objects.filter(user=student, section__parent_class__parent_program = program).order_by('start_date')
-            if reg_bits.exists():
-                if reg_bits[0].start_date.date() not in reg_dict[program]:
-                    reg_dict[program][reg_bits[0].start_date.date()] = 0
-                reg_dict[program][reg_bits[0].start_date.date()] += 1
+    #   Each student's earliest registration (of any kind) in each program
+    first_regs = (StudentRegistration.objects
+                  .filter(user__in=students, section__parent_class__parent_program__in=programs)
+                  .values_list('user_id', 'section__parent_class__parent_program').order_by()
+                  .annotate(first=Min('start_date')))
+    for user_id, program_id, first in first_regs:
+        day = first.date() if first is not None else None
+        reg_dict[program_by_id[program_id]][day] = reg_dict[program_by_id[program_id]].get(day, 0) + 1
 
-            confirm_bits = Record.objects.filter(user=student, event__name='reg_confirmed', program=program).order_by('-time')
-            if confirm_bits.exists():
-                if confirm_bits[0].time.date() not in confirm_dict[program]:
-                    confirm_dict[program][confirm_bits[0].time.date()] = 0
-                confirm_dict[program][confirm_bits[0].time.date()] += 1
+    #   Each student's latest registration confirmation for each program
+    last_confirms = (Record.objects
+                     .filter(user__in=students, event__name='reg_confirmed', program__in=programs)
+                     .values_list('user_id', 'program_id').order_by()
+                     .annotate(last=Max('time')))
+    for user_id, program_id, last in last_confirms:
+        day = last.date()
+        confirm_dict[program_by_id[program_id]][day] = confirm_dict[program_by_id[program_id]].get(day, 0) + 1
 
     #   Compile and render
     startreg_list = []
     confirm_list = []
     for program in programs:
-        reg_dates = sorted(reg_dict[program].keys())
+        reg_dates = sorted(reg_dict[program], key=lambda day: (day is None, day))
         reg_counts = [reg_dict[program][key] for key in reg_dates]
         startreg_list.append(list(zip(reg_dates, reg_counts)))
         confirm_dates = sorted(confirm_dict[program].keys())
@@ -207,17 +224,18 @@ def startreg(form, programs, students, profiles, result_dict={}):
     return render_to_string('program/statistics/startreg.html', result_dict)
 
 
-def repeats(form, programs, students, profiles, result_dict={}):
+def repeats(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
 
     #   For each student, find out what other programs they registered for and bin by quantity in each program type
+    #   (one count per reg_confirmed record, as before; the program type is the first part of the url)
+    indiv_counts = defaultdict(Counter)
+    for user_id, program_url in Record.objects.filter(
+            user__in=students, event__name='reg_confirmed', program__isnull=False).values_list('user_id', 'program__url'):
+        indiv_counts[user_id][program_url.split('/')[0]] += 1
     repeat_count = {}
-    for student in students:
-        programs = Program.objects.filter(record__user=student, record__event__name='reg_confirmed')
-        indiv_count = {}
-        for program in programs:
-            if program.program_type not in indiv_count:
-                indiv_count[program.program_type] = 0
-            indiv_count[program.program_type] += 1
+    for indiv_count in indiv_counts.values():
         program_types = sorted(indiv_count.keys())
         id_pair = tuple([tuple([program_type, indiv_count[program_type]]) for program_type in program_types])
         if id_pair not in repeat_count:
@@ -239,7 +257,9 @@ def repeats(form, programs, students, profiles, result_dict={}):
     return render_to_string('program/statistics/repeats.html', result_dict)
 
 
-def heardabout(form, programs, students, profiles, result_dict={}):
+def heardabout(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
 
     #   Group most popular reasons for hearing about the program
     reasons_dict = {}
@@ -265,7 +285,9 @@ def heardabout(form, programs, students, profiles, result_dict={}):
         result_dict['heardabout_data'] = result_dict['heardabout_data'][:form.cleaned_data['limit']]
     return render_to_string('program/statistics/heardabout.html', result_dict)
 
-def hours(form, programs, students, profiles, result_dict={}):
+def hours(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
 
     #   Bin students by registered timeslots per program
     enrolled_list = []
@@ -273,19 +295,35 @@ def hours(form, programs, students, profiles, result_dict={}):
     students_list = []
     timeslots_enrolled_list = []
     timeslots_attended_list = []
+    student_ids = list(students.values_list('id', flat=True))
+
+    def timeslots_by_student(program, verb, valid_only):
+        #   {student id: set of the program's timeslots in which the student has a section with this verb}
+        regs = StudentRegistration.objects.filter(
+            user__in=students, relationship__name=verb, section__parent_class__parent_program=program,
+            section__meeting_times__isnull=False)
+        if valid_only:
+            regs = regs.filter(StudentRegistration.is_valid_qobject())
+        pairs = set(regs.values_list('user_id', 'section__meeting_times'))
+        timeslot_by_id = Event.objects.in_bulk({timeslot_id for user_id, timeslot_id in pairs})
+        result = defaultdict(set)
+        for user_id, timeslot_id in pairs:
+            result[user_id].add(timeslot_by_id[timeslot_id])
+        return result
+
     for program in programs:
         prog_students = 0
         enrolled_dict = {}
         attended_dict = {}
         timeslots_enrolled_dict = {}
         timeslots_attended_dict = {}
-        for student in students:
+        #   as student.getEnrolledSections(program) (valid registrations) and
+        #   student.getSections(program, ['Attended'], valid_only=False), for all students at once
+        enrolled_timeslots = timeslots_by_student(program, 'Enrolled', True)
+        attended_timeslots = timeslots_by_student(program, 'Attended', False)
+        for student_id in student_ids:
             # calculate number of blocks for which students were enrolled
-            sections_enrolled = student.getEnrolledSections(program)
-            timeslots = []
-            for sec in sections_enrolled:
-                timeslots += sec.meeting_times.all()
-            timeslots = set(timeslots)
+            timeslots = enrolled_timeslots.get(student_id, set())
             if len(timeslots) not in enrolled_dict:
                 enrolled_dict[len(timeslots)] = 0
             enrolled_dict[len(timeslots)] += 1
@@ -298,11 +336,7 @@ def hours(form, programs, students, profiles, result_dict={}):
             # calculate number of blocks students attended
             # if a student attended two classes during the same block, this will probably double count them
             # but that seems pretty unlikely
-            sections_attended = student.getSections(program, ['Attended'], valid_only=False)
-            timeslots = []
-            for sec in sections_attended:
-                timeslots += sec.meeting_times.all()
-            timeslots = set(timeslots)
+            timeslots = attended_timeslots.get(student_id, set())
             if len(timeslots) not in attended_dict:
                 attended_dict[len(timeslots)] = 0
             attended_dict[len(timeslots)] += 1
@@ -345,7 +379,9 @@ def hours(form, programs, students, profiles, result_dict={}):
     result_dict['hours_data'] = list(zip(programs, enrolled_flat, attended_flat, program_timeslots, timeslots_enrolled_flat, timeslots_attended_flat, students_list))
     return render_to_string('program/statistics/hours.html', result_dict)
 
-def student_reg(form, programs, students, profiles, result_dict={}):
+def student_reg(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
     stat_names = [
         'Student Lottery',
         'Class Lottery',
@@ -355,22 +391,23 @@ def student_reg(form, programs, students, profiles, result_dict={}):
     prog_stats = []
     # ordered dictionary so the legend is in order
     series_data = OrderedDict((stat, []) for stat in stat_names)
+    student_ids = set(students.values_list('id', flat=True))
     for program in programs:
         stats_list = []
         # entered student lottery
-        stud_lott_num = ESPUser.objects.filter(phasezerorecord__program=program).intersection(students).distinct().count()
+        stud_lott_num = len(set(ESPUser.objects.filter(phasezerorecord__program=program).values_list('id', flat=True)) & student_ids)
         series_data['Student Lottery'].append([program.name, stud_lott_num])
         stats_list.append(stud_lott_num)
         # set class lottery preferences
-        class_lott_num = len(BigBoardModule.users_with_lottery(program) & set(students.values_list('id', flat = True)))
+        class_lott_num = len(BigBoardModule.users_with_lottery(program) & student_ids)
         series_data['Class Lottery'].append([program.name, class_lott_num])
         stats_list.append(class_lott_num)
         # enrolled in at least one class
-        enroll_num = len(set(BigBoardModule.users_enrolled(program)) & set(students.values_list('id', flat = True)))
+        enroll_num = len(set(BigBoardModule.users_enrolled(program)) & student_ids)
         series_data['Enrolled'].append([program.name, enroll_num])
         stats_list.append(enroll_num)
         # students checked in
-        checked_num = len(set(BigBoardModule.checked_in_users(program)) & set(students.values_list('id', flat = True)))
+        checked_num = len(set(BigBoardModule.checked_in_users(program)) & student_ids)
         series_data['Checked In'].append([program.name, checked_num])
         stats_list.append(checked_num)
         prog_stats.append(stats_list)
@@ -386,7 +423,9 @@ def student_reg(form, programs, students, profiles, result_dict={}):
                        })
     return render_to_string('program/statistics/student_reg.html', result_dict)
 
-def teacher_reg(form, programs, teachers, profiles, result_dict={}):
+def teacher_reg(form, programs, teachers, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
     stat_names = [
         'Class Registered',
         'Class Approved',
@@ -422,7 +461,9 @@ def teacher_reg(form, programs, teachers, profiles, result_dict={}):
                        })
     return render_to_string('program/statistics/teacher_reg.html', result_dict)
 
-def class_reg(form, programs, teachers, profiles, result_dict={}):
+def class_reg(form, programs, teachers, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
     stat_categories = ["Classes", "Class-student-hours"]
     stat_names = [
         'Classes Registered',

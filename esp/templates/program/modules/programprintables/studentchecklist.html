@@ -51,10 +51,10 @@
    <td>{{ student.finaid }}</td>
    <td>{{ student.user.name }}</td>
    {% if "student_profile_pronoun_field"|getBooleanTag %}
-     <td>{{ student.user.getLastProfile.student_info.pronoun|default_if_none:"" }}</td>
+     <td>{{ student.profile.student_info.pronoun|default_if_none:"" }}</td>
    {% endif %}
    <td>{{ student.user.email}}</td>
-   <td>{{ student.user.getLastProfile.student_info.dob|date:"m/d/Y" }}</td>
+   <td>{{ student.profile.student_info.dob|date:"m/d/Y" }}</td>
    <td><strong>{{student.user.id}}</strong></td>
 </tr>
  {% endfor %}

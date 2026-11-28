@@ -38,6 +38,7 @@ Learning Unlimited, Inc.
 """
 
 import copy
+import inspect
 import re
 from collections import defaultdict, OrderedDict
 from datetime import datetime, timedelta, date
@@ -53,7 +54,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.core import urlresolvers, validators
 from django.core.cache import cache
 from django.db import models, transaction
-from django.db.models import Count
+from django.db.models import Count, Min
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.db.models.signals import m2m_changed
@@ -471,6 +472,25 @@ class Program(models.Model, CustomFormsLinkModel):
                     if tmpdict is not None:
                         desc.update(tmpdict)
         return desc
+
+    def user_list(self, list_func, key, QObjects=True):
+        """ One of the lists that list_func (one of USER_TYPE_LIST_FUNCS: 'students', ...)
+        returns, building only the lists of the module that defines it (as students() etc.
+        would: the last module to define a key wins). Modules whose list function takes `keys`
+        get asked for just this one. Raises KeyError if no module defines it. """
+        desc_func = Program.USER_TYPE_LIST_DESC_FUNCS[Program.USER_TYPE_LIST_FUNCS.index(list_func)]
+        for module in reversed(self.getModules(None)):
+            descs = getattr(module, desc_func)() if hasattr(module, desc_func) else None
+            if descs and key in descs:
+                method = getattr(module, list_func)
+                if 'keys' in inspect.signature(method).parameters:
+                    lists = method(QObjects, keys=[key])
+                else:
+                    lists = method(QObjects)
+                if lists and key in lists:
+                    return lists[key]
+                break
+        return getattr(self, list_func)(QObjects)[key]
 
     def getLists(self, QObjects=False):
         from esp.users.models import ESPUser
@@ -915,6 +935,17 @@ class Program(models.Model, CustomFormsLinkModel):
             if ts_day not in result:
                 result.append(ts_day)
         return result
+
+    def earlier_program_ids(self):
+        """ Ids of the programs whose first day is before this program's (days as dates():
+        those of class time blocks; programs without any are left out), in one query rather
+        than dates() for every program on the site. """
+        dates = self.dates()
+        if len(dates) == 0:  # no dates set yet: no program counts as earlier
+            return []
+        first_starts = (Event.objects.filter(event_type__description='Class Time Block', program__isnull=False)
+                        .values_list('program').annotate(first=Min('start')).order_by())
+        return [program_id for program_id, first in first_starts if first.date() < dates[0]]
 
     def datetime_range(self):
         slots = self.getTimeSlots()
@@ -1403,6 +1434,7 @@ class SplashInfo(models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_splashinfo'
+        unique_together = (('student', 'program'),)
 
     def __str__(self):
         return 'Lunch/sibling info for %s at %s' % (self.student, self.program)
@@ -1417,16 +1449,14 @@ class SplashInfo(models.Model):
 
     @staticmethod
     def getForUser(user, program=None):
-        if program:
-            q = SplashInfo.objects.filter(student=user, program=program)
-        else:
-            q = SplashInfo.objects.filter(student=user)
-        if q.count() > 0:
-            return q[0]
-        else:
-            n = SplashInfo(student=user, program=program)
-            n.save()
-            return n
+        if program is not None:
+            info, _ = SplashInfo.objects.get_or_create(student=user, program=program)
+            return info
+        # Preserve the lookup across programs for callers without a program.
+        info = SplashInfo.objects.filter(student=user).first()
+        if info is None:
+            info = SplashInfo.objects.create(student=user)
+        return info
 
     def execute_sibling_discount(self):
         from esp.accounting.controllers import IndividualAccountingController
@@ -1441,9 +1471,10 @@ class SplashInfo(models.Model):
         else:
             Transfer.objects.filter(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type).delete()
 
-    def save(self):
-        super(SplashInfo, self).save()
-        self.execute_sibling_discount()
+    def save(self, *args, **kwargs):
+        super(SplashInfo, self).save(*args, **kwargs)
+        if self.program_id is not None:
+            self.execute_sibling_discount()
 
 class RegistrationProfile(models.Model):
     """ A student registration form """
@@ -1510,6 +1541,20 @@ class RegistrationProfile(models.Model):
         return regProf
     getLastProfile.depend_on_row('program.RegistrationProfile', lambda profile: {'user': profile.user})
     getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
+
+    @staticmethod
+    def get_last_profiles(users, related=()):
+        """getLastProfile for many users in one query: {user id: profile}, with an empty
+        (unsaved) profile for users who have none. related is passed to select_related."""
+        users = list(users)
+        profiles = {profile.user_id: profile for profile in
+                    RegistrationProfile.objects.filter(user__in=[user.id for user in users])
+                    .order_by('user_id', '-last_ts', '-id').distinct('user_id')
+                    .select_related(*related)}
+        for user in users:
+            if user.id not in profiles:
+                profiles[user.id] = RegistrationProfile(user=user)
+        return profiles
 
     @cache_function
     def get_last_program_with_profile(user):

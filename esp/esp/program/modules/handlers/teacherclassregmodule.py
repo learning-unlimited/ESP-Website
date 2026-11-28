@@ -148,7 +148,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                 items.append((label, full_description, query))
         return items
 
-    def teachers(self, QObject=False):
+    def teachers(self, QObject=False, keys=None):
+        """ keys: if given, only these lists are wanted. The full/nearly-full lists need the
+        class catalog and every section's capacity (seconds for a big program), so they are
+        left out unless wanted. """
         fields_to_defer = [
             x.name for x in ClassSubject._meta.fields if isinstance(x, models.TextField)
         ]
@@ -163,18 +166,18 @@ class TeacherClassRegModule(ProgramModuleObj):
         ## isFull() means that all *scheduled* sections are full
         ## Querying the full catalog is overkill here, but we do use a fair bit of it..., and hopefully it's
         ## better cached than other simpler queries that we might use.
-        classes = ClassSubject.objects.catalog(self.program)
-        capacity_factor = ClassSubject.get_capacity_factor()
-        nearly_full_classes = [x for x in classes if x.is_nearly_full(capacity_factor)]
-        Q_nearly_full_teacher = Q(classsubject__in=nearly_full_classes) & Q_isteacher
-        full_classes = [x for x in classes if x.isFull()]
-        Q_full_teacher = Q(classsubject__in=full_classes) & Q_isteacher
-
-        if len(self.program.dates()) == 0: # If current program doesn't have dates set yet, there are no past programs
-            previous_programs = []
+        capacity_lists = {'class_nearly_full', 'class_full'}
+        if keys is None or capacity_lists & set(keys):
+            classes = ClassSubject.objects.catalog(self.program)
+            capacity_factor = ClassSubject.get_capacity_factor()
+            nearly_full_classes = [x for x in classes if x.is_nearly_full(capacity_factor)]
+            Q_nearly_full_teacher = Q(classsubject__in=nearly_full_classes) & Q_isteacher
+            full_classes = [x for x in classes if x.isFull()]
+            Q_full_teacher = Q(classsubject__in=full_classes) & Q_isteacher
         else:
-            previous_programs = [x for x in Program.objects.all()
-                                 if len(x.dates()) > 0 and x.dates()[0] < self.program.dates()[0]]
+            Q_nearly_full_teacher = Q_full_teacher = None
+
+        previous_programs = self.program.earlier_program_ids()
         Q_taught_before_temp = Q(classsubject__status=ClassStatus.ACCEPTED, classsubject__parent_program__in=previous_programs)
         taught_before_users = ESPUser.objects.filter(Q_taught_before_temp).values('id').distinct()
         # For past events, we want the query to be solely user based
@@ -199,6 +202,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                 'class_full': Q_full_teacher,
                 'taught_before': Q_taught_before,
         }
+        if Q_full_teacher is None:
+            for key in capacity_lists:
+                del qobjects[key]
 
         if QObject:
             result = qobjects
@@ -219,9 +225,10 @@ class TeacherClassRegModule(ProgramModuleObj):
             "class_approved": """Teachers teaching an approved class""",
             "class_proposed": """Teachers teaching an unreviewed class""",
             "class_rejected": """Teachers teaching a rejected class""",
-            "class_full": """Teachers teaching a completely full class""",
+            # (same keys and order as teachers(): the user search page lists them in this order)
             "class_nearly_full": """Teachers teaching a nearly-full class (>%d%% of capacity)"""
             % (100 * capacity_factor),
+            "class_full": """Teachers teaching a completely full class""",
             "taught_before": """Teachers who have taught for a previous program""",
         }
         for item in self.get_resource_pairs():

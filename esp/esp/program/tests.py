@@ -44,7 +44,7 @@ from esp.accounting.models import LineItemType
 from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.qsd.models import QuasiStaticData
-from esp.resources.models import Resource, ResourceType
+from esp.resources.models import Resource, ResourceRequest, ResourceType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission, Record, RecordType
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
@@ -54,6 +54,7 @@ from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.db import connection, transaction
+from django.db.models import Q
 from django.db.utils import IntegrityError
 from django.test import LiveServerTestCase, TransactionTestCase, override_settings
 from django.utils import timezone
@@ -81,6 +82,7 @@ from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 
 from datetime import datetime, timedelta
 from decimal import Decimal
+import csv
 import hashlib
 import json
 import numpy
@@ -1440,6 +1442,24 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         self.testLottery()
 
+class SplashInfoTest(ProgramFrameworkTest):
+    def test_sibling_discount_is_unique_per_student_and_program(self):
+        from esp.program.models import SplashInfo
+
+        student, other_student = self.students[:2]
+        info = SplashInfo.getForUser(student, self.program)
+        self.assertEqual(SplashInfo.getForUser(student, self.program).pk, info.pk)
+
+        # The database must enforce uniqueness even on writes that bypass save().
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            SplashInfo.objects.bulk_create([SplashInfo(student=student, program=self.program)])
+
+        other_program = Program.objects.create(
+            url='TestProgram/2223_Fall', name='Fall 2223', grade_min=7, grade_max=12)
+        self.assertNotEqual(SplashInfo.getForUser(student, other_program).pk, info.pk)
+        self.assertNotEqual(SplashInfo.getForUser(other_student, self.program).pk, info.pk)
+
+
 class StatisticsViewTest(ProgramFrameworkTest):
     """/manage/statistics: which users a query covers, plus the None-data crashes."""
 
@@ -1498,6 +1518,41 @@ class StatisticsViewTest(ProgramFrameworkTest):
         response = self.query('zipcodes', student_reg_type_all=None, student_reg_types='classreg')
         self.assertEqual(self.num_users(response), 1)
 
+    def test_zip_filter_uses_the_profile_for_the_selected_programs(self):
+        # The filter and breakdown both use the selected program's address.
+        RegistrationProfile.objects.create(
+            user=self.students[0], contact_user=ContactInfo.objects.create(user=self.students[0], address_zip='94305'))
+        for criteria in ({'zip_query_type': 'exact', 'zip_code': '02139'},
+                         {'zip_query_type': 'partial', 'zip_code_partial': '021'}, {}):
+            with self.subTest(criteria=criteria):
+                _, _, result = self.run_query('zipcodes', **criteria)
+                self.assertEqual(result['zip_data'], [('02139', 2)])
+        self.assertEqual(self.num_users(self.query('zipcodes', zip_query_type='exact', zip_code='94305')), 0)
+
+    def test_zip_filter_falls_back_to_the_latest_profile(self):
+        # A student in a category but with no profile for the selected program: their latest profile counts.
+        self.program.sections()[0].preregister_student(self.students[3], fast_force_create=True)
+        RegistrationProfile.objects.filter(user=self.students[3], program=self.program).update(program=None)
+        RegistrationProfile.objects.create(
+            user=self.students[3], contact_user=ContactInfo.objects.create(user=self.students[3], address_zip='02139'))
+        _, users, result = self.run_query('zipcodes', student_reg_type_all=None, student_reg_types='classreg',
+                                          zip_query_type='exact', zip_code='02139')
+        self.assertEqual(users, self.ids([self.students[3]]))
+        self.assertEqual(result['zip_data'], [('02139', 1)])
+
+    def test_zip_filter_falls_back_after_latest_profile_is_deleted(self):
+        student = self.students[0]
+        self.program.sections()[0].preregister_student(student, fast_force_create=True)
+        RegistrationProfile.objects.filter(user=student, program=self.program).update(program=None)
+        latest = RegistrationProfile.objects.create(
+            user=student, contact_user=ContactInfo.objects.create(user=student, address_zip='94305'))
+        latest.delete()
+
+        _, users, result = self.run_query('zipcodes', student_reg_type_all=None, student_reg_types='classreg',
+                                          zip_query_type='exact', zip_code='02139')
+        self.assertEqual(users, {student.id})
+        self.assertEqual(result['zip_data'], [('02139', 1)])
+
     def test_teacher_queries_count_teachers(self):
         response = self.query('teacher_reg')
         self.assertEqual(self.num_users(response), len(self.teachers))
@@ -1539,10 +1594,10 @@ class StatisticsViewTest(ProgramFrameworkTest):
         seen = {}
         real = getattr(statistics_functions, query)
 
-        def spy(form, programs, users, profiles, result_dict):
+        def spy(form, programs, users, profiles, result_dict, **kwargs):
             seen['programs'] = sorted(p.url for p in programs)
             seen['users'] = set(users.values_list('id', flat=True))
-            out = real(form, programs, users, profiles, result_dict)
+            out = real(form, programs, users, profiles, result_dict, **kwargs)
             seen['result'] = result_dict
             return out
 
@@ -1681,6 +1736,105 @@ class StatisticsViewTest(ProgramFrameworkTest):
         self.assertEqual(result['num_classes'], 4)
         self.assertEqual(result['gradyear_data'], [(ESPUser.program_schoolyear(self.program) + 2, 4)])
 
+    def test_startreg_reports_undated_registrations(self):
+        section, other_section = self.program.sections()[:2]
+        undated, mixed = self.students[:2]
+        section.preregister_student(undated, fast_force_create=True)
+        section.preregister_student(mixed, fast_force_create=True)
+        StudentRegistration.objects.filter(section=section, user__in=[undated, mixed]).update(start_date=None)
+        other_section.preregister_student(mixed, fast_force_create=True)
+        dated = StudentRegistration.objects.get(section=other_section, user=mixed)
+
+        criteria = {'student_reg_type_all': None, 'student_reg_types': 'classreg'}
+        _, _, result = self.run_query('startreg', **criteria)
+        (program, first_dates, _), = result['program_data']
+        self.assertEqual(program, self.program)
+        self.assertEqual(first_dates, [(dated.start_date.date(), 1), (None, 1)])
+        self.assertContains(self.query('startreg', **criteria), 'Unable to determine: 1 student')
+
+    def test_demographics_vitals_and_financial_aid(self):
+        from esp.program.class_status import ClassStatus
+        from esp.program.models import FinancialAidRequest
+        sections = list(self.program.sections().filter(status=ClassStatus.ACCEPTED))
+        _, _, result = self.run_query('demographics')
+        self.assertEqual(result['num_sections'], len(sections))
+        self.assertEqual(result['num_class_hours'], int(sum(s.duration or 0 for s in sections)))
+        self.assertEqual(result['num_student_class_hours'],
+                         int(sum((s.duration or 0) * (s.parent_class.class_size_max or 0) for s in sections)))
+
+        from decimal import Decimal
+        from esp.accounting.controllers import (
+            GlobalAccountingController, IndividualAccountingController, ProgramAccountingController)
+        from esp.accounting.models import FinancialAidGrant, LineItemType
+        FinancialAidRequest.objects.create(user=self.students[0], program=self.program, done=True, reduced_lunch=True)
+        approved_request = FinancialAidRequest.objects.create(user=self.students[1], program=self.program, done=True)
+        FinancialAidRequest.objects.create(user=self.students[2], program=self.program, done=False, reduced_lunch=True)
+        #   Both applicants owe a fee that aid covers; only students[1] is granted aid
+        GlobalAccountingController().setup_accounts()
+        ProgramAccountingController(self.program).setup_accounts()
+        LineItemType.objects.create(program=self.program, text='Fee', amount_dec=Decimal('10.00'),
+                                    required=True, for_finaid=True)
+        for student in self.students[:2]:
+            IndividualAccountingController(self.program, student).ensure_required_transfers()
+        FinancialAidGrant.objects.create(request=approved_request, percent=100)
+        self.assertEqual([student.hasFinancialAid(self.program) for student in self.students[:2]], [False, True])
+        _, _, result = self.run_query('demographics')
+        self.assertEqual((result['finaid_applied'], result['finaid_lunch'], result['finaid_approved']), (2, 1, 1))
+
+    def test_hours(self):
+        section = self.program.sections()[0]
+        timeslots = list(self.program.getTimeSlots()[:2])
+        section.meeting_times.set(timeslots)
+        section.preregister_student(self.students[0], fast_force_create=True)
+        section.preregister_student(self.students[1], fast_force_create=True)
+        StudentRegistration.objects.filter(user=self.students[1]).update(end_date=datetime.now() - timedelta(days=1))
+        attended = RegistrationType.get_map(include=['Attended'], category='student')['Attended']
+        StudentRegistration.objects.create(user=self.students[2], section=section, relationship=attended)
+
+        _, _, result = self.run_query('hours')
+        (program, enrolled, attended, _, by_slot_enrolled, by_slot_attended, num_enrolled), = result['hours_data']
+        # Student 1's registration has expired, so only student 0 counts as enrolled.
+        self.assertEqual((enrolled, num_enrolled), ([(2, 1)], 1))
+        self.assertEqual(by_slot_enrolled, [(timeslots[0], 1), (timeslots[1], 1)])
+        self.assertEqual(attended, [(2, 1)])
+        self.assertEqual(by_slot_attended, [(timeslots[0], 1), (timeslots[1], 1)])
+
+    def test_query_count_does_not_grow_with_users(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        from esp.program.forms import StatisticsQueryForm
+
+        def counts():
+            result = {}
+            for query, _ in StatisticsQueryForm.stats_questions:
+                self.query(query)  # warm the caches
+                with CaptureQueriesContext(connection) as ctx:
+                    self.assertEqual(self.query(query).status_code, 200)
+                result[query] = len(ctx.captured_queries)
+            return result
+
+        section = self.program.sections()[0]
+        section.meeting_times.set(self.program.getTimeSlots()[:1])
+
+        def register(student):
+            section.preregister_student(student, fast_force_create=True)
+            self.confirm(student)
+
+        for student in self.students:
+            register(student)
+        before = counts()
+        for i in range(6):
+            student = ESPUser.objects.create(username='extra%d' % i, email='extra%d@learningu.org' % i)
+            student.makeRole('Student')
+            RegistrationProfile.objects.create(
+                user=student, program=self.program, most_recent_profile=True,
+                student_info=StudentInfo.objects.create(user=student, graduation_year=2030),
+                contact_user=ContactInfo.objects.create(user=student, address_zip='02139'))
+            register(student)
+        after = counts()
+        # The setup above can warm a lookup or two (after < before is fine); no query may grow.
+        self.assertEqual({query: n for query, n in after.items() if n > before[query]}, {})
+
     def test_instance_choices_follow_selected_program_type(self):
         from esp.program.forms import StatisticsQueryForm
         other = Program.objects.create(url='OtherType/2030_Fall', name='OtherType Fall 2030', grade_min=7, grade_max=12)
@@ -1708,6 +1862,247 @@ class StatisticsViewTest(ProgramFrameworkTest):
         html = json.loads(response.content.decode())['statistics_form_contents_html']
         self.assertIn('value="%s"' % other.url, html)
         self.assertNotIn('value="%s"' % self.program.url, html)
+
+
+class PrintableQueryTest(ProgramFrameworkTest):
+    def setUp(self):
+        super(PrintableQueryTest, self).setUp(num_students=4, num_teachers=4, classes_per_teacher=1)
+        self.section, self.other_section = self.program.sections()[:2]
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'))
+
+    def printable(self, name, **params):
+        return self.client.get('/manage/%s/%s' % (self.program.url, name), params)
+
+    def select_users(self, users):
+        user_filter = mock.Mock()
+        query = Q(id__in=[user.id for user in users])
+        selected = ESPUser.objects.filter(query)
+        user_filter.getList.return_value = selected
+        user_filter.get_Q.return_value = query
+        return mock.patch('esp.users.controllers.usersearch.UserSearchController.create_filter',
+                          return_value=(user_filter, True))
+
+    def set_names(self, users):
+        for user, (first, last) in zip(users, [('Zoe', 'McKay'), ('Amy', 'Baker'), ('Ada', 'McKay'), ('Ada', 'McKay')]):
+            user.first_name, user.last_name = first, last
+            user.save()
+        # Use an explicit expected order, including the ID tie-break for the two Adas.
+        return [users[index] for index in (1, 2, 3, 0)]
+
+    def test_class_and_section_lists_render_names_with_their_phones(self):
+        people = self.set_names(self.teachers)
+        phones = {}
+        for number, person in enumerate(self.teachers, 1):
+            phones[person.id] = str(number) * 10
+            RegistrationProfile.objects.create(user=person, program=self.program, contact_user=ContactInfo.objects.create(
+                user=person, phone_cell=phones[person.id]))
+        self.section.parent_class.teachers.set(self.teachers)
+        self.section.moderators.set(self.teachers)
+
+        names = '; '.join(person.name_last_first() for person in people)
+        numbers = '; '.join(phones[person.id] for person in people)
+        for route, params, prefix in (
+            ('classesbyid', {'clsids': self.section.parent_class_id}, 'Section 1: '),
+            ('classesbytime', {'secids': self.section.id}, ''),
+        ):
+            with self.subTest(route=route):
+                html = self.printable(route, **params)
+                cell_count = 1 if prefix else 2
+                self.assertContains(html, '<td>%s</td>' % names, count=cell_count)
+                self.assertContains(html, '<td>%s</td>' % numbers, count=cell_count)
+                if prefix:
+                    self.assertContains(html, prefix + names)
+                    self.assertContains(html, prefix + numbers)
+
+                response = self.printable(route, csv=1, **params)
+                self.assertEqual(response.status_code, 200)
+                _, row = list(csv.reader(response.content.decode('utf-8').splitlines()))
+                self.assertEqual(row[5:9], [names, numbers, prefix + names, prefix + numbers])
+
+    def test_roster_renders_students_in_surname_order_with_their_ids(self):
+        students = self.set_names(self.students)
+        self.section.moderators.add(self.teachers[0])
+        for student in reversed(self.students):
+            self.section.preregister_student(student, fast_force_create=True)
+        with self.select_users(self.teachers[:1]):
+            response = self.printable('classrostersbymoderator')
+        self.assertEqual(response.status_code, 200)
+        rows = re.findall(r'<td align="right">\d+</td>\s*<td>(\d+)</td>\s*<td>([^<]+)</td>',
+                          response.content.decode('utf-8'))
+        self.assertEqual(rows, [(str(student.id), student.name()) for student in students])
+
+    def test_teacher_roster_handout_renders_the_roster(self):
+        # The teacher-facing handout (TeacherPreviewModule.classroster) shares classroster.html
+        # with the admin printables, so it must prepare the same roster fields.
+        from esp.resources.models import ResourceAssignment
+        teacher = self.section.parent_class.get_teachers()[0]
+        event = self.timeslots[0]
+        self.section.meeting_times.add(event)
+        ResourceAssignment.objects.create(target=self.section, resource=Resource.objects.filter(event=event).first())
+        self.section.preregister_student(self.students[0], fast_force_create=True)
+        self.assertTrue(self.client.login(username=teacher.username, password='password'))
+        response = self.client.get('/teach/%s/classroster' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        self.assertIn(six.text_type(self.section), content)
+        self.assertIn('<td>%d</td>' % self.students[0].id, content)
+        self.assertIn(self.students[0].name(), content)
+
+    def test_moderator_schedule_batches_assignment_queries(self):
+        from django.test.utils import CaptureQueriesContext
+        from esp.resources.models import ResourceAssignment
+
+        # Ensure the moderators selected here are not teachers of this section.
+        self.section.parent_class.teachers.clear()
+        self.section.moderators.set(self.teachers)
+        event = self.timeslots[0]
+        self.section.meeting_times.add(event)
+        ResourceAssignment.objects.create(target=self.section, resource=Resource.objects.filter(event=event).first())
+        table = ClassSection.moderators.through._meta.db_table
+        query_counts = []
+        for teachers in (self.teachers[:1], self.teachers):
+            with self.select_users(teachers), CaptureQueriesContext(connection) as queries:
+                response = self.printable('moderatorschedules')
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual({item['teacher'].id for item in response.context['scheditems']},
+                             {teacher.id for teacher in teachers})
+            query_counts.append(sum('FROM "%s"' % table in query['sql'] for query in queries))
+        self.assertGreater(query_counts[0], 0)
+        self.assertLessEqual(query_counts[1], query_counts[0])
+
+    def test_narrow_roster_does_not_fetch_unrelated_enrollments(self):
+        from django.test.utils import CaptureQueriesContext
+        from esp.program.modules.handlers.programprintables import ProgramPrintables
+
+        self.section.preregister_student(self.students[0], fast_force_create=True)
+        self.other_section.preregister_student(self.students[1], fast_force_create=True)
+        with CaptureQueriesContext(connection) as queries:
+            ProgramPrintables._prepare_rosters(self.program, [self.section])
+        self.assertEqual(self.section.roster_student_ids, {self.students[0].id})
+        table = StudentRegistration._meta.db_table
+        enrollment_queries = [query['sql'] for query in queries if 'FROM "%s"' % table in query['sql']]
+        self.assertTrue(enrollment_queries)
+        with connection.cursor() as cursor:
+            for sql in enrollment_queries:
+                cursor.execute(sql)
+                self.assertEqual(len(cursor.fetchall()), 1)
+
+    def assign_classroom(self, section, event, name):
+        from esp.resources.models import ResourceAssignment
+
+        room = Resource.objects.create(name=name, event=event, res_type=ResourceType.get_or_create('Classroom'))
+        ResourceAssignment.objects.create(target=section, resource=room)
+
+    def test_printables_show_all_section_rooms(self):
+        first, later, stale = self.timeslots
+        same_start = Event.objects.create(
+            program=self.program, event_type=first.event_type, start=first.start, end=first.end,
+            short_description='Same start',
+        )
+        self.section.meeting_times.set([first, same_start, later])
+        self.assign_classroom(self.section, first, 'Room Alpha')
+        self.assign_classroom(self.section, first, 'Room Bravo')
+        self.assign_classroom(self.section, same_start, 'Room Charlie')
+        self.assign_classroom(self.section, later, 'Room Alpha')
+        self.assign_classroom(self.section, later, 'Room Delta')
+        self.assign_classroom(self.section, stale, 'Room Stale')
+        names = ['Room Alpha', 'Room Bravo', 'Room Charlie', 'Room Delta']
+        self.assertEqual(self.section.prettyrooms(), names)
+        self.assertEqual([room.name for room in self.section.display_rooms()], names)
+
+        student = self.students[0]
+        self.section.preregister_student(student, fast_force_create=True)
+        self.section.moderators.add(self.teachers[-1])
+        for route, users, params in (
+            ('classesbyid', [], {'clsids': self.section.parent_class_id}),
+            ('classesbyroom', [], {'secids': self.section.id}),
+            ('flatstudentschedules', [student], {}),
+            ('studentschedules/tex', [student], {}),
+            ('classrostersbymoderator', self.teachers[-1:], {}),
+            ('moderatorschedules', self.teachers[-1:], {}),
+        ):
+            with self.subTest(route=route), self.select_users(users):
+                response = self.printable(route, **params)
+                for name in names:
+                    self.assertContains(response, name, count=1)
+                self.assertNotContains(response, 'Room Stale')
+        for route, params in (('classesbyid', {'clsids': self.section.parent_class_id}),
+                              ('classesbyroom', {'secids': self.section.id})):
+            with self.subTest(route=route):
+                response = self.printable(route, csv=1, **params)
+                self.assertContains(response, ', '.join(names))
+                self.assertNotContains(response, 'Room Stale')
+
+    def test_classes_by_room_sorts_roomless_sections_last_then_by_time(self):
+        with_z, roomless_late, with_a, roomless_early = self.program.sections()
+        first, second, third = self.timeslots
+        for section, event in ((with_z, first), (roomless_late, third), (with_a, third), (roomless_early, second)):
+            section.meeting_times.add(event)
+        self.assign_classroom(with_z, first, 'Room Z')
+        self.assign_classroom(with_a, third, 'Room A')
+
+        response = self.printable('classesbyroom')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([section.id for section in response.context['sections']],
+                         [with_a.id, with_z.id, roomless_early.id, roomless_late.id])
+
+    def test_room_timetables_use_each_assignment_in_its_own_time_slot(self):
+        first, later, _ = self.timeslots
+        self.section.meeting_times.set([first, later])
+        self.assign_classroom(self.section, first, 'Room Alpha')
+        self.assign_classroom(self.section, later, 'Room Bravo')
+        moderator = self.teachers[-1]
+        self.section.moderators.add(moderator)
+        for route in ('roomschedules', 'roomschedules/all_blocks'):
+            with self.subTest(route=route):
+                response = self.printable(route)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual([(item['room'], item['timeblock'].start) for item in response.context['scheditems']
+                                  if item['cls'] == self.section],
+                                 [('Room Alpha', first.start), ('Room Bravo', later.start)])
+        response = self.printable('moderator_rooms_spr')
+        self.assertEqual(response.status_code, 200)
+        _, *rows = csv.reader(response.content.decode('utf-8').splitlines())
+        self.assertEqual({row[0]: row[1:] for row in rows}, {
+            'Room Alpha': [moderator.name(), ' ', ' '],
+            'Room Bravo': [' ', moderator.name(), ' '],
+        })
+
+
+class UserSearchListNamesTest(ProgramFrameworkTest):
+    """The user search page names its lists from the modules' description functions
+    (studentDesc() etc.) instead of building the lists; both must have the same keys, in order."""
+
+    def setUp(self):
+        super(UserSearchListNamesTest, self).setUp()
+        # A resource request, so the teacher lists include the dynamic per-resource ones.
+        section = self.program.sections()[0]
+        res_type = ResourceType.objects.create(name='Projector', description='Projector', program=self.program)
+        ResourceRequest.objects.create(target=section, res_type=res_type, desired_value='Yes')
+
+    def test_description_keys_match_list_keys(self):
+        self.assertEqual(len(self.program.getModules()), ProgramModule.objects.count())
+        for list_func, desc_func in zip(Program.USER_TYPE_LIST_FUNCS, Program.USER_TYPE_LIST_DESC_FUNCS):
+            with self.subTest(list_func=list_func):
+                list_keys = list(getattr(self.program, list_func)(QObjects=True).keys())
+                self.assertTrue(list_keys)
+                self.assertEqual(list(getattr(self.program, desc_func)().keys()), list_keys)
+        self.assertTrue(any(key.startswith('teacher_res_') for key in self.program.teacherDesc()),
+                        list(self.program.teacherDesc()))
+
+    def test_page_lists_every_list_and_submits_one(self):
+        from esp.users.controllers.usersearch import UserSearchController
+        context = UserSearchController().prepare_context(self.program)
+        for user_type, list_func in zip(Program.USER_TYPES_WITH_LIST_FUNCS, Program.USER_TYPE_LIST_FUNCS):
+            names = [item['name'] for item in context['lists'][user_type] if not item.get('all_flag')]
+            self.assertEqual(names, list(getattr(self.program, list_func)(QObjects=True).keys()))
+        # Submitting a list (and a combination of two) still finds its users.
+        q = UserSearchController().query_from_postdata(
+            self.program, {'base_list': 'class_approved', 'recipient_type': 'Teacher'})
+        self.assertEqual(set(ESPUser.objects.filter(q).distinct()), set(self.teachers))
+        q = UserSearchController().query_from_postdata(
+            self.program, {'combo_base_list': 'Teacher:class_submitted', 'checkbox_and_class_approved': 'on'})
+        self.assertEqual(set(ESPUser.objects.filter(q).distinct()), set(self.teachers))
 
 
 @unittest.skipIf(ilp_lottery.gp is None, "gurobipy is not installed")
@@ -2212,6 +2607,67 @@ class LotterySnapshotTest(ProgramFrameworkTest):
         self.assertTrue({'archive@example.com', self.program.director_email} <= keep)
         self.assertTrue(set(cls.get_teachers().values_list('email', flat=True)) <= keep)
 
+    def test_save_from_pairs_expires_cached_enrollments(self):
+        sections = list(self.program.sections())[:2]
+        first, second = self.students[:2]
+
+        def enrolled(student):
+            return [sec.id for sec in student.getEnrolledSections(self.program)]
+
+        BaseLotteryAssignmentController.save_from_pairs(self.program, [(first.id, sections[0].id)], try_mailman=False)
+        self.assertEqual((enrolled(first), enrolled(second)), ([sections[0].id], []))  # now cached
+        BaseLotteryAssignmentController.save_from_pairs(self.program, [(second.id, sections[1].id)], try_mailman=False)
+        # The first student's enrollment was expired by update(), which sends no signal of its own.
+        self.assertEqual((enrolled(first), enrolled(second)), ([], [sections[1].id]))
+
+    def test_save_from_pairs_expires_every_user_and_section_cache(self):
+        # invalidate_registration_caches sends one signal per distinct user and section, not
+        # per registration; every user's and every section's caches must still be expired.
+        sec_a, sec_b = list(self.program.sections())[:2]
+        first, second = self.students[:2]
+
+        def state():
+            return ([sec.id for sec in first.getEnrolledSections(self.program)],
+                    [sec.id for sec in second.getEnrolledSections(self.program)],
+                    ClassSection.objects.get(id=sec_a.id).num_students(),
+                    ClassSection.objects.get(id=sec_b.id).num_students())
+
+        self.assertEqual(state(), ([], [], 0, 0))  # now cached
+        BaseLotteryAssignmentController.save_from_pairs(
+            self.program, [(first.id, sec_a.id), (first.id, sec_b.id), (second.id, sec_a.id)], try_mailman=False)
+        self.assertEqual(state(), (sorted([sec_a.id, sec_b.id]), [sec_a.id], 2, 1))
+        BaseLotteryAssignmentController.save_from_pairs(self.program, [(second.id, sec_b.id)], try_mailman=False)
+        self.assertEqual(state(), ([], [sec_b.id], 0, 1))
+
+    def test_save_assignments_expires_dropped_users_and_sections(self):
+        # The legacy (dense-matrix) save path: a second save with no row for the first save's
+        # student or section must still expire their caches (enrollments and section counts).
+        sec_a, sec_b = list(self.program.sections())[:2]
+        first, second = self.students[:2]
+
+        def save(pairs):
+            controller = BaseLotteryAssignmentController.__new__(BaseLotteryAssignmentController)
+            controller.program = self.program
+            controller.options = {'stats_display': False}
+            controller.student_ids = numpy.array([first.id, second.id])
+            controller.section_ids = numpy.array([sec_a.id, sec_b.id])
+            controller.student_sections = numpy.zeros((2, 2), dtype=bool)
+            for student, section in pairs:
+                controller.student_sections[[first, second].index(student), [sec_a, sec_b].index(section)] = True
+            controller.save_assignments(try_mailman=False)
+
+        def state():
+            return ([sec.id for sec in first.getEnrolledSections(self.program)],
+                    [sec.id for sec in second.getEnrolledSections(self.program)],
+                    ClassSection.objects.get(id=sec_a.id).num_students(),
+                    ClassSection.objects.get(id=sec_b.id).num_students(),
+                    ClassSection.objects.get(id=sec_a.id).enrolled_students)
+
+        save([(first, sec_a)])
+        self.assertEqual(state(), ([sec_a.id], [], 1, 0, 1))  # now cached
+        save([(second, sec_b)])
+        self.assertEqual(state(), ([], [sec_b.id], 0, 1, 0))
+
     def test_save_from_pairs_clears_previous_enrollments(self):
         sections = list(self.program.sections())[:2]
         BaseLotteryAssignmentController.save_from_pairs(
@@ -2444,6 +2900,137 @@ class LotteryGuardedRefreshConcurrencyTest(TransactionTestCase):
         self.assertIsNotNone(self.run.last_polled_at)
 
 
+class LotterySaveConcurrencyTest(TransactionTestCase):
+    """Two lottery saves for the same program, on separate connections (two web workers),
+    must not interleave: the second waits for the first to commit, then expires its
+    enrollments, so only the second save's remain. Without the advisory lock in
+    replace_enrollments, the second save's expiry wouldn't see the first's uncommitted rows
+    and both saves' enrollments would stay valid. (TransactionTestCase and the setUp/tearDown
+    below for the same reasons as LotteryGuardedRefreshConcurrencyTest.)"""
+
+    def setUp(self):
+        if hasattr(cache, "flush_all"):
+            cache.flush_all()
+        ProgramFrameworkTest.setUp(self)
+
+    def tearDown(self):
+        ContentType.objects.clear_cache()
+
+    def test_concurrent_saves_are_serialized(self):
+        sec_a, sec_b = list(self.program.sections())[:2]
+        first, second = self.students[:2]
+        a_saved, release_a = threading.Event(), threading.Event()
+        order, errors = [], []
+
+        def save_a():
+            try:
+                with transaction.atomic():  # as a web request's transaction: the lock lasts until it ends
+                    BaseLotteryAssignmentController.replace_enrollments(self.program, [(first.id, sec_a.id)])
+                    a_saved.set()
+                    release_a.wait(timeout=10)
+                    order.append('a')
+            except Exception as e:
+                errors.append(e)
+            finally:
+                connection.close()
+
+        def save_b():
+            try:
+                BaseLotteryAssignmentController.replace_enrollments(self.program, [(second.id, sec_b.id)])
+                order.append('b')
+            except Exception as e:
+                errors.append(e)
+            finally:
+                connection.close()
+
+        thread_a = threading.Thread(target=save_a)
+        thread_a.start()
+        self.assertTrue(a_saved.wait(timeout=10))
+        thread_b = threading.Thread(target=save_b)
+        thread_b.start()
+        thread_b.join(timeout=1)
+        self.assertTrue(thread_b.is_alive(), "the second save didn't wait for the first")
+        release_a.set()
+        thread_a.join(timeout=10)
+        thread_b.join(timeout=10)
+
+        self.assertEqual(errors, [])
+        self.assertEqual(order, ['a', 'b'])
+        valid = StudentRegistration.objects.filter(
+            StudentRegistration.is_valid_qobject(),
+            section__parent_class__parent_program=self.program, relationship__name='Enrolled')
+        self.assertEqual({(sr.user_id, sr.section_id) for sr in valid}, {(second.id, sec_b.id)})
+
+    def test_overlapping_mailman_syncs_leave_the_latest_saved_enrollment(self):
+        import lzma
+
+        section = self.program.sections()[0]
+        first, second = self.students[:2]
+        snapshot = LotteryInputSnapshot.objects.create(
+            program=self.program, input_hash='1' * 64,
+            data=lzma.compress(json.dumps({'students': [first.id, second.id]}).encode('utf-8')),
+        )
+        older, newer = [
+            LotteryRun.objects.create(program=self.program, snapshot=snapshot, status='done', solver_name='test',
+                                      enrolled_pairs=[[student.id, section.id]])
+            for student in (first, second)
+        ]
+        url = '/manage/%s/lottery_ilp_save' % self.program.url
+        first_sync_started, release_first_sync, second_finished = (threading.Event() for _ in range(3))
+        mailman_sections = {}
+        responses, errors = {}, []
+
+        def sync_mailman(program, lotteried_student_ids, students_by_section):
+            if students_by_section[section.id] == [first.id]:
+                first_sync_started.set()
+                if not release_first_sync.wait(timeout=20):
+                    raise RuntimeError('timed out waiting to finish the first Mailman sync')
+            mailman_sections[section.id] = students_by_section[section.id]
+
+        def save(run_id, client, finished=None):
+            try:
+                response = client.post(url, {'run_id': run_id})
+                responses[run_id] = (response.status_code, json.loads(response.content)['response'][0])
+            except Exception as exc:
+                errors.append(exc)
+            finally:
+                connection.close()
+                if finished is not None:
+                    finished.set()
+
+        clients = [Client(), Client()]
+        for client in clients:
+            self.assertTrue(client.login(username=self.admins[0].username, password='password'))
+        first_thread = threading.Thread(target=save, args=(older.id, clients[0]))
+        second_thread = threading.Thread(target=save, args=(newer.id, clients[1], second_finished))
+        with mock.patch.object(BaseLotteryAssignmentController, 'sync_mailman_lists', side_effect=sync_mailman):
+            first_thread.start()
+            try:
+                self.assertTrue(first_sync_started.wait(timeout=10), errors)
+                self.assertFalse(connection.in_atomic_block)
+                self.assertIsNotNone(LotteryRun.objects.get(pk=older.id).saved_at)
+                second_thread.start()
+                # A serialized implementation may block the second sync until the first finishes.
+                second_finished.wait(timeout=5)
+            finally:
+                release_first_sync.set()
+                first_thread.join(timeout=10)
+                if second_thread.ident is not None:
+                    second_thread.join(timeout=10)
+
+        self.assertFalse(first_thread.is_alive())
+        self.assertFalse(second_thread.is_alive())
+        self.assertEqual(errors, [])
+        for run in (older, newer):
+            status, payload = responses[run.id]
+            self.assertEqual(status, 200)
+            self.assertNotIn('error_msg', payload)
+        enrolled_ids = list(StudentRegistration.valid_objects().filter(
+            section=section, relationship__name='Enrolled').values_list('user_id', flat=True))
+        self.assertEqual(enrolled_ids, [second.id])
+        self.assertEqual(mailman_sections, {section.id: enrolled_ids})
+
+
 class RemoteSolverClientTimeoutTest(TestCase):
     """Covers the previously-untested gap that RemoteSolverClient's mandatory
     (connect, read) timeouts actually bound a real hang, not just that the
@@ -2618,28 +3205,106 @@ class LotteryILPViewsTest(ProgramFrameworkTest):
         MockClient.return_value.stop.assert_called_once_with('job-1')
         self.assertNotIn('error_msg', self._response_item(resp))
 
-    def test_save_view(self):
+    def _create_completed_run(self, student, section):
         legacy_controller = LegacyLotteryAssignmentController(self.program)
         snapshot = LotteryInputSnapshot.objects.create(
             program=self.program, input_hash=legacy_controller.input_hash(),
             data=legacy_controller.encode_snapshot_blob(),
         )
-        section = self.program.sections()[0]
-        student = self.students[0]
-        run = LotteryRun.objects.create(
+        return LotteryRun.objects.create(
             program=self.program, snapshot=snapshot, solver_name='test', solver_job_id='job-1',
             status='done', enrolled_pairs=[[student.id, section.id]],
         )
 
-        resp = self._post('lottery_ilp_save', {'run_id': run.id})
-        self.assertNotIn('error_msg', self._response_item(resp))
+    def test_save_view(self):
+        section = self.program.sections()[0]
+        student = self.students[0]
+        run = self._create_completed_run(student, section)
+
+        with mock.patch.object(transaction, 'on_commit', wraps=transaction.on_commit) as on_commit, \
+                mock.patch.object(BaseLotteryAssignmentController, 'update_mailman_lists_from_pairs') as sync_mailman:
+            resp = self._post('lottery_ilp_save', {'run_id': run.id})
+            self.assertNotIn('error_msg', self._response_item(resp))
+            run.refresh_from_db()
+            self.assertIsNotNone(run.saved_at)
+            self.assertEqual(run.saved_by, self.admins[0])
+            self.assertTrue(StudentRegistration.valid_objects().filter(
+                user=student, section=section, relationship__name='Enrolled',
+            ).exists())
+            sync_mailman.assert_not_called()
+            on_commit.assert_called_once()
+
+            # TestCase rolls back its outer transaction, so run the registered callback here.
+            on_commit.call_args[0][0]()
+            snapshot = BaseLotteryAssignmentController.decode_snapshot_blob(bytes(run.snapshot.data))
+            sync_mailman.assert_called_once_with(self.program, run.enrolled_pairs, snapshot['students'])
+            section.refresh_from_db()
+            self.assertEqual(section.enrolled_students, 1)
+
+    def test_save_view_rolls_back_enrollments_if_saved_marker_fails(self):
+        old_student, new_student = self.students[:2]
+        section = self.program.sections()[0]
+        run = self._create_completed_run(new_student, section)
+        relationship = RegistrationType.objects.get(name='Enrolled')
+        StudentRegistration.objects.create(user=old_student, section=section, relationship=relationship)
+
+        with mock.patch.object(LotteryRun, 'save', side_effect=RuntimeError('marker write failed')), \
+                mock.patch.object(transaction, 'on_commit', wraps=transaction.on_commit) as on_commit:
+            with self.assertRaisesMessage(RuntimeError, 'marker write failed'):
+                self._post('lottery_ilp_save', {'run_id': run.id})
+            on_commit.assert_not_called()
 
         run.refresh_from_db()
-        self.assertIsNotNone(run.saved_at)
-        self.assertEqual(run.saved_by, self.admins[0])
-        self.assertTrue(StudentRegistration.objects.filter(
-            user=student, section=section, relationship__name='Enrolled',
-        ).exists())
+        self.assertIsNone(run.saved_at)
+        self.assertIsNone(run.saved_by)
+        self.assertEqual(list(StudentRegistration.valid_objects().filter(
+            section=section, relationship=relationship).values_list('user_id', flat=True)), [old_student.id])
+
+    def test_save_view_mailman_retains_newer_save_when_older_callback_is_delayed(self):
+        section = self.program.sections()[0]
+        old_student, new_student = self.students[:2]
+        older = self._create_completed_run(old_student, section)
+        newer = LotteryRun.objects.create(
+            program=self.program, snapshot=older.snapshot, solver_name='test', solver_job_id='job-2',
+            status='done', enrolled_pairs=[[new_student.id, section.id]],
+        )
+        mailman_sections = {}
+
+        def sync_mailman(program, lotteried_student_ids, students_by_section):
+            mailman_sections.clear()
+            mailman_sections.update(students_by_section)
+
+        with mock.patch.object(transaction, 'on_commit', wraps=transaction.on_commit) as on_commit, \
+                mock.patch.object(BaseLotteryAssignmentController, 'sync_mailman_lists', side_effect=sync_mailman):
+            for run in (older, newer):
+                response = self._post('lottery_ilp_save', {'run_id': run.id})
+                self.assertNotIn('error_msg', self._response_item(response))
+            # Simulate the older request being delayed just after committing its database changes.
+            older_callback, newer_callback = [call[0][0] for call in on_commit.call_args_list]
+            newer_callback()
+            older_callback()
+
+        enrolled_ids = list(StudentRegistration.valid_objects().filter(
+            section=section, relationship__name='Enrolled').values_list('user_id', flat=True))
+        self.assertEqual(enrolled_ids, [new_student.id])
+        self.assertEqual(mailman_sections, {section.id: enrolled_ids})
+
+    def test_save_view_syncs_mailman_when_expired_registration_section_disappears(self):
+        old_section, new_section = self.program.sections()[:2]
+        old_student, new_student = self.students[:2]
+        run = self._create_completed_run(new_student, new_section)
+        StudentRegistration.objects.create(
+            user=old_student, section=old_section, relationship=RegistrationType.objects.get(name='Enrolled'))
+
+        with mock.patch.object(transaction, 'on_commit', wraps=transaction.on_commit) as on_commit, \
+                mock.patch.object(BaseLotteryAssignmentController, 'sync_mailman_lists') as sync_mailman:
+            response = self._post('lottery_ilp_save', {'run_id': run.id})
+            self.assertNotIn('error_msg', self._response_item(response))
+            old_section.delete()
+            on_commit.call_args[0][0]()
+
+        snapshot = BaseLotteryAssignmentController.decode_snapshot_blob(bytes(run.snapshot.data))
+        sync_mailman.assert_called_once_with(self.program, snapshot['students'], {new_section.id: [new_student.id]})
 
     def test_save_view_rejects_run_with_no_result(self):
         snapshot = LotteryInputSnapshot.objects.create(program=self.program, input_hash='3' * 64, data=b'x')

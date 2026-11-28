@@ -41,7 +41,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Record, RecordType
-from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
+from esp.program.models  import ClassSubject, ClassSection, FinancialAidRequest, RegistrationProfile, StudentRegistration
 from esp.program.models  import ClassFlagType
 from esp.program.class_status import ClassStatus
 from esp.users.views     import search_for_user
@@ -50,6 +50,7 @@ from esp.utils.latex  import render_to_latex
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
+from esp.resources.models import ResourceAssignment
 from esp.middleware import ESPError
 from esp.middleware.esperrormiddleware import ESPError_Log, ESPError_NoLog
 from esp.utils.query_utils import nest_Q
@@ -59,13 +60,13 @@ from esp.program.models import VolunteerOffer, Program
 from django import forms
 from django.conf import settings
 from django.http import HttpResponse
-from django.db.models import IntegerField, Case, When, Count, Q, Prefetch
+from django.db.models import IntegerField, Case, When, Count, Min, Q, Prefetch
 from django.template import loader
 from django.template.loader import render_to_string, get_template
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import cmp_to_key, partial
 import collections
 import copy
@@ -93,6 +94,75 @@ SCHEDULE_PAGES_RE = re.compile(r'ESPSCHEDPAGES (\d+)')
 SCHEDULE_PAGE_NAMES = ['first page (name, costs and pretext)',
                        'schedule page (class table and posttext)',
                        'barcode page', 'blank back page']
+
+
+def _memo(obj, name, compute):
+    """compute(), worked out once per object: sorting calls the comparison functions below
+    O(n log n) times, and each lookup in them is a query."""
+    memo = obj.__dict__.setdefault('_printables_memo', {})
+    if name not in memo:
+        memo[name] = compute()
+    return memo[name]
+
+
+def prepare_sections_for_print(sections):
+    """ Set what the class/section list templates show for each section, looked up in bulk
+    rather than per section (and per use) in the template: print_index (index()),
+    print_rooms (prettyrooms()) and print_times (friendly_times()). """
+    sections = list(sections)
+    siblings = collections.defaultdict(list)
+    for sec_id, class_id in ClassSection.objects.filter(
+            parent_class_id__in={sec.parent_class_id for sec in sections}).order_by('id').values_list('id', 'parent_class_id'):
+        siblings[class_id].append(sec_id)
+    rooms = ClassSection.room_names_by_section(sec.id for sec in sections)
+    for sec in sections:
+        sec.print_index = siblings[sec.parent_class_id].index(sec.id) + 1
+        sec.print_rooms = rooms[sec.id]
+        sec.print_times = sec.friendly_times()
+
+
+def bulk_grades(prog, students):
+    """ {student id: student.getGrade(prog)}, with a fixed number of queries for the students who
+    have a registration profile for prog. The others go through getGrade() itself, since its
+    lookup then falls back to (and may save) another profile. """
+    students = list(students)
+    is_student = set(ESPUser.objects.filter(id__in=[s.id for s in students], groups__name='Student')
+                     .values_list('id', flat=True))
+    profiles = {profile.user_id: profile for profile in
+                RegistrationProfile.objects.filter(user__in=is_student, program=prog)
+                .order_by('user_id', '-last_ts', '-id').distinct('user_id').select_related('student_info')}
+    schoolyear = ESPUser.program_schoolyear(prog)
+    grades = {}
+    for student in students:
+        if student.id not in is_student:
+            grades[student.id] = 0  # as getYOG: only students have a year of graduation
+        elif student.id in profiles:
+            info = profiles[student.id].student_info
+            yog = info.graduation_year if info and info.graduation_year else None
+            grades[student.id] = ESPUser.gradeFromYOG(yog, schoolyear) if yog is not None else 0
+        else:
+            grades[student.id] = student.getGrade(prog)
+    return grades
+
+
+def cmp_classes(one, other):
+    """ClassSection.__cmp__ / ClassSubject.__cmp__ (first meeting time, then title),
+    with each object's lookups done once."""
+    if not isinstance(other, type(one)):
+        return 1
+    one_event = _memo(one, 'first_event', one.firstBlockEvent)
+    other_event = _memo(other, 'first_event', other.firstBlockEvent)
+    if one_event is not None and other_event is None:
+        return 1
+    if one_event is None and other_event is not None:
+        return -1
+    if one_event is not None and other_event is not None:
+        cmpresult = one_event.__cmp__(other_event)
+        if cmpresult != 0:
+            return cmpresult
+    if isinstance(one, ClassSection):
+        return cmp(_memo(one, 'title', one.title), _memo(other, 'title', other.title))
+    return cmp(one.title, other.title)
 
 
 def check_schedule_pages(tex_log, students, pages_per_student):
@@ -464,8 +534,13 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_response(self.baseDir()+'classes_flags.html', request, context)
 
     @needs_admin
-    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x, y: cmp(x, y), filt_exp = lambda x: True, split_teachers = False, template_file='classes_list.html'):
-        classes = ClassSubject.objects.filter(parent_program = self.program)
+    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = cmp_classes, filt_exp = lambda x: True, split_teachers = False, template_file='classes_list.html'):
+        #   (the template shows each class's sections, teachers and moderators: fetched once here,
+        #   teachers and moderators in surname order)
+        by_name = ESPUser.objects.order_by('last_name', 'first_name', 'id')
+        classes = ClassSubject.objects.filter(parent_program = self.program).prefetch_related(
+            Prefetch('teachers', queryset=by_name), 'sections',
+            Prefetch('sections__moderators', queryset=by_name))
 
         if 'clsids' in request.GET:
             clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
@@ -500,6 +575,17 @@ class ProgramPrintables(ProgramModuleObj):
 
         classes.sort(key=cmp_to_key(sort_exp))
 
+        #   What the templates show per section and per teacher/moderator, looked up in bulk
+        #   (copies made by split_teachers share their prefetched sections and teachers)
+        sections = list({id(sec): sec for cls in classes for sec in cls.sections.all()}.values())
+        prepare_sections_for_print(sections)
+        people = list({id(user): user for user in
+                       [t for cls in classes for t in cls.teachers.all()] +
+                       [m for sec in sections for m in sec.moderators.all()]}.values())
+        profiles = RegistrationProfile.get_last_profiles(people, ('contact_user',))
+        for user in people:
+            user.print_profile = profiles[user.id]
+
         context = {'classes': classes, 'program': self.program}
 
         if (extra and 'csv' in extra) or 'csv' in request.GET:
@@ -512,8 +598,9 @@ class ProgramPrintables(ProgramModuleObj):
             return render_to_response(self.baseDir()+template_file, request, context)
 
     @needs_admin
-    def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x, y: cmp(x, y), filt_exp = lambda x: True, template_file='sections_list.html'):
-        sections = self.program.sections()
+    def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = cmp_classes, filt_exp = lambda x: True, template_file='sections_list.html'):
+        sections = self.program.sections().prefetch_related(
+            Prefetch('moderators', queryset=ESPUser.objects.order_by('last_name', 'first_name', 'id')))
 
         if 'secids' in request.GET:
             secids = [int(secid) for secid in request.GET['secids'].split(",")]
@@ -541,6 +628,20 @@ class ProgramPrintables(ProgramModuleObj):
 
         sections = list(filter(filt_exp, sections))
 
+        #   What the templates show per section and per teacher/moderator, looked up in bulk
+        #   (before sorting: sorting by room uses print_rooms)
+        prepare_sections_for_print(sections)
+        people = []
+        for sec in sections:
+            sec.print_teachers = sorted(sec.teachers, key=lambda t: (t.last_name, t.first_name, t.id))
+            #   (names in the same order as the phone numbers; as getTeacherNamesLast otherwise)
+            sec.print_teacher_names = [t.name_last_first() if t.name_last_first().strip() else t.username
+                                       for t in sec.print_teachers]
+            people += sec.print_teachers + list(sec.moderators.all())
+        profiles = RegistrationProfile.get_last_profiles(people, ('contact_user',))
+        for user in people:
+            user.print_profile = profiles[user.id]
+
         sections.sort(key=cmp_to_key(sort_exp))
 
         context = {'sections': sections, 'program': self.program}
@@ -557,16 +658,22 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def classesbytime(self, request, tl, one, two, module, extra, prog):
+        def num_times(sec):
+            return _memo(sec, 'num_times', sec.meeting_times.count)
+
+        def first_start(sec):
+            return _memo(sec, 'first_start', lambda: sec.meeting_times.all()[0].start)
+
         def cmp_time(one, other):
-            if (one.meeting_times.count() > 0 and other.meeting_times.count() > 0):
-                cmp0 = cmp(one.meeting_times.all()[0].start, other.meeting_times.all()[0].start)
+            if (num_times(one) > 0 and num_times(other) > 0):
+                cmp0 = cmp(first_start(one), first_start(other))
             else:
-                cmp0 = cmp(one.meeting_times.count(), other.meeting_times.count())
+                cmp0 = cmp(num_times(one), num_times(other))
 
             if cmp0 != 0:
                 return cmp0
 
-            return cmp(one, other)
+            return cmp_classes(one, other)
 
         return self.sectionsbyFOO(request, tl, one, two, module, extra, prog, cmp_time)
 
@@ -579,7 +686,7 @@ class ProgramPrintables(ProgramModuleObj):
             if cmp0 != 0:
                 return cmp0
 
-            return cmp(one, other)
+            return cmp_classes(one, other)
 
         return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_title)
 
@@ -592,7 +699,7 @@ class ProgramPrintables(ProgramModuleObj):
             if cmp0 != 0:
                 return cmp0
 
-            return cmp(one, other)
+            return cmp_classes(one, other)
 
         def filt_teacher(cls):
             return len(cls.get_teachers()) > 0
@@ -603,19 +710,13 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def classesbyroom(self, request, tl, one, two, module, extra, prog):
         def cmp_room(one, other):
-            qs_one = one.initial_rooms()
-            qs_other = other.initial_rooms()
-            cmp0 = 0
-
-            if qs_one.count() > 0 and qs_other.count() > 0:
-                room_one = qs_one[0]
-                room_other = qs_other[0]
-                cmp0 = cmp(room_one.name, room_other.name)
-
-            if cmp0 != 0:
-                return cmp0
-
-            return cmp(one, other)
+            if bool(one.print_rooms) != bool(other.print_rooms):
+                return -1 if one.print_rooms else 1
+            if one.print_rooms:
+                room_order = cmp(min(one.print_rooms), min(other.print_rooms))
+                if room_order:
+                    return room_order
+            return cmp_classes(one, other)
 
         return self.sectionsbyFOO(request, tl, one, two, module, extra, prog, cmp_room)
 
@@ -881,18 +982,27 @@ class ProgramPrintables(ProgramModuleObj):
 
 
     @needs_admin
-    def studentsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x, y: cmp(x, y), filt_exp = lambda x: True, template_file = 'studentlist.html', extra_func = lambda x: {}, display_name = 'Student List'):
+    def studentsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x, y: cmp(x, y), filt_exp = lambda x: True, template_file = 'studentlist.html', extra_func = lambda x: {}, display_name = 'Student List', bulk_extra_func = None):
         filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': display_name})
         if not found:
             return filterObj
 
         context = {'module': self, 'program': prog}
         students = list(filter(filt_exp, filterObj.getList(ESPUser).distinct()))
+        #   bulk_extra_func: like extra_func, but for all the students at once ({student id: dict})
+        extras = bulk_extra_func(students) if bulk_extra_func else {}
         for s in students:
-            extra_dict = extra_func(s)
+            extra_dict = extras[s.id] if bulk_extra_func else extra_func(s)
             for key in extra_dict:
                 setattr(s, key, extra_dict[key])
         students.sort(key=cmp_to_key(sort_exp))
+        if template_file == 'studentlist.html':
+            # Each student's latest profile and grade, for the template (one query for all profiles)
+            profiles = RegistrationProfile.get_last_profiles(students, ('student_info', 'contact_emergency'))
+            grades = bulk_grades(prog, students)
+            for s in students:
+                s.list_profile = profiles[s.id]
+                s.list_grade = grades[s.id]
         context['students'] = students
 
         return render_to_response(self.baseDir()+template_file, request, context)
@@ -909,34 +1019,90 @@ class ProgramPrintables(ProgramModuleObj):
         """ student list, having emergency contact information instead """
         from esp.program.models import RegistrationProfile
 
-        def emergency_stuff(student):
-            #  Try to get some kind of emergency contact info even if it wasn't entered for this program.
-            program_profile = RegistrationProfile.getLastForProgram(student, prog)
-            if program_profile.contact_emergency:
-                return {'emerg_contact': program_profile.contact_emergency}
-            else:
-                other_profiles = RegistrationProfile.objects.filter(user=student).order_by('-last_ts')
-                for prof in other_profiles:
-                    if prof.contact_emergency:
-                        return {'emerg_contact': prof.contact_emergency}
+        def emergency_stuff(students):
+            #   Each student's emergency contact: from their newest profile for this program if it has one,
+            #   otherwise from their newest profile (for any program) that has one.  Also each student's
+            #   latest profile (for pronouns).
+            program_profiles = {profile.user_id: profile for profile in
+                                RegistrationProfile.objects.filter(user__in=students, program=prog)
+                                .order_by('user_id', '-last_ts', '-id').distinct('user_id')
+                                .select_related('contact_emergency')}
+            for student in students:
+                if student.id not in program_profiles:
+                    # (as before: getLastForProgram may adopt a recent profile from another program for this one)
+                    program_profiles[student.id] = RegistrationProfile.getLastForProgram(student, prog)
+            contacts = {user_id: profile.contact_emergency for user_id, profile in program_profiles.items()
+                        if profile.contact_emergency_id is not None}
+            missing = [student.id for student in students if student.id not in contacts]
+            contacts.update((profile.user_id, profile.contact_emergency) for profile in
+                            RegistrationProfile.objects.filter(user__in=missing, contact_emergency__isnull=False)
+                            .order_by('user_id', '-last_ts', '-id').distinct('user_id')
+                            .select_related('contact_emergency'))
+            last_profiles = RegistrationProfile.get_last_profiles(students, ('student_info',))
+            result = {}
+            for student in students:
+                result[student.id] = {'list_profile': last_profiles[student.id]}
+                if student.id in contacts:
+                    result[student.id]['emerg_contact'] = contacts[student.id]
+            return result
 
-                return {}
-
-        return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', extra_func = emergency_stuff, display_name = 'Student Emergency Contact List')
+        return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', bulk_extra_func = emergency_stuff, display_name = 'Student Emergency Contact List')
 
     def _scheditems_for_teacher(self, teacher, program=None):
         """ Build scheditems list for a single teacher (teaching + moderating sections). """
+        return self._scheditems_for_teachers([teacher], program)
+
+    def _scheditems_for_teachers(self, teachers, program=None):
+        """ Build the scheditems list (teacherschedule.html) for these teachers, in order: each one's
+        scheduled, accepted sections that have a room or resource assigned, that they teach or
+        moderate (as getTaughtOrModeratingSectionsFromProgram), by time. Looked up for all of them
+        at once, with the times and rooms the template shows. """
         if program is None:
             program = self.program
-        classes = sorted([cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(program)
-                if cls.meeting_times.all().exists()
-                and cls.resourceassignment_set.all().exists()
-                and cls.status > 0])
+        teacher_ids = [teacher.id for teacher in teachers]
+        #   Sections taught (classes not rejected, as getTaughtClasses) or moderated
+        taught_classes = collections.defaultdict(set)
+        for user_id, class_id in ClassSubject.teachers.through.objects.filter(
+                espuser_id__in=teacher_ids, classsubject__parent_program=program,
+        ).exclude(classsubject__status=ClassStatus.REJECTED).values_list('espuser_id', 'classsubject_id'):
+            taught_classes[user_id].add(class_id)
+        moderated = collections.defaultdict(set)
+        for user_id, sec_id in ClassSection.moderators.through.objects.filter(
+                espuser_id__in=teacher_ids, classsection__parent_class__parent_program=program,
+        ).values_list('espuser_id', 'classsection_id'):
+            moderated[user_id].add(sec_id)
+        all_classes = set().union(*taught_classes.values()) if taught_classes else set()
+        all_moderated = set().union(*moderated.values()) if moderated else set()
+        #   ... that are accepted (status > 0), have meeting times and have a resource assigned
+        sections = {sec.id: sec for sec in ClassSection.objects.filter(
+            Q(parent_class_id__in=all_classes) | Q(id__in=all_moderated), status__gt=0,
+            meeting_times__isnull=False, resourceassignment__isnull=False,
+        ).distinct().select_related('parent_class').prefetch_related(
+            Prefetch('parent_class__teachers', queryset=ESPUser.objects.order_by('last_name'), to_attr='_teachers'))}
+        sections_by_class = collections.defaultdict(list)
+        class_teacher_ids = {}
+        for sec in sections.values():
+            class_id = sec.parent_class_id
+            sections_by_class[class_id].append(sec.id)
+            if class_id not in class_teacher_ids:
+                class_teacher_ids[class_id] = {teacher.id for teacher in sec.parent_class._teachers}
+        rooms = ClassSection.room_names_by_section(sections)
+        times = {}
         scheditems = []
-        for cls in classes:
-            moderating = teacher not in cls.parent_class.get_teachers()
-            role = program.getModeratorTitle() if moderating else 'Teacher'
-            scheditems.append({'name': teacher.name(), 'teacher': teacher, 'cls': cls, 'role': role, 'moderating': moderating})
+        for teacher in teachers:
+            sec_ids = set(moderated[teacher.id])
+            for class_id in taught_classes[teacher.id]:
+                sec_ids.update(sections_by_class[class_id])
+            #   (by id first, the queryset's order, so that ties sort as before)
+            classes = sorted((sections[sec_id] for sec_id in sorted(sec_ids) if sec_id in sections),
+                             key=cmp_to_key(cmp_classes))
+            for cls in classes:
+                moderating = teacher.id not in class_teacher_ids[cls.parent_class_id]
+                role = program.getModeratorTitle() if moderating else 'Teacher'
+                if cls.id not in times:
+                    times[cls.id] = cls.friendly_times()
+                scheditems.append({'name': teacher.name(), 'teacher': teacher, 'cls': cls, 'role': role, 'moderating': moderating,
+                                   'times': times[cls.id], 'rooms': rooms[cls.id], 'has_classrooms': bool(rooms[cls.id])})
         return scheditems
 
     @aux_call
@@ -951,9 +1117,7 @@ class ProgramPrintables(ProgramModuleObj):
         context = {'module': self}
         teachers = sorted(filterObj.getList(ESPUser).distinct())
 
-        scheditems = []
-        for teacher in teachers:
-            scheditems.extend(self._scheditems_for_teacher(teacher))
+        scheditems = self._scheditems_for_teachers(teachers)
 
         context['scheditems'] = scheditems
         context['moderators'] = True
@@ -984,9 +1148,7 @@ class ProgramPrintables(ProgramModuleObj):
         context = {'module': self     }
         teachers = sorted(filterObj.getList(ESPUser).distinct())
 
-        scheditems = []
-        for teacher in teachers:
-            scheditems.extend(self._scheditems_for_teacher(teacher))
+        scheditems = self._scheditems_for_teachers(teachers)
 
         context['scheditems'] = scheditems
         context['moderators'] = False
@@ -1006,11 +1168,7 @@ class ProgramPrintables(ProgramModuleObj):
         context = {'module': self     }
         teachers = sorted(filterObj.getList(ESPUser).distinct())
 
-        scheditems = []
-        for teacher in teachers:
-            scheditems.extend(item for item in self._scheditems_for_teacher(teacher) if item['moderating'])
-
-        context['scheditems'] = scheditems
+        context['scheditems'] = [item for item in self._scheditems_for_teachers(teachers) if item['moderating']]
         context['moderators'] = True
         context['teachers'] = False
 
@@ -1226,9 +1384,9 @@ class ProgramPrintables(ProgramModuleObj):
         response = HttpResponse(content_type='text/csv')
         writer = csv.writer(response)
         writer.writerow(('Control ID', 'Student ID', 'Last name', 'First name', 'Total cost', 'Finaid grant', 'Amount paid', 'Amount owed'))
-        for student in students:
-            iac = IndividualAccountingController(self.program, student)
-            writer.writerow((iac.get_id(), student.id, student.last_name, student.first_name, '%.2f' % iac.amount_requested(), '%.2f' % iac.amount_finaid(), '%.2f' % iac.amount_paid(), '%.2f' % iac.amount_due()))
+        for row in ProgramAccountingController(self.program).student_payment_rows(students):
+            student = row['student']
+            writer.writerow(('%d/%d' % (self.program.id, student.id), student.id, student.last_name, student.first_name, '%.2f' % row['amount_requested'], '%.2f' % row['amount_finaid'], '%.2f' % row['amount_paid'], '%.2f' % row['amount_due']))
 
         return response
 
@@ -1471,6 +1629,7 @@ class ProgramPrintables(ProgramModuleObj):
         #   for every student enrolled in it; for a whole program, repeating
         #   these lookups per student took minutes.
         teachers_by_subject = {}
+        rooms = ClassSection.room_names_by_section(classes_by_id)
         for cls in classes_by_id.values():
             subject = cls.parent_class
             if subject.id not in teachers_by_subject:
@@ -1479,7 +1638,7 @@ class ProgramPrintables(ProgramModuleObj):
                 else:
                     teachers_by_subject[subject.id] = subject.getTeacherNames()
             cls.schedule_times = cls.friendly_times()
-            cls.schedule_rooms = [room.name for room in cls.initial_rooms()]
+            cls.schedule_rooms = rooms[cls.id]
             cls.schedule_code = cls.emailcode()
             cls.schedule_teachers = teachers_by_subject[subject.id]
 
@@ -1620,16 +1779,40 @@ class ProgramPrintables(ProgramModuleObj):
         context = {'module': self }
         students = sorted(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
+        # Every student's valid enrollments in the program's accepted sections, in one query;
+        # each section's row values are worked out once, not once per enrolled student.
+        enrollments = StudentRegistration.objects.filter(
+            StudentRegistration.is_valid_qobject(), relationship__name='Enrolled', user__in=students,
+            section__parent_class__parent_program=prog, section__status__gt=0,
+        ).values_list('user_id', 'section_id').distinct()
+        sections_by_student = collections.defaultdict(list)
+        for user_id, section_id in enrollments:
+            sections_by_student[user_id].append(section_id)
+        sections = {
+            sec.id: sec for sec in
+            ClassSection.objects.filter(id__in={sec_id for sec_ids in sections_by_student.values() for sec_id in sec_ids})
+            .select_related('parent_class')
+            .prefetch_related(Prefetch('meeting_times', queryset=Event.objects.order_by('start', 'id')))
+        }
+        teachers_by_subject = {}
+        rooms = ClassSection.room_names_by_section(sections)
+        for sec in sections.values():
+            if sec.parent_class_id not in teachers_by_subject:
+                teachers_by_subject[sec.parent_class_id] = sec.parent_class.getTeacherNames()
+            sec.flat_teachers = teachers_by_subject[sec.parent_class_id]
+            sec.flat_rooms = rooms[sec.id]
+            sec.flat_times = sec.friendly_times()
+
+        def section_key(sec):
+            # ClassSection.__cmp__ order: unscheduled first, then by first meeting time, then title.
+            times = sec.meeting_times.all()
+            return (1, times[0].start, sec.title()) if times else (0, None, sec.title())
 
         scheditems = []
-
         for student in students:
-            # get list of valid classes
-            classes = sorted([ cls for cls in student.getEnrolledSections()
-                    if cls.parent_program == self.program
-                    and cls.isAccepted()                       ])
-            # now we sort them by time/title
-
+            # sorted by id first, so ties keep the old (id) order
+            classes = sorted(sorted((sections[sec_id] for sec_id in sections_by_student[student.id]),
+                                    key=lambda sec: sec.id), key=section_key)
             for cls in classes:
                 scheditems.append({'name': student.name(),
                                    'cls' : cls})
@@ -1645,66 +1828,47 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def roomschedules(self, request, tl, one, two, module, extra, prog):
         """ generate class room rosters"""
-        from esp.cal.models import Event
-
-        classes = self.program.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED)
-
-        context = {}
-
-        rooms_dict = {}
-        scheditems = []
-
+        sections = {sec.id: sec for sec in self.program.sections().filter(
+            status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED)}
+        assignments = ClassSection.scheduled_classroom_assignments(sections)
+        rooms_dict = collections.defaultdict(list)
         if extra == "all_blocks":
+            occupied = collections.defaultdict(set)
+            for section_id, name, event_id in assignments.values_list(
+                    'target_id', 'resource__name', 'resource__event_id'):
+                occupied[name, event_id].add(section_id)
             blocks = prog.getTimeSlotList()
-            rooms = prog.groupedClassrooms()
-            for block in blocks:
-                for room in rooms:
-                    available_room = False
-                    empty_room = True
-                    if block in room.timeslots:
-                        available_room = True
-                        if available_room:
-                            for cls in classes.filter(meeting_times=block):
-                                if room.name in cls.initial_rooms().values_list('name', flat = True):
-                                    empty_room = False
-                                    update_dict = {'room': room.name,
-                                                   'cls': cls,
-                                                   'timeblock': block}
-                                    if room.name in rooms_dict:
-                                        rooms_dict[room.name].append(update_dict)
-                                    else:
-                                        rooms_dict[room.name] = [update_dict]
-                    if empty_room:
-                        update_dict = {'room': room.name,
-                                       'cls': 'Room Available' if available_room else 'Room Unavailable',
-                                       'timeblock': block}
-                        if room.name in rooms_dict:
-                            rooms_dict[room.name].append(update_dict)
-                        else:
-                            rooms_dict[room.name] = [update_dict]
+            for room in prog.groupedClassrooms():
+                available = {event.id for event in room.timeslots}
+                for block in blocks:
+                    section_ids = occupied[room.name, block.id]
+                    if section_ids:
+                        for section_id in sorted(section_ids):
+                            rooms_dict[room.name].append(
+                                {'room': room.name, 'cls': sections[section_id], 'timeblock': block})
+                    else:
+                        status = 'Room Available' if block.id in available else 'Room Unavailable'
+                        rooms_dict[room.name].append({'room': room.name, 'cls': status, 'timeblock': block})
         else:
-            for cls in classes:
-                for room in cls.initial_rooms():
-                    for event_group in Event.group_contiguous(list(cls.meeting_times.all())):
-                        update_dict = {'room': room.name,
-                                       'cls': cls,
-                                       'timeblock': Event.collapse(event_group, tol = timedelta(days=1))[0]}
-                        if room.name in rooms_dict:
-                            rooms_dict[room.name].append(update_dict)
-                        else:
-                            rooms_dict[room.name] = [update_dict]
+            room_events = collections.defaultdict(dict)
+            for assignment in assignments.select_related('resource__event'):
+                room = assignment.resource
+                room_events[assignment.target_id, room.name][room.event_id] = room.event
+            for (section_id, name), events in sorted(room_events.items()):
+                for group in Event.group_contiguous(list(events.values())):
+                    block = Event.collapse(group, tol=timedelta(days=1))[0]
+                    rooms_dict[name].append({'room': name, 'cls': sections[section_id], 'timeblock': block})
 
+        scheditems = []
         for room_name in prog.natural_sort(list(rooms_dict.keys())):
-            rooms_dict[room_name].sort(key=lambda x: x['timeblock'].start)
-            for val in rooms_dict[room_name]:
-                scheditems.append(val)
+            scheditems.extend(sorted(rooms_dict[room_name], key=lambda item: item['timeblock'].start))
 
-        context['scheditems'] = scheditems
-        context['settings'] = settings
-        context['group_name'] = Tag.getTag('full_group_name')
-        context['phone_number'] = Tag.getTag('group_phone_number')
-
-        return render_to_response(self.baseDir()+'roomschedules.html', request, context)
+        return render_to_response(self.baseDir()+'roomschedules.html', request, {
+            'scheditems': scheditems,
+            'settings': settings,
+            'group_name': Tag.getTag('full_group_name'),
+            'phone_number': Tag.getTag('group_phone_number'),
+        })
 
     @aux_call
     @needs_admin
@@ -1760,6 +1924,47 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'student_tickets.html', request, context)
 
+    @staticmethod
+    def _prepare_rosters(prog, items):
+        """Work out what classroster.html shows for each class or section in items (once each,
+        however many teachers it is listed under): roster_title, roster_times, roster_rooms,
+        roster_code and roster_students (each with id, name, pronoun and grade)."""
+        items = list(items)
+        if not items:
+            return
+        class_ids = {item.id for item in items if isinstance(item, ClassSubject)}
+        section_ids = {item.id for item in items if isinstance(item, ClassSection)}
+        enrollments = StudentRegistration.objects.filter(
+            Q(section__parent_class_id__in=class_ids) | Q(section_id__in=section_ids),
+            StudentRegistration.is_valid_qobject(), relationship__name='Enrolled',
+            section__parent_class__parent_program=prog,
+        ).values_list('section_id', 'section__parent_class_id', 'user_id').distinct()
+        by_section = collections.defaultdict(set)
+        by_class = collections.defaultdict(set)
+        for sec_id, class_id, user_id in enrollments:
+            by_section[sec_id].add(user_id)
+            by_class[class_id].add(user_id)
+        wanted = set()
+        for item in items:
+            item.roster_student_ids = by_class[item.id] if isinstance(item, ClassSubject) else by_section[item.id]
+            wanted |= item.roster_student_ids
+        show_pronoun = Tag.getBooleanTag('student_profile_pronoun_field')
+        students = ESPUser.objects.in_bulk(wanted)
+        grades = bulk_grades(prog, students.values())
+        profiles = RegistrationProfile.get_last_profiles(students.values(), ('student_info',)) if show_pronoun else {}
+        for student in students.values():
+            student.roster_grade = grades[student.id]
+            if show_pronoun:
+                info = profiles[student.id].student_info
+                student.roster_pronoun = info.pronoun if info else None
+        for item in items:
+            item.roster_title = six.text_type(item)
+            item.roster_times = item.friendly_times()
+            item.roster_rooms = item.prettyrooms()
+            item.roster_code = item.emailcode()
+            item.roster_students = sorted((students[user_id] for user_id in item.roster_student_ids),
+                                          key=lambda s: (s.last_name, s.first_name, s.id))
+
     @aux_call
     @needs_admin
     def classrosters(self, request, tl, one, two, module, extra, prog):
@@ -1775,14 +1980,24 @@ class ProgramPrintables(ProgramModuleObj):
         context = {'module': self, 'program': prog}
         teachers = sorted(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
+        # Accepted classes per teacher, in one query (as getTaughtClasses + isAccepted)
+        taught = ClassSubject.teachers.through.objects.filter(
+            espuser__in=teachers, classsubject__parent_program=prog, classsubject__status__gt=0,
+        ).values_list('espuser_id', 'classsubject_id').order_by('classsubject_id')
+        classes = ClassSubject.objects.in_bulk({class_id for _, class_id in taught})
+        classes_by_teacher = collections.defaultdict(list)
+        for user_id, class_id in taught:
+            classes_by_teacher[user_id].append(classes[class_id])
+
         scheditems = []
 
         for teacher in teachers:
-            for cls in teacher.getTaughtClasses(self.program):
-                if cls.isAccepted():
-                    scheditems.append({'teacher': teacher,
-                                       'cls'    : cls})
+            for cls in classes_by_teacher[teacher.id]:
+                scheditems.append({'teacher': teacher,
+                                   'cls'    : cls})
 
+        if extra != 'attendance':
+            self._prepare_rosters(prog, list(classes.values()))
         context['scheditems'] = scheditems
         context['bymoderator'] = False
         if extra == 'attendance':
@@ -1807,14 +2022,31 @@ class ProgramPrintables(ProgramModuleObj):
         context = {'module': self, 'program': prog}
         teachers = sorted(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
+        # Accepted moderated sections per teacher, in one query
+        # (as getModeratingSectionsFromProgram + isAccepted: in start time order)
+        moderated = ClassSection.moderators.through.objects.filter(
+            espuser__in=teachers, classsection__parent_class__parent_program=prog, classsection__status__gt=0,
+        ).values_list('espuser_id', 'classsection_id')
+        sections = list(ClassSection.objects.filter(id__in={sec_id for _, sec_id in moderated})
+                        .select_related('parent_class').annotate(start_time=Min('meeting_times__start')))
+        start = {sec.id: sec.start_time for sec in sections}
+        sections = {sec.id: sec for sec in sections}
+        sections_by_teacher = collections.defaultdict(list)
+        for user_id, sec_id in moderated:
+            sections_by_teacher[user_id].append(sections[sec_id])
+        for secs in sections_by_teacher.values():
+            # by start time, unscheduled last (as Postgres sorts NULLs)
+            secs.sort(key=lambda sec: (start[sec.id] is None, start[sec.id] or 0, sec.id))
+
         scheditems = []
 
         for teacher in teachers:
-            for cls in teacher.getModeratingSectionsFromProgram(self.program):
-                if cls.isAccepted():
-                    scheditems.append({'teacher': teacher,
-                                       'cls'    : cls})
+            for cls in sections_by_teacher[teacher.id]:
+                scheditems.append({'teacher': teacher,
+                                   'cls'    : cls})
 
+        if extra != 'attendance':
+            self._prepare_rosters(prog, list(sections.values()))
         context['scheditems'] = scheditems
         context['bymoderator'] = True
         if extra == 'attendance':
@@ -1848,27 +2080,45 @@ class ProgramPrintables(ProgramModuleObj):
         tag_data = Tag.getProgramTag('student_reg_records', prog)
         if tag_data:
             records = [event for event in [x.strip().lower() for x in tag_data.split(',') if RecordType.objects.filter(name = x.strip().lower()).exists()] if event not in ['attended', 'med', 'liab']]
+        # Everything below is fetched for all students at once (it took ~30 queries per student).
+        payment_rows = {row['student'].id: row for row in
+                        ProgramAccountingController(prog).student_payment_rows(students)}
+        profiles = RegistrationProfile.get_last_profiles(students, ('student_info',))
+        # applied = has a completed request; reduced lunch as on the student's latest request
+        applied = set()
+        reduced_lunch = {}
+        for user_id, done, lunch in FinancialAidRequest.objects.filter(
+                program=prog, user__in=students).order_by('id').values_list('user_id', 'done', 'reduced_lunch'):
+            if done:
+                applied.add(user_id)
+            reduced_lunch[user_id] = lunch
+        # as Record.user_completed(student, event, prog)
+        completed = set(Record.objects.filter(
+            program=prog, user__in=students, event__name__in=['attended', 'med', 'liab'] + records,
+            time__lte=datetime.now()).values_list('user_id', 'event__name'))
         studentList = []
         for student in students:
+            row = payment_rows[student.id]
             finaid_status = 'None'
-            if student.appliedFinancialAid(prog):
-                if student.financialaidrequest_set.filter(program=prog).order_by('-id')[0].reduced_lunch:
+            if student.id in applied:
+                if reduced_lunch[student.id]:
                     finaid_status = 'Req. (RL)'
                 else:
                     finaid_status = 'Req. (No RL)'
 
-            iac = IndividualAccountingController(self.program, student)
-            if student.hasFinancialAid(self.program):
+            # as student.hasFinancialAid(prog)
+            if row['amount_finaid'] > 0:
                 finaid_status = 'Approved'
 
             studentList.append({'user': student,
-                                'paid': iac.has_paid(in_full=True),
-                                'amount_due': iac.amount_due(),
+                                'profile': profiles[student.id],
+                                'paid': row['amount_paid'] > 0 and row['amount_due'] <= 0,
+                                'amount_due': row['amount_due'],
                                 'finaid': finaid_status,
-                                'checked_in': Record.user_completed(student, "attended", self.program),
-                                'med': Record.user_completed(student, "med", self.program),
-                                'liab': Record.user_completed(student, "liab", self.program),
-                                'other': [Record.user_completed(student, rec, self.program) for rec in records]})
+                                'checked_in': (student.id, 'attended') in completed,
+                                'med': (student.id, 'med') in completed,
+                                'liab': (student.id, 'liab') in completed,
+                                'other': [(student.id, rec) in completed for rec in records]})
 
         context['other_records'] = records
         context['students'] = students
@@ -1906,10 +2156,12 @@ class ProgramPrintables(ProgramModuleObj):
         #   than on every checklist they appear on
         show_pronoun = Tag.getBooleanTag('student_profile_pronoun_field')
         details = {}
+        grades = bulk_grades(prog, listed)
+        profiles = RegistrationProfile.get_last_profiles(listed, ('contact_user', 'student_info'))
         for student in listed:
-            profile = student.getLastProfile()
+            profile = profiles[student.id]
             details[student.id] = {
-                'grade': student.getGrade(prog),
+                'grade': grades[student.id],
                 'email': profile.contact_user.e_mail if profile.contact_user else '',
                 'pronoun': profile.student_info.pronoun if show_pronoun and profile.student_info else None,
             }
@@ -2110,6 +2362,11 @@ class ProgramPrintables(ProgramModuleObj):
                            ['Conflicts'] + \
                            ['Comments'])
 
+        # one instance per class, so that cmp_classes looks each one up only once
+        classes_by_id = {}
+        def same_class(cls):
+            return classes_by_id.setdefault(cls.id, cls)
+
         # this writes each row associated with a section, for the columns determined above.
         for section, timeslist in sections_possible_times:
             time_values = [time_possible(time, timeslist) for time in times]
@@ -2118,13 +2375,18 @@ class ProgramPrintables(ProgramModuleObj):
             teachers = section.parent_class.get_teachers()
             conflicts = []
             for teacher in teachers:
-                conflicts.extend([x for x in teacher.getTaughtClassesFromProgram(prog) if x not in conflicts and x != section.parent_class])
+                # (`not in` / `!=` as ClassSubject.__eq__ (same first time and title), each class's
+                # first time looked up once)
+                conflicts.extend([x for x in map(same_class, teacher.getTaughtClassesFromProgram(prog))
+                                  if not any(cmp_classes(x, c) == 0 for c in conflicts)
+                                  and cmp_classes(x, same_class(section.parent_class)) != 0])
             conflicts = sorted(conflicts, key = lambda x: x.id)
+            requests = list(section.getResourceRequests())  # once, not once per resource type
 
             write_csv.writerow([section.parent_class.emailcode(), int(round(section.duration))] + \
                                [str(len(section.parent_class.get_sections()))] + \
                                [section.parent_class.class_size_max] + \
-                               [', '.join([r.desired_value for r in section.getResourceRequests() if r.res_type == rt]) for rt in resource_types]+ \
+                               [', '.join([r.desired_value for r in requests if r.res_type_id == rt.id]) for rt in resource_types]+ \
                                time_values + \
                                [', '.join([conflict.emailcode() for conflict in conflicts])]  + \
                                [smart_str(((section.parent_class.requested_room + '. ') if section.parent_class.requested_room else '') + section.parent_class.message_for_directors)])
@@ -2136,48 +2398,25 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def moderator_rooms_spr(self, request, tl, one, two, module, extra, prog):
         """
-        Create a spreadsheet with a row for each room, a column for each timeblock,
-        filled out with moderator names and phone numbers.
+        Create a spreadsheet with a row for each room and a column for each
+        timeblock, filled out with moderator names.
         """
 
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 
-        sections = sorted(self.program.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED))
+        sections = self.program.sections().filter(
+            status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED).prefetch_related('moderators')
+        moderators = {sec.id: '; '.join(sec.getModeratorNames()) for sec in sections}
+        rooms = collections.defaultdict(dict)
+        assignments = ClassSection.scheduled_classroom_assignments(moderators).order_by('target_id')
+        for section_id, name, event_id in assignments.values_list('target_id', 'resource__name', 'resource__event_id'):
+            rooms[name].setdefault(event_id, moderators[section_id])
 
-        rooms = {}
-
-        for sec in sections:
-            for room in sec.initial_rooms():
-                for event_group in Event.collapse(list(sec.meeting_times.all())):
-                    update_dict = {'room': room.name,
-                                   'moderator': '; '.join(sec.getModeratorNames()),
-                                   'timeblock': event_group}
-                    if room.name in rooms:
-                        rooms[room.name].append(update_dict)
-                    else:
-                        rooms[room.name] = [update_dict]
-
-        # functions to determine what will fill in the spreadsheet cell for each thing
-        def get_room_time_moderator(room_name, time):
-            for val in rooms[room_name]:
-                if val['timeblock'] == time:
-                    return val['moderator']
-            return ' '
-
-        times = prog.getTimeSlots()
-        time_headers = [str(time) for time in times]
-
-        # header row, naming each column
-        write_csv.writerow(['Room'] + time_headers)
-
-        # this writes a row for each room
-        for room in rooms.keys():
-            row = [room]
-            for time in times:
-                row.append(get_room_time_moderator(room, time))
-
-            write_csv.writerow(row)
+        times = list(prog.getTimeSlots())
+        write_csv.writerow(['Room'] + [str(time) for time in times])
+        for name in prog.natural_sort(list(rooms)):
+            write_csv.writerow([name] + [rooms[name].get(time.id, ' ') for time in times])
 
         response['Content-Disposition'] = 'attachment; filename=master_%s_schedule.csv' % prog.getModeratorTitle().lower()
         return response
@@ -2193,7 +2432,6 @@ class ProgramPrintables(ProgramModuleObj):
                 -   ID of the timeslot
                 -   Lock level (usually 0 for unlocked, 1 or higher for locked)
         """
-        from esp.resources.models import ResourceAssignment
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 

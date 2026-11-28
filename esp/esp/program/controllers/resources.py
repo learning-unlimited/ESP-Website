@@ -94,7 +94,7 @@ class ResourceController(object):
         for sec in secs:
             sec.clearRooms()
             sec.clearFloatingResources()
-            sec.meeting_times.clear()
+            sec.clear_meeting_times()
         #   delete classroom with specified ID and associated resources
         for room in rooms:
             room.associated_resources().delete()

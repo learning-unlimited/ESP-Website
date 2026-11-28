@@ -79,6 +79,9 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             context["scheditems"] = pmo._scheditems_for_teacher(teacher, program=prog)
+            if template_file == "classrosters.html":
+                #   classroster.html reads what _prepare_rosters sets on each section
+                pmo._prepare_rosters(prog, [item['cls'] for item in context["scheditems"]])
             return render_to_response(pmo.baseDir() + template_file, request, context)
         else:
             raise ESPError(

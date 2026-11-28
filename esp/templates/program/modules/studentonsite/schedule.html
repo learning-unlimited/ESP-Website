@@ -133,16 +133,20 @@ setInterval(write_updated_time,1000);
                     <td class="cls {% cycle 'cls1' 'cls2' %}" rowspan="{{ timeslot.1.0.section.get_meeting_times|length }}">
                         <!--link to course details-->
                         <a class="no-dec" title="More Details" href="/learn/{{one}}/{{two}}/onsitedetails/{{ cls.section.id }}"><b>{{ cls.section.title }}&nbsp;<i class="material-icons md-3">list</i></a></b>
-                        {% if checked_in and not cls.section.initial_rooms.count == 0 %}
-                        <br>{% if map_provider == 'whereis.mit.edu' %}
+                        {% if checked_in %}
+                        {% with rooms=cls.section.prettyrooms initial_room=cls.section.initial_rooms.0 %}
+                        {% if rooms %}
+                        <br>{% if map_provider == 'whereis.mit.edu' and initial_room %}
                                 <a class="no-dec" title="Directions" target="_blank"
-                                   href="{{ cls.section.initial_rooms.0.mit_whereis_url }}">{{ cls.section.prettyrooms|join:", " }}&nbsp;<i class="material-icons md-3">directions</i></a>
+                                   href="{{ initial_room.mit_whereis_url }}">{{ rooms|join:", " }}&nbsp;<i class="material-icons md-3">directions</i></a>
                             {% elif map_provider == 'google' %}
                                 {% if cls.section.initial_lat_long %}<a class="no-dec" title="Directions" target="_blank"
-                                   href="https://www.google.com/maps/dir/?api=1&destination={{ cls.section.initial_lat_long }}&travelmode=walking">{% endif %}{{ cls.section.prettyrooms|join:", " }}{% if cls.section.initial_lat_long %}&nbsp;<i class="material-icons md-3">directions</i></a>{% endif %}
+                                   href="https://www.google.com/maps/dir/?api=1&destination={{ cls.section.initial_lat_long }}&travelmode=walking">{% endif %}{{ rooms|join:", " }}{% if cls.section.initial_lat_long %}&nbsp;<i class="material-icons md-3">directions</i></a>{% endif %}
                             {% else %}
-                                {{ cls.section.prettyrooms|join:", " }}
+                                {{ rooms|join:", " }}
                             {% endif %}
+                        {% endif %}
+                        {% endwith %}
                         {% endif %}
                     </td>
                     {% endif %}

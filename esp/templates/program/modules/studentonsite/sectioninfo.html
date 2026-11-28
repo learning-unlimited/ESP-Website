@@ -20,8 +20,7 @@
                 <td>Room:</td>
                 <td>
                     {% if checked_in %}
-                        {% if section.initial_rooms %}
-                            {% for r in section.initial_rooms %}
+                            {% for r in section.display_rooms %}
                                 {{ r.name }}
                                 {% if map_provider == 'whereis.mit.edu' %}
                                     (<a href="{{ r.mit_whereis_url }}" target="_blank">map</a>)
@@ -36,10 +35,9 @@
                                 {% endif %}
                                 {% endcomment %}
                                 {% if not forloop.last %}, {% endif %}
-                            {% endfor %}
-                        {% else %}
+                            {% empty %}
                             Unassigned
-                        {% endif %}
+                            {% endfor %}
                     {% else %}
                         You are not checked in
                     {% endif %}

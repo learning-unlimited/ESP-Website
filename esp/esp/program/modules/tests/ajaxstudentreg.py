@@ -122,7 +122,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
 
         #   Reschedule that class and try again
         sec.clearRooms()
-        sec.meeting_times.clear()
+        sec.clear_meeting_times()
         sec = ClassSection.objects.get(id=sec.id)
         vt = sec.viable_times()
         new_timeslot = random.choice(vt)

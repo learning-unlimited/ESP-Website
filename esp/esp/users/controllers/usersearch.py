@@ -255,10 +255,23 @@ class UserSearchController(object):
             on the main "comm panel" page
         """
 
+        #   Build only the lists that were asked for (building all of a user type's lists takes
+        #   seconds for teachers), each at most once per call.
+        built_lists = {}
+
+        def program_list(list_func, list_name):
+            if (list_func, list_name) not in built_lists:
+                built_lists[(list_func, list_name)] = program.user_list(list_func, list_name, QObjects=True)
+            return built_lists[(list_func, list_name)]
+
+        #   Which user type has each list (from the modules' descriptions, which are cheap and
+        #   have the same keys as the lists)
+        list_names = {list_func: getattr(program, desc_func)()
+                      for list_func, desc_func in zip(Program.USER_TYPE_LIST_FUNCS, Program.USER_TYPE_LIST_DESC_FUNCS)}
+
         def get_recipient_type(list_name):
             for user_type in Program.USER_TYPE_LIST_FUNCS:
-                raw_lists = getattr(program, user_type)(True)
-                if list_name in raw_lists:
+                if list_name in list_names[user_type]:
                     return user_type
 
         subquery = None
@@ -273,8 +286,7 @@ class UserSearchController(object):
                     q_program = Q()
                     recipient_type = data['recipient_type']
                 else:
-                    program_lists = getattr(program, data['recipient_type'].lower()+'s')(QObjects=True)
-                    q_program = program_lists[data['base_list']]
+                    q_program = program_list(data['recipient_type'].lower()+'s', data['base_list'])
                     """ Some program queries rely on UserBits, and since user types are also stored in
                         UserBits we cannot store both of these in a single Q object.  To compensate, we
                         ignore the user type when performing a program-specific query.  """
@@ -290,7 +302,7 @@ class UserSearchController(object):
             if list_name.startswith('all'):
                 q_program = Q()
             else:
-                q_program = getattr(program, recipient_type.lower()+'s')(QObjects=True)[list_name]
+                q_program = program_list(recipient_type.lower()+'s', list_name)
 
             #   Apply Boolean filters
             #   Base list will be intersected with any lists marked 'AND', and then unioned
@@ -312,7 +324,7 @@ class UserSearchController(object):
 
                 if user_type:
 
-                    qobject = getattr(program, user_type)(QObjects=True)[and_list_name]
+                    qobject = program_list(user_type, and_list_name)
 
                     if and_list_name in not_keys:
                         q_program = q_program & ~qobject
@@ -353,7 +365,7 @@ class UserSearchController(object):
             for or_list_name in or_keys:
                 user_type = get_recipient_type(or_list_name)
                 if user_type:
-                    qobject = getattr(program, user_type)(QObjects=True)[or_list_name]
+                    qobject = program_list(user_type, or_list_name)
                     if or_list_name not in not_keys:
                         q_program = q_program | qobject
                     else:
@@ -420,10 +432,14 @@ class UserSearchController(object):
         category_lists = {}
         list_descriptions = program.getListDescriptions()
 
-        #   Add in program-specific lists for most common user types
-        for user_type, list_func in zip(Program.USER_TYPES_WITH_LIST_FUNCS, Program.USER_TYPE_LIST_FUNCS):
-            raw_lists = getattr(program, list_func)(True)
-            category_lists[user_type] = [{'name': key, 'list': raw_lists[key], 'description': list_descriptions[key]} for key in raw_lists]
+        #   Add in program-specific lists for most common user types.
+        #   The page only shows each list's name and description, so the names come from the
+        #   modules' description functions (studentDesc() etc., same keys in the same order).
+        #   Building the lists themselves (students() etc.) took seconds per page load; that is
+        #   left to query_from_postdata, on submit.
+        for user_type, desc_func in zip(Program.USER_TYPES_WITH_LIST_FUNCS, Program.USER_TYPE_LIST_DESC_FUNCS):
+            category_lists[user_type] = [{'name': key, 'description': list_descriptions[key]}
+                                         for key in getattr(program, desc_func)()]
             for item in category_lists[user_type]:
                 if item['name'] in UserSearchController.preferred_lists:
                     item['preferred'] = True
